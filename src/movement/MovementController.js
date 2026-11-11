@@ -2,8 +2,8 @@ const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
 /**
  * First-pass anime-fighter movement. Distances are arena units and time is seconds.
- * Double-taps are resolved in logical forward/back directions, so they reverse
- * automatically when the fighter changes sides.
+ * Horizontal controls are screen-relative and never reverse when fighters cross.
+ * Dash type (forward dash or backdash) is determined relative to facing.
  */
 export class MovementController {
   constructor({
@@ -28,7 +28,7 @@ export class MovementController {
       airSpeed, groundDashCooldown
     });
     this.elapsed = 0;
-    this.lastTap = { forward: -Infinity, backward: -Infinity };
+    this.lastTap = { left: -Infinity, right: -Infinity };
   }
 
   update(fighter, input, deltaSeconds, { floorY, minX, maxX }) {
@@ -40,11 +40,9 @@ export class MovementController {
     const worldAxis = input.getWorldAxis
       ? input.getWorldAxis("horizontal")
       : input.getAxis("horizontal", fighter.facing) * fighter.facing;
-    const logicalAxis = worldAxis * fighter.facing;
     const pressedWorldAxis =
       Number(input.wasPressed?.("right") ?? false) -
       Number(input.wasPressed?.("left") ?? false);
-    const pressedLogicalAxis = pressedWorldAxis * fighter.facing;
 
     fighter.onGround = fighter.y >= floorY && fighter.vy >= 0;
     if (fighter.onGround) {
@@ -53,12 +51,12 @@ export class MovementController {
       fighter.airDashAvailable = true;
     }
 
-    if (pressedLogicalAxis !== 0) {
-      const direction = pressedLogicalAxis > 0 ? "forward" : "backward";
+    if (pressedWorldAxis !== 0) {
+      const direction = pressedWorldAxis > 0 ? "right" : "left";
       const previousTap = this.lastTap[direction];
       const isDoubleTap = this.elapsed - previousTap <= this.doubleTapWindow;
       this.lastTap[direction] = this.elapsed;
-      if (isDoubleTap) this.startDash(fighter, direction);
+      if (isDoubleTap) this.startDash(fighter, pressedWorldAxis);
     }
 
     if (fighter.onGround && input.wasPressed?.("jump")) {
@@ -68,7 +66,7 @@ export class MovementController {
       fighter.crouching = false;
       // Commit to the jump direction at takeoff: neutral is vertical,
       // directional jumps keep their horizontal trajectory until landing.
-      fighter.airHorizontalVelocity = logicalAxis === 0 ? 0 : logicalAxis * this.airSpeed;
+      fighter.airHorizontalVelocity = worldAxis === 0 ? 0 : worldAxis * this.airSpeed;
     }
 
     fighter.crouching = fighter.onGround &&
@@ -84,7 +82,7 @@ export class MovementController {
       }
     } else if (fighter.onGround) {
       const speedMultiplier = fighter.crouching ? this.crouchSpeedMultiplier : 1;
-      fighter.vx = logicalAxis * this.groundSpeed * speedMultiplier;
+      fighter.vx = worldAxis * this.groundSpeed * speedMultiplier;
     } else {
       fighter.vx = fighter.airHorizontalVelocity ?? 0;
     }
@@ -104,9 +102,9 @@ export class MovementController {
     }
   }
 
-  startDash(fighter, direction) {
-    const forward = direction === "forward";
-    const sign = forward ? fighter.facing : -fighter.facing;
+  startDash(fighter, worldDirection) {
+    const sign = Math.sign(worldDirection);
+    const forward = sign * fighter.facing > 0;
     if (fighter.onGround) {
       if ((fighter.groundDashCooldownRemaining ?? 0) <= 0) {
         fighter.groundDashCooldownRemaining = this.groundDashCooldown;

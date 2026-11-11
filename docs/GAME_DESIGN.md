@@ -23,19 +23,19 @@ This document records the decisions confirmed so far. Anything labelled **Open**
 
 | Action | Input | Behaviour |
 |---|---|---|
-| Forward | D or A | Relative to the direction the fighter is facing / opponent's side |
-| Backward | A or D | Relative to the direction the fighter is facing / opponent's side |
-| Ground dash | Double-tap forward or backward | Forward dash or backdash, respectively |
-| Air dash | Double-tap forward or backward while airborne | Directional air dash |
+| Move left | A | Always moves toward the left side of the screen |
+| Move right | D | Always moves toward the right side of the screen |
+| Ground dash | Double-tap A or D | Dashes in the pressed screen direction; classified as forward dash or backdash based on facing |
+| Air dash | Double-tap A or D while airborne | Air-dashes in the pressed screen direction |
 | Jump | W | Neutral jump when no horizontal direction is held |
-| Directional jump | W + A or W + D | Forward or backward jump, relative to facing direction |
+| Directional jump | W + A or W + D | Jumps left or right on screen, regardless of facing |
 | Crouch | S | Crouching |
 | Light | H | Light attack |
 | Medium | J | Medium attack |
 | Heavy | K | Heavy attack |
 | Special | L | Special input / attack |
 
-Forward and backward must be relative directions, not permanently tied to a specific key. When the fighter changes sides, their forward/backward interpretation reverses. Directional jumping follows the same rule.
+Movement keys are screen-relative and never reverse when fighters cross: A always means left and D always means right. Fighters automatically turn to face the opponent. Whether a dash is classified as a forward dash or backdash is determined by comparing its screen direction with the fighter's facing direction.
 
 ## Combat and special inputs
 

@@ -224,3 +224,26 @@ Copy this template for each new handoff:
 
 **Suggested next step:**
 - Project owner: try crouch-walking in both directions and decide whether 50% feels right or needs tuning.
+
+
+### 2026-11-11 — ChatGPT — Keep movement controls screen-relative
+**Type:** Completed / Handoff
+**Commit:** to be recorded after commit creation
+**Files / systems:**
+- `src/movement/MovementController.js`
+- `tests/Arena.test.js`
+- `docs/GAME_DESIGN.md`
+- `docs/TECHNICAL_PLAN.md`
+
+**What changed / what I noticed:**
+- A always moves left and D always moves right, even after the fighter crosses the opponent.
+- Directional jumps and ground/air dashes now follow the pressed screen direction.
+- Forward dash versus backdash is still classified relative to the fighter's facing, so dash speeds and labels retain their intended distinction.
+- Automatic facing toward the opponent remains unchanged.
+
+**Verification:**
+- Added regression tests for movement after crossing sides, directional jumping while facing left, and backdash classification.
+- Tests have not been executed; browser playtest remains required.
+
+**Suggested next step:**
+- Project owner: cross through the opponent repeatedly and verify A/D, jumps, and double-tap dashes never reverse unexpectedly.

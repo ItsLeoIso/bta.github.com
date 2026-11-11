@@ -133,3 +133,31 @@ test("crouch movement returns to normal speed when the crouch key is released",(
   assert.equal(arena.player.vx,300);
   assert.equal(arena.player.crouching,false);
 });
+
+test("screen-left and screen-right movement stay consistent after crossing sides",()=>{
+  const arena=new Arena();
+  arena.player.x=700;
+  arena.update(0.1,input({axis:1}));
+  assert.equal(arena.player.facing,-1);
+  assert.equal(arena.player.x,730);
+  arena.update(0.1,input({axis:-1}));
+  assert.equal(arena.player.x,700);
+});
+
+test("directional jump follows the pressed screen direction after crossing sides",()=>{
+  const arena=new Arena();
+  arena.player.x=700;
+  arena.update(1/60,input({axis:1,pressed:["jump"]}));
+  assert.ok(arena.player.x>700);
+  assert.equal(arena.player.facing,-1);
+});
+
+test("double-tap screen-right becomes a backdash when facing left",()=>{
+  const arena=new Arena();
+  arena.player.x=700;
+  arena.update(1/60,input({pressed:["right"]}));
+  arena.update(0.08,input());
+  arena.update(1/60,input({pressed:["right"]}));
+  assert.equal(arena.player.dashType,"backdash");
+  assert.ok(arena.player.vx>0);
+});

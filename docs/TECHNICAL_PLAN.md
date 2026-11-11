@@ -10,7 +10,7 @@
 - Keep simulation/gameplay logic separate from rendering and UI.
 - Use a fixed-step simulation loop (60 updates per second) with render interpolation.
 - Represent controls as logical actions rather than hard-coding gameplay to physical keys throughout the engine.
-- Resolve forward/backward relative to each fighter's facing direction.
+- Keep horizontal movement controls screen-relative (A always left, D always right); resolve forward/backward dash classification and combat directions relative to facing.
 - Track input history and timestamps in the input layer so double-taps and motion commands can be added without coupling them to movement.
 - Make character move definitions extensible and data-driven where practical.
 - Keep networking concerns separate from local simulation so online play can be explored later without entangling the initial prototype.
@@ -36,14 +36,14 @@ Implemented:
 
 ## Movement prototype 001
 Implemented in the code:
-- W jumps; W+A / W+D launch with backward / forward horizontal momentum relative to facing.
+- W jumps; W+A / W+D launch with left / right horizontal momentum relative to the screen, independent of facing.
 - Moderate gravity and a grounded floor check.
 - Locked air trajectory: neutral jumps stay vertical; directional jumps preserve their takeoff direction until landing. An air dash can change the locked horizontal trajectory.
-- Double-tap forward/backward for ground dash/backdash, with a shared 0.45-second prototype cooldown between ground dash starts.
+- Double-tap A/D for a screen-direction ground dash; whether it is a forward dash or backdash depends on facing. Both share a 0.45-second prototype cooldown between ground dash starts.
 - Ground movement is reduced to 50% of normal walking speed while crouch is held; this modifier does not affect dash bursts or airborne movement.
-- Double-tap forward/backward in the air for a directional air dash.
+- Double-tap A/D in the air for a screen-direction air dash.
 - One air dash per airtime, refreshed on landing.
-- Facing-relative dash direction.
+- Screen-relative dash direction, with forward-dash/backdash type classified relative to facing.
 
 Tuning values are initial placeholders, not final balance:
 - Ground speed: 300 units/s; air steering speed: 260 units/s.
