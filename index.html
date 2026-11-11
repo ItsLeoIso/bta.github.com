@@ -1,16 +1,13 @@
 <!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#111111" />
-    <meta name="description" content="BLT — Belt to Ass, a browser-first 2D fighting game." />
-    <title>BLT — Belt to Ass</title>
-  </head>
-  <body>
-    <main>
-      <h1>BLT — Belt to Ass</h1>
-      <p>Project scaffold is in place. The game runtime has not been implemented yet.</p>
-    </main>
-  </body>
-</html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#090909"><meta name="description" content="BLT — Belt to Ass, a browser-first 2D fighting game.">
+<title>BLT — Belt to Ass</title><link rel="stylesheet" href="./src/ui/styles.css">
+</head><body><main class="app-shell">
+<header class="site-header"><div class="brand">BLT<span> — BELT TO ASS</span></div><div class="build-label">ENGINE PROTOTYPE 001</div></header>
+<section class="game-panel" aria-label="BLT engine preview"><canvas id="game-canvas" aria-label="BLT fighting game arena"></canvas><div class="canvas-hint">ENGINE TEST ARENA · PLACEHOLDER FIGHTERS</div></section>
+<footer class="controls">
+<p><strong>MOVE</strong> A / D <span>·</span> <strong>JUMP</strong> W <span>·</span> <strong>CROUCH</strong> S</p>
+<p><strong>ATTACK</strong> H / J / K / L <span>·</span> <strong>PAUSE</strong> ESC</p>
+<p class="status" id="engine-status" role="status">INITIALIZING ENGINE…</p>
+</footer></main><script type="module" src="./src/main.js"></script></body></html>

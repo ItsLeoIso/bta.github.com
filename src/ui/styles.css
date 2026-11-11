@@ -1,0 +1,11 @@
+:root{color-scheme:dark;font-family:"Courier New",monospace;background:#080808;color:#e2dce8}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% 40%,#19171d 0%,#080808 72%)}
+.app-shell{width:min(1120px,calc(100% - 32px));margin:0 auto;padding:28px 0 24px}
+.site-header{display:flex;justify-content:space-between;align-items:baseline;gap:16px;margin-bottom:18px}
+.brand{font-size:clamp(20px,4vw,30px);font-weight:900;letter-spacing:.08em}.brand span{color:#8d8798;font-size:12px;letter-spacing:.12em}
+.build-label,.canvas-hint{color:#77717e;font-size:11px;letter-spacing:.12em}
+.game-panel{position:relative;overflow:hidden;border:1px solid #3b3542;background:#090909;box-shadow:0 18px 70px #000a}
+#game-canvas{display:block;width:100%;aspect-ratio:16/9}.canvas-hint{position:absolute;bottom:12px;left:14px;pointer-events:none}
+.controls{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 20px;margin-top:14px;color:#8d8798;font-size:11px;letter-spacing:.05em}
+.controls p{margin:0}.controls strong{color:#d7d0df}.controls span{color:#4d4754;padding:0 5px}.controls .status{width:100%;margin-top:10px;color:#aaa4b2}
+@media(max-width:600px){.app-shell{width:min(100% - 20px,1120px);padding-top:18px}.site-header{align-items:flex-start;flex-direction:column;gap:5px}.controls{flex-direction:column}}
