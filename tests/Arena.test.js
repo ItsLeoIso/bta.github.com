@@ -114,3 +114,22 @@ test("ground dashes share a cooldown and cannot be chained across the arena",()=
   arena.update(1/60,input({pressed:["right"]}));
   assert.equal(arena.player.dashType,"forward");
 });
+test("crouching reduces grounded walking speed by half",()=>{
+  const standing=new Arena();
+  const crouching=new Arena();
+  standing.update(0.5,input({axis:1}));
+  crouching.update(0.5,input({axis:1,down:["crouch"]}));
+  assert.equal(standing.player.x,450);
+  assert.equal(crouching.player.x,375);
+  assert.equal(crouching.player.crouching,true);
+  assert.equal(crouching.player.vx,150);
+});
+
+test("crouch movement returns to normal speed when the crouch key is released",()=>{
+  const arena=new Arena();
+  arena.update(0.2,input({axis:1,down:["crouch"]}));
+  assert.equal(arena.player.vx,150);
+  arena.update(0.2,input({axis:1}));
+  assert.equal(arena.player.vx,300);
+  assert.equal(arena.player.crouching,false);
+});

@@ -40,6 +40,7 @@ Implemented in the code:
 - Moderate gravity and a grounded floor check.
 - Locked air trajectory: neutral jumps stay vertical; directional jumps preserve their takeoff direction until landing. An air dash can change the locked horizontal trajectory.
 - Double-tap forward/backward for ground dash/backdash, with a shared 0.45-second prototype cooldown between ground dash starts.
+- Ground movement is reduced to 50% of normal walking speed while crouch is held; this modifier does not affect dash bursts or airborne movement.
 - Double-tap forward/backward in the air for a directional air dash.
 - One air dash per airtime, refreshed on landing.
 - Facing-relative dash direction.

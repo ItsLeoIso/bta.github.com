@@ -17,13 +17,15 @@ export class MovementController {
     jumpVelocity = 760,
     gravity = 1800,
     groundSpeed = 300,
+    crouchSpeedMultiplier = 0.5,
     airSpeed = 260,
     groundDashCooldown = 0.45
   } = {}) {
     Object.assign(this, {
       doubleTapWindow, groundDashSpeed, backdashSpeed, airDashSpeed,
       groundDashDuration, backdashDuration, airDashDuration,
-      jumpVelocity, gravity, groundSpeed, airSpeed, groundDashCooldown
+      jumpVelocity, gravity, groundSpeed, crouchSpeedMultiplier,
+      airSpeed, groundDashCooldown
     });
     this.elapsed = 0;
     this.lastTap = { forward: -Infinity, backward: -Infinity };
@@ -69,6 +71,10 @@ export class MovementController {
       fighter.airHorizontalVelocity = logicalAxis === 0 ? 0 : logicalAxis * this.airSpeed;
     }
 
+    fighter.crouching = fighter.onGround &&
+      fighter.dashRemaining <= 0 &&
+      input.isDown("crouch");
+
     if (fighter.dashRemaining > 0) {
       fighter.dashRemaining = Math.max(0, fighter.dashRemaining - deltaSeconds);
       fighter.vx = fighter.dashVelocity;
@@ -77,12 +83,12 @@ export class MovementController {
         fighter.dashType = null;
       }
     } else if (fighter.onGround) {
-      fighter.vx = logicalAxis * this.groundSpeed;
+      const speedMultiplier = fighter.crouching ? this.crouchSpeedMultiplier : 1;
+      fighter.vx = logicalAxis * this.groundSpeed * speedMultiplier;
     } else {
       fighter.vx = fighter.airHorizontalVelocity ?? 0;
     }
 
-    fighter.crouching = fighter.onGround && fighter.dashRemaining <= 0 && input.isDown("crouch");
     fighter.x = clamp(fighter.x + fighter.vx * deltaSeconds, minX, maxX);
     if (!fighter.onGround) {
       fighter.vy += this.gravity * deltaSeconds;

@@ -202,3 +202,25 @@ Copy this template for each new handoff:
 
 **Suggested next step:**
 - Project owner: check whether the new fighter-to-stage ratio feels right and whether the characters need any further adjustment.
+
+
+### 2026-11-11 — ChatGPT — Reduce movement speed while crouching
+**Type:** Completed / Handoff
+**Commit:** to be recorded after commit creation
+**Files / systems:**
+- `src/movement/MovementController.js`
+- `tests/Arena.test.js`
+- `docs/GAME_DESIGN.md`
+- `docs/TECHNICAL_PLAN.md`
+
+**What changed / what I noticed:**
+- Crouch-walking now uses 50% of normal grounded walking speed (150 vs. 300 arena units per second).
+- The crouch state is resolved before horizontal movement, so the speed reduction applies immediately while crouch is held.
+- Dash bursts and airborne movement are unchanged.
+
+**Verification:**
+- Added regression tests for the reduced crouch speed and restoration of normal speed after releasing crouch.
+- Tests were not executed in this environment; browser playtest remains requested.
+
+**Suggested next step:**
+- Project owner: try crouch-walking in both directions and decide whether 50% feels right or needs tuning.
