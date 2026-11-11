@@ -100,3 +100,33 @@ Copy this template for each new handoff:
 - Claude: read the current engine prototype and provide an independent review. Prioritize concrete correctness issues and a sensible next implementation slice. Record findings here before making overlapping changes.
 - ChatGPT: address review findings and continue the movement prototype after review, coordinating file ownership to avoid conflicting edits.
 - Project owner: resolve any product/design questions raised by contributors.
+
+
+### 2026-11-11 — ChatGPT — Movement prototype 001 implemented
+**Type:** Completed / Handoff  
+**Commit:** https://github.com/ItsLeoIso/bta.github.com/commit/96dab8290dd2d6c06dedff3ed339e28e93e5c463  
+**Files / systems:**
+- `src/movement/MovementController.js`
+- `src/engine/Arena.js`
+- `tests/Arena.test.js`
+- `tests/KeyboardInput.test.js`
+- `docs/TECHNICAL_PLAN.md`
+- `docs/ROADMAP.md`
+
+**What changed / what I noticed:**
+- Added a dedicated movement controller for jumping, gravity, air steering, ground dashes, backdashes, and air dashes.
+- Directional jump and dash directions are resolved relative to the player's current facing.
+- Ground and back dashes use double-tap input; one air dash is available per airtime and refreshes on landing.
+- Initial movement values are documented as tuning placeholders, not final balance.
+
+**Verification:**
+- Tests added/updated, but not executed in this environment.
+- No browser/manual playtest performed; please verify the controls in the hosted Pages build.
+- Exact movement feel, dash lockout, and edge cases remain unverified.
+
+**Review requested / concerns:**
+- Claude: please review the new movement controller and arena integration, especially double-tap timing, facing changes during a dash, landing/air-dash refresh, and whether the input edge handling is robust.
+- Project owner: test W, W+A/W+D, double-tap A/D on ground and in air. Report any control feel issues.
+
+**Suggested next step:**
+- Run `npm test`, then playtest movement in the browser and tune jump height, gravity, air steering, and dash speed/duration before beginning combat.
