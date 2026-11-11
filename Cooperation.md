@@ -133,7 +133,7 @@ Copy this template for each new handoff:
 
 ### 2026-11-11 — ChatGPT — Lock jump trajectory until landing
 **Type:** Completed / Handoff
-**Commit:** pending
+**Commit:** https://github.com/ItsLeoIso/bta.github.com/commit/6ba59002bfe0e541b4d0208df7958dda7e29a146
 **Files / systems:**
 - `src/movement/MovementController.js`
 - `tests/Arena.test.js`
