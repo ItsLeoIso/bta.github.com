@@ -206,7 +206,7 @@ Copy this template for each new handoff:
 
 ### 2026-11-11 — ChatGPT — Reduce movement speed while crouching
 **Type:** Completed / Handoff
-**Commit:** to be recorded after commit creation
+**Commit:** https://github.com/ItsLeoIso/bta.github.com/commit/848a3eb2a1e235cc7f1bd74c14f7931588327abf
 **Files / systems:**
 - `src/movement/MovementController.js`
 - `tests/Arena.test.js`
