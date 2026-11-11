@@ -51,6 +51,7 @@ Forward and backward must be relative directions, not permanently tied to a spec
 
 - **Movement style:** Anime-fighter air control — fast movement, air combos, air dashes, and long combo possibilities.
 - **Gravity:** Moderate — enough time for air combos, while falling should still feel natural.
+- Ground forward dashes and backdashes share a cooldown so players cannot chain them continuously to cross the arena; the prototype starts at 0.45 seconds, subject to playtesting.
 - Air control is an intentional core mechanic.
 
 Exact movement speeds, acceleration, jump height, gravity values, dash duration, hitstun, and cancel windows are **Open / to be tuned through playtesting**.

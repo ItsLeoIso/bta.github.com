@@ -92,3 +92,25 @@ test("air dash changes the locked trajectory without restoring air steering",()=
   for(let i=0;i<12;i++) arena.update(1/60,input({axis:-1}));
   assert.ok(arena.player.x>afterDash);
 });
+
+test("ground dashes share a cooldown and cannot be chained across the arena",()=>{
+  const arena=new Arena();
+  arena.update(1/60,input({pressed:["right"]}));
+  arena.update(0.08,input());
+  arena.update(1/60,input({pressed:["right"]}));
+  assert.equal(arena.player.dashType,"forward");
+
+  // A fresh double-tap during the lockout must not start another dash.
+  arena.update(0.08,input());
+  arena.update(0.08,input({pressed:["right"]}));
+  arena.update(0.08,input());
+  arena.update(0.08,input({pressed:["right"]}));
+  assert.equal(arena.player.dashType,null);
+
+  // Once the cooldown has elapsed, another fresh double-tap is allowed.
+  arena.update(0.5,input());
+  arena.update(1/60,input({pressed:["right"]}));
+  arena.update(0.08,input());
+  arena.update(1/60,input({pressed:["right"]}));
+  assert.equal(arena.player.dashType,"forward");
+});

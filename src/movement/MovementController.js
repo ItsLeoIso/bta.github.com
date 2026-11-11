@@ -17,12 +17,13 @@ export class MovementController {
     jumpVelocity = 760,
     gravity = 1800,
     groundSpeed = 300,
-    airSpeed = 260
+    airSpeed = 260,
+    groundDashCooldown = 0.45
   } = {}) {
     Object.assign(this, {
       doubleTapWindow, groundDashSpeed, backdashSpeed, airDashSpeed,
       groundDashDuration, backdashDuration, airDashDuration,
-      jumpVelocity, gravity, groundSpeed, airSpeed
+      jumpVelocity, gravity, groundSpeed, airSpeed, groundDashCooldown
     });
     this.elapsed = 0;
     this.lastTap = { forward: -Infinity, backward: -Infinity };
@@ -30,6 +31,10 @@ export class MovementController {
 
   update(fighter, input, deltaSeconds, { floorY, minX, maxX }) {
     this.elapsed += deltaSeconds;
+    fighter.groundDashCooldownRemaining = Math.max(
+      0,
+      (fighter.groundDashCooldownRemaining ?? 0) - deltaSeconds
+    );
     const worldAxis = input.getWorldAxis
       ? input.getWorldAxis("horizontal")
       : input.getAxis("horizontal", fighter.facing) * fighter.facing;
@@ -97,9 +102,12 @@ export class MovementController {
     const forward = direction === "forward";
     const sign = forward ? fighter.facing : -fighter.facing;
     if (fighter.onGround) {
-      fighter.dashType = forward ? "forward" : "backdash";
-      fighter.dashRemaining = forward ? this.groundDashDuration : this.backdashDuration;
-      fighter.dashVelocity = sign * (forward ? this.groundDashSpeed : this.backdashSpeed);
+      if ((fighter.groundDashCooldownRemaining ?? 0) <= 0) {
+        fighter.groundDashCooldownRemaining = this.groundDashCooldown;
+        fighter.dashType = forward ? "forward" : "backdash";
+        fighter.dashRemaining = forward ? this.groundDashDuration : this.backdashDuration;
+        fighter.dashVelocity = sign * (forward ? this.groundDashSpeed : this.backdashSpeed);
+      }
     } else if (fighter.airDashAvailable) {
       fighter.dashType = "air";
       fighter.dashRemaining = this.airDashDuration;

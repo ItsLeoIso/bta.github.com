@@ -153,3 +153,27 @@ Copy this template for each new handoff:
 
 **Suggested next step:**
 - Project owner: retest neutral and diagonal jumps, then test changing direction with and without an air dash.
+
+### 2026-11-11 — ChatGPT — Add ground-dash cooldown
+**Type:** Completed / Handoff
+**Commit:** Pending
+**Files / systems:**
+- `src/movement/MovementController.js`
+- `tests/Arena.test.js`
+- `docs/GAME_DESIGN.md`
+- `docs/TECHNICAL_PLAN.md`
+
+**What changed / what I noticed:**
+- Ground forward dashes and backdashes now share a 0.45-second cooldown, measured from dash start.
+- The dash burst itself is unchanged; the cooldown prevents repeated double-taps from chaining ground dashes.
+- Air dashes remain governed by the existing one-air-dash-per-airtime rule.
+
+**Verification:**
+- Added a regression test covering rejection during cooldown and allowing a new dash after cooldown.
+- Tests have not yet been executed; browser playtest is still required.
+
+**Review requested / concerns:**
+- Claude: review cooldown timing and confirm ground and backdash lockout behavior is consistent.
+
+**Suggested next step:**
+- Project owner: test repeated forward dashes and alternating forward/backdashes; tune the 0.45-second value if it feels too restrictive or too permissive.
