@@ -59,7 +59,9 @@ export class MovementController {
       fighter.onGround = false;
       fighter.y -= 0.001;
       fighter.crouching = false;
-      fighter.vx = logicalAxis * this.groundSpeed;
+      // Commit to the jump direction at takeoff: neutral is vertical,
+      // directional jumps keep their horizontal trajectory until landing.
+      fighter.airHorizontalVelocity = logicalAxis === 0 ? 0 : logicalAxis * this.airSpeed;
     }
 
     if (fighter.dashRemaining > 0) {
@@ -72,7 +74,7 @@ export class MovementController {
     } else if (fighter.onGround) {
       fighter.vx = logicalAxis * this.groundSpeed;
     } else {
-      fighter.vx = logicalAxis * this.airSpeed;
+      fighter.vx = fighter.airHorizontalVelocity ?? 0;
     }
 
     fighter.crouching = fighter.onGround && fighter.dashRemaining <= 0 && input.isDown("crouch");
@@ -103,6 +105,8 @@ export class MovementController {
       fighter.dashRemaining = this.airDashDuration;
       fighter.dashVelocity = sign * this.airDashSpeed;
       fighter.vy = 0;
+      // Air dash changes the locked trajectory; it does not enable free steering.
+      fighter.airHorizontalVelocity = sign * this.airDashSpeed;
       fighter.airDashAvailable = false;
     }
   }

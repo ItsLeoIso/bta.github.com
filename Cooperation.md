@@ -130,3 +130,26 @@ Copy this template for each new handoff:
 
 **Suggested next step:**
 - Run `npm test`, then playtest movement in the browser and tune jump height, gravity, air steering, and dash speed/duration before beginning combat.
+
+### 2026-11-11 — ChatGPT — Lock jump trajectory until landing
+**Type:** Completed / Handoff
+**Commit:** pending
+**Files / systems:**
+- `src/movement/MovementController.js`
+- `tests/Arena.test.js`
+- `docs/GAME_DESIGN.md`
+- `docs/TECHNICAL_PLAN.md`
+
+**What changed / what I noticed:**
+- Neutral jumps now stay vertical; directional jumps preserve the chosen horizontal direction from takeoff.
+- Air dashes can change the locked horizontal trajectory, which remains committed until landing.
+
+**Verification:**
+- Added regression tests for neutral jump lock, directional jump lock, and air-dash trajectory change.
+- Tests have not yet been executed; browser retest is requested.
+
+**Review requested / concerns:**
+- Claude: please check takeoff direction locking, dash transition, and landing reset behavior.
+
+**Suggested next step:**
+- Project owner: retest neutral and diagonal jumps, then test changing direction with and without an air dash.

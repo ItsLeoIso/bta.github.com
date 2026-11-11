@@ -62,3 +62,33 @@ test("double-tapping forward in the air starts one air dash",()=>{
   assert.equal(arena.player.dashType,"air");
   assert.equal(arena.player.airDashAvailable,false);
 });
+
+test("neutral jump stays vertical despite horizontal air input",()=>{
+  const arena=new Arena(), startX=arena.player.x;
+  arena.update(1/60,input({pressed:["jump"]}));
+  for(let i=0;i<12;i++) arena.update(1/60,input({axis:1}));
+  assert.equal(arena.player.x,startX);
+  assert.ok(arena.player.y<arena.floorY);
+});
+
+test("directional jump keeps its takeoff direction despite opposite air input",()=>{
+  const arena=new Arena();
+  arena.update(1/60,input({axis:1,pressed:["jump"]}));
+  const afterTakeoff=arena.player.x;
+  arena.update(1/60,input({axis:-1}));
+  assert.ok(arena.player.x>afterTakeoff);
+  const before=arena.player.x;
+  for(let i=0;i<12;i++) arena.update(1/60,input({axis:-1}));
+  assert.ok(arena.player.x>before);
+});
+
+test("air dash changes the locked trajectory without restoring air steering",()=>{
+  const arena=new Arena();
+  arena.update(1/60,input({pressed:["jump"]}));
+  arena.update(1/60,input({pressed:["right"]}));
+  arena.update(0.08,input());
+  arena.update(1/60,input({pressed:["right"]}));
+  const afterDash=arena.player.x;
+  for(let i=0;i<12;i++) arena.update(1/60,input({axis:-1}));
+  assert.ok(arena.player.x>afterDash);
+});

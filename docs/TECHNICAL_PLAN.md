@@ -37,7 +37,7 @@ Implemented:
 Implemented in the code:
 - W jumps; W+A / W+D launch with backward / forward horizontal momentum relative to facing.
 - Moderate gravity and a grounded floor check.
-- Air steering while airborne.
+- Locked air trajectory: neutral jumps stay vertical; directional jumps preserve their takeoff direction until landing. An air dash can change the locked horizontal trajectory.
 - Double-tap forward/backward for ground dash/backdash.
 - Double-tap forward/backward in the air for a directional air dash.
 - One air dash per airtime, refreshed on landing.
