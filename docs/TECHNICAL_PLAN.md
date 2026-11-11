@@ -6,11 +6,9 @@
 - **Dependencies/build tooling:** None for the initial browser prototype.
 - **Tests:** Node.js built-in test runner (node --test).
 
-This stack is chosen to maximize control over custom fighting-game mechanics and avoid framework constraints during the prototype.
-
 ## Architectural goals
 - Keep simulation/gameplay logic separate from rendering and UI.
-- Use a fixed-step simulation loop (60 updates per second initially) with render interpolation.
+- Use a fixed-step simulation loop (60 updates per second) with render interpolation.
 - Represent controls as logical actions rather than hard-coding gameplay to physical keys throughout the engine.
 - Resolve forward/backward relative to each fighter's facing direction.
 - Track input history and timestamps in the input layer so double-taps and motion commands can be added without coupling them to movement.
@@ -33,15 +31,25 @@ Implemented:
 - Canvas 2D renderer with responsive sizing and device-pixel-ratio handling.
 - Placeholder arena, player fighter, and training dummy.
 - Keyboard state tracking for A/D/W/S and H/J/K/L, plus Escape pause.
-- Horizontal movement preview with facing-relative direction handling.
-- Initial automated tests for the loop and arena.
+- Initial automated tests for the loop, arena, and keyboard input.
 
-Not implemented yet:
-- Jumping, gravity, crouch movement, dashes, and air control.
-- Attack behavior, hitboxes/hurtboxes, hitstun, blocking, or damage.
-- Input buffering, double-taps, and motion-command recognition.
-- Character animation and custom pixel-art assets.
-- Online multiplayer.
+## Movement prototype 001
+Implemented in the code:
+- W jumps; W+A / W+D launch with backward / forward horizontal momentum relative to facing.
+- Moderate gravity and a grounded floor check.
+- Air steering while airborne.
+- Double-tap forward/backward for ground dash/backdash.
+- Double-tap forward/backward in the air for a directional air dash.
+- One air dash per airtime, refreshed on landing.
+- Facing-relative dash direction.
+
+Tuning values are initial placeholders, not final balance:
+- Ground speed: 300 units/s; air steering speed: 260 units/s.
+- Jump velocity: 760 units/s; gravity: 1800 units/s².
+- Ground dash: 700 units/s for 0.16 s.
+- Backdash: 540 units/s for 0.22 s.
+- Air dash: 650 units/s for 0.14 s.
+- Double-tap window: 0.24 s.
 
 ## Running and testing
 - Run locally: python3 -m http.server 8000, then open http://localhost:8000.

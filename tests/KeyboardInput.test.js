@@ -24,3 +24,11 @@ test("pressed actions are edge-triggered and cleared at end of frame",()=>{
   assert.equal(input.wasPressed("light"),false);
   input.detach();
 });
+test("jump key is exposed as a one-frame pressed action",()=>{
+  const t=target(),input=new KeyboardInput(t); input.attach();
+  t.emit("keydown",{code:"KeyW",preventDefault(){}});
+  assert.equal(input.wasPressed("jump"),true);
+  input.endFrame();
+  assert.equal(input.wasPressed("jump"),false);
+  input.detach();
+});
