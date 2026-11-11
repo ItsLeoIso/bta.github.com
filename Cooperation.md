@@ -177,3 +177,28 @@ Copy this template for each new handoff:
 
 **Suggested next step:**
 - Project owner: test repeated forward dashes and alternating forward/backdashes; tune the 0.45-second value if it feels too restrictive or too permissive.
+
+### 2026-11-11 — ChatGPT — Increase fighter on-screen scale
+**Type:** Completed / Handoff
+**Commit:** Pending
+**Files / systems:**
+- `src/engine/CanvasRenderer.js`
+- `src/engine/Arena.js`
+- `tests/Arena.test.js`
+- `docs/GAME_DESIGN.md`
+- `docs/TECHNICAL_PLAN.md`
+
+**What changed / what I noticed:**
+- Placeholder fighter bodies now render at 3× their previous width and height.
+- Ground shadows remain flat rather than being vertically enlarged with the fighters.
+- Arena dimensions and movement speeds remain unchanged; horizontal center limits were moved inward to keep the wider fighters within the stage.
+
+**Verification:**
+- Updated the arena boundary expectation and documented the presentation scale.
+- Tests have not yet been executed; browser visual review is requested.
+
+**Review requested / concerns:**
+- Claude: review the renderer transform and stage-edge spacing at 3× scale.
+
+**Suggested next step:**
+- Project owner: check whether the new fighter-to-stage ratio feels right and whether the characters need any further adjustment.

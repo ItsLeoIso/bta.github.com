@@ -22,9 +22,9 @@ export class Arena {
     player.facing=player.x<=this.opponent.x ? 1 : -1;
     this.opponent.facing=-player.facing;
     this.movement.update(player,input,deltaSeconds,{
-      floorY:this.floorY,minX:40,maxX:this.width-40
+      floorY:this.floorY,minX:64,maxX:this.width-64
     });
-    player.x=clamp(player.x,40,this.width-40);
+    player.x=clamp(player.x,64,this.width-64);
     player.facing=player.x<=this.opponent.x ? 1 : -1;
     this.opponent.facing=-player.facing;
   }

@@ -29,6 +29,7 @@ Implemented:
 - Browser entry point using native ES modules.
 - Fixed 60 Hz simulation accumulator with capped frame delta.
 - Canvas 2D renderer with responsive sizing and device-pixel-ratio handling.
+- Placeholder fighters are drawn at 3× their original body dimensions; arena size and movement speeds remain unchanged, with horizontal stage bounds adjusted to keep the larger bodies on-screen.
 - Placeholder arena, player fighter, and training dummy.
 - Keyboard state tracking for A/D/W/S and H/J/K/L, plus Escape pause.
 - Initial automated tests for the loop, arena, and keyboard input.

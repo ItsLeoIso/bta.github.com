@@ -8,6 +8,7 @@ This document records the decisions confirmed so far. Anything labelled **Open**
 - **Genre:** 2D traditional fighting game with anime-fighter influence; inspirations mentioned include Dragon Ball FighterZ and Melty Blood.
 - **Initial platform:** Browser.
 - **Visual direction:** Retro pixel art.
+- **Character-to-arena scale:** Placeholder fighters render at 3× their original prototype size, targeting the larger on-screen fighter presence of anime fighters such as FighterZ and Melty Blood. Arena dimensions and movement physics remain unchanged; stage edge limits account for the wider bodies.
 - **Early development art:** Placeholder sprites are acceptable while custom sprites are being developed.
 - **Presentation:** Dark / black-grey visual direction.
 - **Intro concept:** Start on a dark, silent screen with pixelated `START`. On any button press, a fighter punches through the START text; fast-paced music begins, the character appears on the right and poses, and menu options appear on the left.

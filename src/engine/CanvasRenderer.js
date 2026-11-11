@@ -49,11 +49,20 @@ export class CanvasRenderer {
   drawFighter(ctx, fighter, color, alpha) {
     const x = fighter.previousX + (fighter.x-fighter.previousX)*alpha;
     const y = fighter.previousY + (fighter.y-fighter.previousY)*alpha;
-    const bodyWidth = 42, bodyHeight = fighter.crouching ? 48 : 76, top = y-bodyHeight;
-    ctx.save(); ctx.translate(x,0); ctx.fillStyle = color;
-    ctx.fillRect(-bodyWidth/2,top+18,bodyWidth,bodyHeight-18); ctx.fillRect(-17,top,34,27);
-    ctx.fillStyle = "#090909"; ctx.fillRect(fighter.facing*7,top+10,5,5);
-    ctx.fillStyle = "#3b3542"; ctx.fillRect(-bodyWidth/2-5,y-8,bodyWidth+10,8); ctx.restore();
+    const fighterScale = 3;
+    const bodyWidth = 42, bodyHeight = fighter.crouching ? 48 : 76, top = -bodyHeight;
+    ctx.save();
+    // Keep the ground shadow broad but flat while scaling the fighter itself.
+    ctx.fillStyle = "#3b3542";
+    ctx.fillRect(x-(bodyWidth* fighterScale+10)/2,y-8,bodyWidth*fighterScale+10,8);
+    ctx.translate(x,y);
+    ctx.scale(fighterScale,fighterScale);
+    ctx.fillStyle = color;
+    ctx.fillRect(-bodyWidth/2,top+18,bodyWidth,bodyHeight-18);
+    ctx.fillRect(-17,top,34,27);
+    ctx.fillStyle = "#090909";
+    ctx.fillRect(fighter.facing*7,top+10,5,5);
+    ctx.restore();
   }
   drawHud(ctx, arena) {
     ctx.fillStyle = COLORS.text; ctx.font = "bold 16px monospace"; ctx.textAlign = "left"; ctx.fillText("PLAYER 01",32,36);
