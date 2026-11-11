@@ -13,7 +13,7 @@ A browser-first 2D 1v1 anime-style fighting game. This repository is the source 
 - Main menu order: Arcade, Online, Training, Option.
 - Browser is the first target platform.
 
-See [the game design](docs/GAME_DESIGN.md), [the roadmap](docs/ROADMAP.md), and [the technical plan](docs/TECHNICAL_PLAN.md).
+See [the game design](docs/GAME_DESIGN.md), [the roadmap](docs/ROADMAP.md), [the technical plan](docs/TECHNICAL_PLAN.md), and the contributor [cooperation log](Cooperation.md).
 
 ## Repository layout
 - assets/ — visual, audio, and stage assets.
