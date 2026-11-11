@@ -228,7 +228,7 @@ Copy this template for each new handoff:
 
 ### 2026-11-11 — ChatGPT — Keep movement controls screen-relative
 **Type:** Completed / Handoff
-**Commit:** to be recorded after commit creation
+**Commit:** https://github.com/ItsLeoIso/bta.github.com/commit/a0543453664c8027fe1109510161cee599b621d5
 **Files / systems:**
 - `src/movement/MovementController.js`
 - `tests/Arena.test.js`
