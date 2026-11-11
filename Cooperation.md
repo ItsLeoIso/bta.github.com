@@ -156,7 +156,7 @@ Copy this template for each new handoff:
 
 ### 2026-11-11 — ChatGPT — Add ground-dash cooldown
 **Type:** Completed / Handoff
-**Commit:** Pending
+**Commit:** https://github.com/ItsLeoIso/bta.github.com/commit/04888dc22d1d6099f4e72a0e7bb77b35d7991308
 **Files / systems:**
 - `src/movement/MovementController.js`
 - `tests/Arena.test.js`
