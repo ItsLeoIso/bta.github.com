@@ -180,7 +180,7 @@ Copy this template for each new handoff:
 
 ### 2026-11-11 — ChatGPT — Increase fighter on-screen scale
 **Type:** Completed / Handoff
-**Commit:** Pending
+**Commit:** https://github.com/ItsLeoIso/bta.github.com/commit/1eeb7cd584c1ad2b84355ca75b8040bfd6bc5eb9
 **Files / systems:**
 - `src/engine/CanvasRenderer.js`
 - `src/engine/Arena.js`
