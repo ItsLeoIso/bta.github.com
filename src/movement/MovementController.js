@@ -152,6 +152,9 @@ export class MovementController {
     } else if (fighter.state.reaction !== FIGHTER_STATES.reaction.NONE) {
       // Hit reactions control horizontal motion through their knockback velocity.
       fighter.vx = fighter.reactionData?.knockbackVelocity ?? 0;
+    } else if (fighter.state.action === FIGHTER_STATES.action.GUARD) {
+      // A held directional guard is stationary; release back to move again.
+      fighter.vx = 0;
     } else if (fighter.state.action === FIGHTER_STATES.action.ATTACK) {
       // Attacks lock grounded horizontal control.
       fighter.vx = fighter.onGround ? 0 : fighter.airHorizontalVelocity ?? 0;
