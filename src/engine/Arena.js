@@ -1,4 +1,5 @@
 import { MovementController } from "../movement/MovementController.js";
+import { AttackController } from "../combat/AttackController.js";
 import { resolvePushboxes } from "../movement/Pushbox.js";
 import { FIGHTER_STATES, FighterStateController } from "../state/FighterStateController.js";
 
@@ -17,7 +18,7 @@ function createFighter({x,facing}) {
     actionData:{dashType:null,remaining:0,velocity:0},
     dashType:null,dashRemaining:0,dashVelocity:0,
     airDashAvailable:true,airHorizontalVelocity:0,
-    groundDashCooldownRemaining:0
+    groundDashCooldownRemaining:0,lastAttackData:null
   };
 }
 
@@ -31,6 +32,7 @@ export class Arena {
     this.stateController.initialize(this.player);
     this.stateController.initialize(this.opponent);
     this.movement=new MovementController({stateController:this.stateController});
+    this.attacks=new AttackController({stateController:this.stateController});
   }
 
   update(deltaSeconds,input) {
@@ -39,6 +41,7 @@ export class Arena {
     this.opponent.previousX=this.opponent.x; this.opponent.previousY=this.opponent.y;
     player.facing=player.x<=this.opponent.x ? 1 : -1;
     this.opponent.facing=-player.facing;
+    this.attacks.update(player,input);
     this.movement.update(player,input,deltaSeconds,{
       floorY:this.floorY,minX:this.stageMargin,maxX:this.width-this.stageMargin
     });
