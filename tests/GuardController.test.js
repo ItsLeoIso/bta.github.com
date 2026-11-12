@@ -58,23 +58,23 @@ test("blocking applies blockstun and pushback without reducing health", () => {
   assert.equal(defender.state.action, STATES.action.NONE);
 });
 
-test("Arena allows crouch-guard retreat at 25% walking speed", () => {
+test("Arena allows crouch-guard retreat at 12.5% walking speed", () => {
   const arena = new Arena();
   const startX = arena.player.x;
   const backInput = { getWorldAxis: () => -1, wasPressed: () => false, isDown: action => action === "crouch" };
   arena.update(0.1, backInput);
   assert.equal(arena.player.state.action, STATES.action.GUARD);
   assert.equal(arena.player.guardData.guardHeight, "low");
-  assert.equal(arena.player.x, startX - 7.5);
+  assert.equal(arena.player.x, startX - 3.75);
 });
 
-test("standing guard retreat moves at 50% walking speed", () => {
+test("standing guard retreat moves at 25% walking speed", () => {
   const arena = new Arena();
   const startX = arena.player.x;
   const backInput = { getWorldAxis: () => -1, wasPressed: () => false, isDown: () => false };
   arena.update(0.1, backInput);
   assert.equal(arena.player.state.action, STATES.action.GUARD);
-  assert.equal(arena.player.x, startX - 15);
+  assert.equal(arena.player.x, startX - 7.5);
 });
 
 
@@ -85,4 +85,19 @@ test("back is interpreted relative to facing after the fighters cross sides", ()
   guard.update(target, input(1));
   assert.equal(target.state.action, STATES.action.GUARD);
   assert.equal(target.guardData.guardHeight, "high");
+});
+
+
+test("ordinary crouch movement uses 12.5% of normal walking speed", () => {
+  const arena = new Arena();
+  const startX = arena.player.x;
+  const crouchWalkInput = {
+    getWorldAxis: () => 1,
+    wasPressed: () => false,
+    isDown: action => action === "crouch"
+  };
+  arena.update(0.1, crouchWalkInput);
+  assert.equal(arena.player.state.action, STATES.action.NONE);
+  assert.equal(arena.player.state.locomotion, STATES.locomotion.CROUCHING);
+  assert.equal(arena.player.x, startX + 3.75);
 });
