@@ -69,14 +69,18 @@ Initial pushbox values (55 half-width, 70 standing height, 50 crouching height) 
 
 ## Fighter state architecture
 
-Planned foundation before expanding combat:
+Implemented foundation:
 
-- Add an explicit fighter state controller rather than deriving gameplay state from scattered flags.
-- Represent grounded/airborne locomotion and stance (standing, walking, crouching, jumping) separately from action states (dash, air dash, attack) and temporary reactions/lockouts (hitstun, blockstun, knockdown, wake-up) where appropriate.
-- Give each state/action explicit entry, update, and exit/transition rules. Centralize transition validation and define interruption priority.
-- Keep facing direction, screen-relative input, timers, and attack phase as distinct data; do not duplicate them as state flags.
-- Select pushbox and hurtbox profiles from the fighter's current stance/locomotion. Keep pushboxes, hurtboxes, and attack hitboxes as separate systems.
-- Add transition tests for grounded/airborne changes, crouch and walk, dash completion, landing, attack phases, guard, and hit reactions as those systems arrive.
+- Added `src/state/FighterStateController.js` as the authority for three independent state channels: locomotion, action, and reaction.
+- Locomotion currently covers standing, walking, crouching, jumping, and falling, with transitions validated centrally.
+- Action currently covers neutral, dash, attack, and guard. Dash timing/type/velocity are action data rather than independent state flags.
+- Reaction currently covers neutral, hitstun, blockstun, knockdown, and wake-up. Reactions interrupt actions, and higher-priority reactions cannot be replaced by lower-priority ones.
+- Existing physics and pushbox fields remain synchronized as compatibility mirrors while the rest of the engine migrates to explicit state.
+- Added a live DOM state inspector for both fighters. It displays locomotion, action, reaction, and action detail while the game runs.
+- Added a frame-data area for startup, active, recovery, hit advantage, and block advantage. These values are intentionally placeholders until attack definitions and frame timing are implemented.
+- Added unit tests for legal/illegal transitions, action locking, reaction interruption/priority, compatibility mirrors, and integration with walking, crouching, jumping, falling, landing, and dash completion.
+
+Next state/combat work should keep facing direction, screen-relative input, timers, and attack phase as distinct data. Pushboxes, hurtboxes, and attack hitboxes remain separate systems, with collision profiles selected from the fighter's current stance/locomotion.
 
 ## Planned combat foundation
 - Implement light, medium, and heavy attacks with explicit startup, active, and recovery phases.
