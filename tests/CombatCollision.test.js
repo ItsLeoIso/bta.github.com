@@ -86,6 +86,7 @@ test("overlapping active hitbox and standing hurtbox produce one hit event", () 
   const event = resolveAttackCollision(attacker, defender);
   assert.equal(event.type, "hit");
   assert.equal(event.moveId, "light");
+  assert.equal(event.hitLevel, "high");
   assert.equal(event.defender, defender);
   assert.equal(attacker.actionData.hitConfirmed, true);
   assert.equal(resolveAttackCollision(attacker, defender), null);
@@ -94,7 +95,9 @@ test("overlapping active hitbox and standing hurtbox produce one hit event", () 
 test("high attacks can be crouched under while mid attacks hit crouching targets", () => {
   const crouching = fighter({ x: 200, y: 200, locomotion: STATES.locomotion.CROUCHING });
 
-  assert.equal(resolveAttackCollision(activeAttacker({ moveId: "light" }), crouching), null);
+  const highAttacker = activeAttacker({ moveId: "light" });
+  assert.equal(resolveAttackCollision(highAttacker, crouching), null);
+  assert.equal(highAttacker.actionData.hitConfirmed, false);
   const midHit = resolveAttackCollision(activeAttacker({ moveId: "medium" }), crouching);
   assert.equal(midHit.hitLevel, "mid");
 });
