@@ -62,6 +62,15 @@ export class CanvasRenderer {
     ctx.fillRect(-17,top,34,27);
     ctx.fillStyle = "#090909";
     ctx.fillRect(fighter.facing*7,top+10,5,5);
+    if (fighter.state?.action === "attack" && fighter.actionData?.phase === "active") {
+      // A temporary visual cue for active timing; collision boxes arrive in the next combat step.
+      ctx.strokeStyle = "#f0e7ff";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(fighter.facing * 14, top + 44);
+      ctx.quadraticCurveTo(fighter.facing * 34, top + 20, fighter.facing * 54, top + 42);
+      ctx.stroke();
+    }
     ctx.restore();
   }
   drawHud(ctx, arena) {
