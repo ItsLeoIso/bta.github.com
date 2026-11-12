@@ -93,9 +93,22 @@ Implemented as the first combat action system:
 - The active phase has a temporary visual slash cue. It is not a hitbox and cannot hit the opponent yet.
 - The state inspector displays the current phase and move frame data. Hit and block advantage remain unset until collision and guard resolution can determine real outcomes.
 
+## Hitbox and hurtbox collision prototype
+
+Implemented as a separate combat geometry layer:
+
+- Added `src/combat/Hurtbox.js` with standing, crouching, and airborne axis-aligned hurtbox profiles. Hurtboxes represent hittable body space and do not reuse the movement pushboxes.
+- Added `src/combat/Hitbox.js` to create a facing-relative attack rectangle only during active frames. Each Light, Medium, and Heavy definition supplies its own prototype box dimensions and reach.
+- Added `src/combat/CombatCollision.js` for strict positive-area rectangle overlap and one-hit-per-action confirmation. A miss remains eligible to connect on a later active frame.
+- Arena collision resolution runs after movement and pushbox separation, using final positions and current facing. A confirmed collision produces a structured hit event and brief on-screen hit label.
+- The renderer outlines fighter hurtboxes and the current active attack hitbox for tuning. The collision boxes are gameplay geometry; the art slash remains presentation only.
+- This milestone intentionally does not subtract health or apply hitstun/knockback. Those belong to the damage and reaction pass. Pushboxes remain independent and continue to resolve body separation.
+
+Initial hurtbox profiles: standing half-width 34 / height 76; crouching half-width 38 / height 48; airborne half-width 32 / height 66. Attack box dimensions are prototype tuning values and require playtesting.
+
 ## Planned combat foundation
-- Implement light, medium, and heavy attacks with explicit startup, active, and recovery phases.
-- Add attack hitboxes and fighter hurtboxes, then resolve hit detection and hit reactions.
+- Add directional blocking and resolve guard direction relative to the opponent, including when fighters cross sides.
+- Add damage, hitstun, blockstun, knockback, and advantage calculations after hit/block outcomes are defined.
 - Add directional blocking: holding away from the opponent guards automatically based on current facing; this must remain correct when fighters cross sides.
 - Keep movement input screen-relative while interpreting guard direction relative to the opponent. Add regression tests for guarding from both sides before adding blockstun, chip damage, or guard-break rules.
 
