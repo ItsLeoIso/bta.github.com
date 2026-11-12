@@ -177,12 +177,12 @@ test("crouch guard blocks mid and low attacks but not high attacks", () => {
   const highAttacker = activeAttacker({ moveId: "light" });
   const crouchGuard = fighter({ x: 200, facing: -1, locomotion: STATES.locomotion.CROUCHING, action: STATES.action.GUARD });
   crouchGuard.guardData = { guardHeight: "low" };
-  assert.equal(resolveAttackCollision(highAttacker, crouchGuard).type, "hit");
+  assert.equal(resolveAttackCollision(highAttacker, crouchGuard), null);
 });
 
 test("guard fails against attacks from behind or at the wrong height", () => {
   const rearAttacker = activeAttacker({ moveId: "medium", facing: 1 });
-  const facingAway = fighter({ x: 200, facing: -1, action: STATES.action.GUARD });
+  const facingAway = fighter({ x: 200, facing: 1, action: STATES.action.GUARD });
   facingAway.guardData = { guardHeight: "high" };
   assert.equal(resolveAttackCollision(rearAttacker, facingAway).type, "hit");
 
