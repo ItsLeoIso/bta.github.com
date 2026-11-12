@@ -5,40 +5,43 @@ export const ATTACK_DEFINITIONS = Object.freeze({
   light: Object.freeze({
     id: "light",
     name: "Light",
+    hitLevel: "high",
     startupFrames: 5,
     activeFrames: 3,
     recoveryFrames: 10,
     hitAdvantage: null,
     blockAdvantage: null,
-    hitbox: Object.freeze({ offsetX: 24, offsetY: -176, width: 126, height: 100 })
+    hitbox: Object.freeze({ offsetX: 24, offsetY: -220, width: 126, height: 72 })
   }),
   medium: Object.freeze({
     id: "medium",
     name: "Medium",
+    hitLevel: "mid",
     startupFrames: 8,
     activeFrames: 4,
     recoveryFrames: 15,
     hitAdvantage: null,
     blockAdvantage: null,
-    hitbox: Object.freeze({ offsetX: 30, offsetY: -176, width: 160, height: 100 })
+    hitbox: Object.freeze({ offsetX: 30, offsetY: -152, width: 160, height: 80 })
   }),
   heavy: Object.freeze({
     id: "heavy",
     name: "Heavy",
+    hitLevel: "low",
     startupFrames: 12,
     activeFrames: 5,
     recoveryFrames: 21,
     hitAdvantage: null,
     blockAdvantage: null,
-    hitbox: Object.freeze({ offsetX: 36, offsetY: -176, width: 190, height: 100 })
+    hitbox: Object.freeze({ offsetX: 36, offsetY: -72, width: 190, height: 72 })
   })
 });
 
 const ATTACK_INPUTS = Object.freeze(["light", "medium", "heavy"]);
 
 /**
- * Starts and advances grounded prototype attacks. Hit detection is deliberately
- * separate: active frames are timed here but do not yet create collision boxes.
+ * Starts and advances grounded prototype attacks. Each move carries a hit level
+ * (high, mid, or low); collision resolution applies its stance/air interactions.
  */
 export class AttackController {
   constructor({ stateController = new FighterStateController() } = {}) {
