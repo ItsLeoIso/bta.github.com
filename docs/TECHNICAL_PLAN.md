@@ -115,10 +115,18 @@ Implemented first pass:
 - Health bars display the current health values. These values are prototype tuning and will be adjusted during playtesting.
 - Added unit coverage for damage scaling, reaction type and duration, knockback direction, reaction recovery, and health clamping.
 
+## Directional guard and blockstun pass
+
+Implemented first pass:
+- Hold the screen direction opposite the opponent to enter standing guard; add S / crouch while holding back to enter low guard.
+- Guard direction is evaluated against current facing, so it remains correct when fighters cross sides. Guard only starts while grounded and neutral; it locks horizontal movement and ends when back is released or the fighter leaves the ground.
+- Standing guard blocks High and Mid attacks. Crouch guard blocks Mid and Low attacks. High attacks can still be crouched under; Low attacks pass under airborne fighters. Guarding from behind or choosing the wrong guard height does not block.
+- A successful block consumes the attack's one-hit confirmation, prevents health loss, and applies short blockstun with reduced pushback. The reaction channel interrupts guard/action until blockstun expires.
+- Added a visible guard cue, block feedback, state-inspector details, control hints, and regression tests for guard direction, guard height, blockstun, and damage prevention.
+
 Next:
-- Add directional blocking and resolve guard direction relative to the opponent, including when fighters cross sides.
-- Keep movement input screen-relative while interpreting guard direction relative to the opponent. Add regression tests for guarding from both sides.
-- Then add blockstun, chip damage, block advantage, and guard-break rules.
+- Add chip damage, block advantage calculation, and guard-break rules.
+- Add opponent attack behaviour so the current training dummy can actively exercise the player's guard in the live arena.
 
 ## Running and testing
 - Run locally: python3 -m http.server 8000, then open http://localhost:8000.
