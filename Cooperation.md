@@ -394,3 +394,20 @@ Copy this template for each new handoff:
 3. Start the combat foundation: attacks with startup/active/recovery, hitboxes and hurtboxes (kept separate from pushboxes), hit reactions, then directional guard with tests from both sides.
 4. Before attacks, consider an explicit `fighter.state` (idle, walk, crouch, jump, dash, attack, hitstun, guard) instead of inferring state from `onGround`, `crouching` and `dashRemaining`.
 5. **File ownership:** Claude touched only the files listed above and will not edit gameplay code further until Leandro or ChatGPT agrees who owns `MovementController.js` and `Arena.js` next.
+
+
+### 2026-11-12 — Leandro / ChatGPT — Make fighter state explicit
+**Type:** Design decision / Handoff  
+**Commit:** See this documentation update.  
+**Files / systems:** `docs/GAME_DESIGN.md`, `docs/TECHNICAL_PLAN.md`, `src/characters/`, future movement/combat state controller.
+
+**What changed / owner direction:**
+- Leandro asked that the fighter's state be explicitly represented, including standing and crouching, rather than relying only on movement variables.
+- BLT will use a centrally managed state model. Initial states include standing/idle, walking, crouching, jumping/airborne, ground dash, air dash, attacking, guarding, hitstun, and blockstun; knockdown/wake-up can follow with the combat system.
+- Standing guard and crouching guard are distinct stances. Attack actions have startup, active, and recovery phases.
+- Prefer a layered model (locomotion/stance, action, and reaction/lockout) where that keeps transitions clear, rather than forcing every combination into one enormous flat enum.
+- Facing direction and screen-relative input remain separate from state. State controls legal transitions and selects appropriate pushbox/hurtbox profiles. Pushboxes, hurtboxes, and attack hitboxes remain separate systems.
+- Exact transition priorities and later mechanics (including air guard and knockdown rules) remain to be specified when implementing combat.
+
+**Suggested next step:**
+- When integrating Claude's proposed movement/pushbox bundle, establish the state data model and transition tests without changing confirmed controls or movement feel. Then connect attack phases, guard, hit reactions, and state-specific collision geometry.

@@ -53,6 +53,17 @@ Tuning values are initial placeholders, not final balance:
 - Air dash: 650 units/s for 0.14 s.
 - Double-tap window: 0.24 s.
 
+## Fighter state architecture
+
+Planned foundation before expanding combat:
+
+- Add an explicit fighter state controller rather than deriving gameplay state from scattered flags.
+- Represent grounded/airborne locomotion and stance (standing, walking, crouching, jumping) separately from action states (dash, air dash, attack) and temporary reactions/lockouts (hitstun, blockstun, knockdown, wake-up) where appropriate.
+- Give each state/action explicit entry, update, and exit/transition rules. Centralize transition validation and define interruption priority.
+- Keep facing direction, screen-relative input, timers, and attack phase as distinct data; do not duplicate them as state flags.
+- Select pushbox and hurtbox profiles from the fighter's current stance/locomotion. Keep pushboxes, hurtboxes, and attack hitboxes as separate systems.
+- Add transition tests for grounded/airborne changes, crouch and walk, dash completion, landing, attack phases, guard, and hit reactions as those systems arrive.
+
 ## Planned combat foundation
 - Implement light, medium, and heavy attacks with explicit startup, active, and recovery phases.
 - Add attack hitboxes and fighter hurtboxes, then resolve hit detection and hit reactions.
