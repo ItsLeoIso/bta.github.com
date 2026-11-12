@@ -9,10 +9,19 @@ export function boxesOverlap(first, second) {
     first.bottom > second.top;
 }
 
-/**
- * Resolves at most one hit per attack action. This reports a combat event only;
- * health loss and hitstun are kept for the damage/reaction milestone.
- */
+function canGuardAttack(attacker, defender, hitLevel) {
+  if (defender.state?.action !== FIGHTER_STATES.action.GUARD) return false;
+  const incomingDirection = Math.sign(attacker.x - defender.x);
+  if (incomingDirection === 0 || incomingDirection !== defender.facing) return false;
+
+  const guardHeight = defender.guardData?.guardHeight ??
+    defender.actionData?.guardHeight;
+  if (hitLevel === "high") return guardHeight === "high";
+  if (hitLevel === "low") return guardHeight === "low";
+  return guardHeight === "high" || guardHeight === "low";
+}
+
+/** Resolve one attack outcome (hit or block) per attack action. */
 export function resolveAttackCollision(attacker, defender) {
   const hitbox = getActiveAttackHitbox(attacker);
   if (!hitbox) return null;
@@ -23,7 +32,8 @@ export function resolveAttackCollision(attacker, defender) {
   // Highs can be crouched under; lows pass beneath airborne fighters.
   if (
     hitLevel === "high" &&
-    defenderLocomotion === FIGHTER_STATES.locomotion.CROUCHING
+    defenderLocomotion === FIGHTER_STATES.locomotion.CROUCHING &&
+    defender.state?.action !== FIGHTER_STATES.action.GUARD
   ) return null;
   if (
     hitLevel === "low" &&
@@ -35,8 +45,9 @@ export function resolveAttackCollision(attacker, defender) {
   if (!boxesOverlap(hitbox, hurtbox)) return null;
 
   attacker.actionData.hitConfirmed = true;
+  const blocked = canGuardAttack(attacker, defender, hitLevel);
   return {
-    type: "hit",
+    type: blocked ? "block" : "hit",
     moveId: attacker.actionData.moveId,
     moveName: attacker.actionData.moveName,
     hitLevel,
