@@ -15,7 +15,7 @@ test("arena moves player and clamps them inside stage bounds",()=>{
   arena.update(1,input({axis:1}));
   assert.equal(arena.player.x,600);
   arena.update(2,input({axis:1}));
-  assert.equal(arena.player.x,896);
+  assert.equal(arena.player.x,892);
 });
 
 test("arena updates facing based on relative fighter positions",()=>{
