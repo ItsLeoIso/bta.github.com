@@ -23,6 +23,20 @@ test("Arena starts a timed attack from the mapped player input", () => {
   assert.equal(fighter.actionData.phaseFrame, 1);
 });
 
+test("Arena preserves each attack's height classification in action data", () => {
+  const arena = new Arena();
+  arena.update(1 / 60, input({ pressed: ["light"] }));
+  assert.equal(arena.player.actionData.hitLevel, "high");
+
+  const secondArena = new Arena();
+  secondArena.update(1 / 60, input({ pressed: ["medium"] }));
+  assert.equal(secondArena.player.actionData.hitLevel, "mid");
+
+  const thirdArena = new Arena();
+  thirdArena.update(1 / 60, input({ pressed: ["heavy"] }));
+  assert.equal(thirdArena.player.actionData.hitLevel, "low");
+});
+
 test("ground movement and jump input are locked while an attack is active", () => {
   const arena = new Arena();
   const fighter = arena.player;
