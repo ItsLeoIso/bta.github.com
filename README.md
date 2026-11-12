@@ -3,7 +3,7 @@
 A browser-first 2D 1v1 anime-style fighting game. This repository is the source of truth for the game's code, assets, design decisions, and development plan.
 
 ## Current status
-**Combat prototype 003.** The Vanilla JavaScript + HTML5 Canvas foundation includes fixed-step simulation, movement, explicit fighter states, timed Light / Medium / Heavy attacks with High / Mid / Low hit levels, separate pushboxes and combat hurtboxes, active-frame hitboxes, and one-hit collision events. Damage, hit reactions, blocking, and round flow remain the next combat milestones.
+**Combat prototype 004.** The Vanilla JavaScript + HTML5 Canvas foundation includes fixed-step simulation, movement, explicit fighter states, timed Light / Medium / Heavy attacks with High / Mid / Low hit levels, separate pushboxes and combat hurtboxes, active-frame hitboxes, damage and hit reactions, plus directional high/low guard with blockstun. Chip damage, block advantage, opponent attack behaviour, and round flow remain future milestones.
 
 ## Design at a glance
 - 2D, side-view, 1v1 fighting; assists may be considered later.
