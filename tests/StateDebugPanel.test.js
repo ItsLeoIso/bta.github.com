@@ -39,6 +39,34 @@ test("state inspector displays both fighters' live state channels", () => {
   assert.equal(values["opponent.locomotion"], "standing");
 });
 
+test("state inspector displays the active attack hit level", () => {
+  const root = makePanelRoot();
+  const panel = new StateDebugPanel(root);
+  const arena = {
+    player: {
+      state: { locomotion: "standing", action: "attack", reaction: "none" },
+      actionData: {
+        moveName: "Light",
+        hitLevel: "high",
+        phase: "active",
+        phaseFrame: 2
+      },
+      lastAttackData: null
+    },
+    opponent: {
+      state: { locomotion: "standing", action: "none", reaction: "none" },
+      actionData: {}
+    }
+  };
+
+  panel.update(arena);
+
+  const values = Object.fromEntries(
+    root.elements.map(element => [element.dataset.debugValue, element.textContent])
+  );
+  assert.equal(values["player.action-detail"], "Light · HIGH · active 2f");
+});
+
 test("state inspector shows dash type and remaining frames", () => {
   const root = makePanelRoot();
   const panel = new StateDebugPanel(root);
