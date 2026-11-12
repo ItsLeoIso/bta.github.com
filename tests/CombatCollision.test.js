@@ -32,7 +32,7 @@ function activeAttacker({ facing = 1, hitConfirmed = false } = {}) {
       phase: "active",
       phaseFrame: 1,
       hitConfirmed,
-      hitbox: { offsetX: 24, offsetY: -228, width: 126, height: 228 }
+      hitbox: { offsetX: 24, offsetY: -228, width: 126, height: 80 }
     }
   });
 }
@@ -53,7 +53,7 @@ test("standing, crouching, and airborne hurtboxes use distinct profiles", () => 
 test("attack hitboxes exist only during active frames and before the first hit", () => {
   const attacker = activeAttacker();
   assert.deepEqual(getActiveAttackHitbox(attacker), {
-    left: 124, right: 250, top: -28, bottom: 200
+    left: 124, right: 250, top: -28, bottom: 52
   });
 
   attacker.actionData.phase = "startup";
@@ -66,7 +66,7 @@ test("attack hitboxes exist only during active frames and before the first hit",
 test("attack hitbox mirrors correctly when the fighter faces left", () => {
   const attacker = activeAttacker({ facing: -1 });
   assert.deepEqual(getActiveAttackHitbox(attacker), {
-    left: -50, right: 76, top: -28, bottom: 200
+    left: -50, right: 76, top: -28, bottom: 52
   });
 });
 
@@ -89,12 +89,12 @@ test("overlapping active hitbox and standing hurtbox produce one hit event", () 
   assert.equal(resolveAttackCollision(attacker, defender), null);
 });
 
-test("crouching and airborne hurtboxes can be hit when their volumes overlap", () => {
+test("standard attacks hit standing and airborne targets but pass over crouching targets", () => {
   const attacker = activeAttacker();
   const crouching = fighter({ x: 200, y: 200, locomotion: STATES.locomotion.CROUCHING });
   const airborne = fighter({ x: 200, y: 200, locomotion: STATES.locomotion.FALLING });
 
-  assert.ok(resolveAttackCollision(attacker, crouching));
+  assert.equal(resolveAttackCollision(attacker, crouching), null);
   assert.ok(resolveAttackCollision(activeAttacker(), airborne));
 });
 
@@ -128,14 +128,13 @@ test("every combat hurtbox is at least as large as the visible fighter silhouett
   assert.equal(airborne.bottom - airborne.top, 228);
 });
 
-test("all attack hitboxes are at least fighter-sized and grow by attack strength", async () => {
+test("attack hitboxes keep their reach while staying within the upper-body band", async () => {
   const { ATTACK_DEFINITIONS } = await import("../src/combat/AttackController.js");
   const boxes = ["light", "medium", "heavy"].map(id => ATTACK_DEFINITIONS[id].hitbox);
 
-  for (const box of boxes) {
-    assert.ok(box.width >= 126);
-    assert.ok(box.height >= 228);
-  }
+  assert.deepEqual(boxes.map(box => box.width), [126, 160, 190]);
+  assert.ok(boxes.every(box => box.height === 80));
+  assert.ok(boxes.every(box => box.offsetY === -228));
   assert.ok(boxes[0].width < boxes[1].width);
   assert.ok(boxes[1].width < boxes[2].width);
 });
