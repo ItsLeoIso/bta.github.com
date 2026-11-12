@@ -25,18 +25,18 @@ function makeInput(axis, crouch = false) {
   };
 }
 
-test("ordinary crouch walking is 25% of normal walking speed", () => {
+test("ordinary crouch walking is 12.5% of normal walking speed", () => {
   const states = new FighterStateController();
   const movement = new MovementController({ stateController: states });
   const fighter = makeFighter();
   movement.update(fighter, makeInput(1, true), 0.1, {
     floorY: 440, minX: 68, maxX: 892
   });
-  assert.equal(fighter.vx, 75);
-  assert.equal(fighter.x, 207.5);
+  assert.equal(fighter.vx, 37.5);
+  assert.equal(fighter.x, 203.75);
 });
 
-test("standing guard retreat is half speed and does not move forward", () => {
+test("standing guard retreat is 25% speed and does not move forward", () => {
   const states = new FighterStateController();
   const movement = new MovementController({ stateController: states });
   const fighter = makeFighter();
@@ -45,15 +45,15 @@ test("standing guard retreat is half speed and does not move forward", () => {
   movement.update(fighter, makeInput(-1), 0.1, {
     floorY: 440, minX: 68, maxX: 892
   });
-  assert.equal(fighter.vx, -150);
-  assert.equal(fighter.x, 185);
+  assert.equal(fighter.vx, -37.5);
+  assert.equal(fighter.x, 196.25);
   movement.update(fighter, makeInput(1), 0.1, {
     floorY: 440, minX: 68, maxX: 892
   });
   assert.equal(fighter.vx, 0);
 });
 
-test("crouch guard retreat is quarter speed", () => {
+test("crouch guard retreat is 12.5% speed", () => {
   const states = new FighterStateController();
   const movement = new MovementController({ stateController: states });
   const fighter = makeFighter();
