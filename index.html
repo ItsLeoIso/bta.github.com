@@ -53,22 +53,22 @@
       <section class="state-debug__frame-data" aria-label="Upcoming attack frame data">
         <header class="state-debug__header">
           <h2>FRAME DATA</h2>
-          <span class="state-debug__pending">COMBAT PENDING</span>
+          <span class="state-debug__pending" data-debug-frame-status>NO ATTACK SELECTED</span>
         </header>
         <dl class="state-debug__frames">
-          <div><dt>Startup</dt><dd>—</dd></div>
-          <div><dt>Active</dt><dd>—</dd></div>
-          <div><dt>Recovery</dt><dd>—</dd></div>
-          <div><dt>Hit adv.</dt><dd>—</dd></div>
-          <div><dt>Block adv.</dt><dd>—</dd></div>
+          <div><dt>Startup</dt><dd data-debug-frame="startup">—</dd></div>
+          <div><dt>Active</dt><dd data-debug-frame="active">—</dd></div>
+          <div><dt>Recovery</dt><dd data-debug-frame="recovery">—</dd></div>
+          <div><dt>Hit adv.</dt><dd data-debug-frame="hit">—</dd></div>
+          <div><dt>Block adv.</dt><dd data-debug-frame="block">—</dd></div>
         </dl>
-        <p class="state-debug__note">Move frame values will appear here when attacks are implemented.</p>
+        <p class="state-debug__note" data-debug-frame-note>Press H, J or K to inspect Light, Medium or Heavy timing.</p>
       </section>
     </aside>
 
     <footer class="controls">
       <p><strong>MOVE</strong> A / D <span>·</span> <strong>JUMP</strong> W <span>·</span> <strong>CROUCH</strong> S</p>
-      <p><strong>ATTACK</strong> H / J / K / L <span>·</span> <strong>PAUSE</strong> ESC</p>
+      <p><strong>ATTACK</strong> H Light / J Medium / K Heavy <span>·</span> <strong>PAUSE</strong> ESC</p>
       <p class="status" id="engine-status" role="status">INITIALIZING ENGINE…</p>
     </footer>
   </main>
