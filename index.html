@@ -1,13 +1,77 @@
 <!doctype html>
-<html lang="en"><head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#090909"><meta name="description" content="BLT — Belt to Ass, a browser-first 2D fighting game.">
-<title>BLT — Belt to Ass</title><link rel="stylesheet" href="./src/ui/styles.css">
-</head><body><main class="app-shell">
-<header class="site-header"><div class="brand">BLT<span> — BELT TO ASS</span></div><div class="build-label">ENGINE PROTOTYPE 001</div></header>
-<section class="game-panel" aria-label="BLT engine preview"><canvas id="game-canvas" aria-label="BLT fighting game arena"></canvas><div class="canvas-hint">ENGINE TEST ARENA · PLACEHOLDER FIGHTERS</div></section>
-<footer class="controls">
-<p><strong>MOVE</strong> A / D <span>·</span> <strong>JUMP</strong> W <span>·</span> <strong>CROUCH</strong> S</p>
-<p><strong>ATTACK</strong> H / J / K / L <span>·</span> <strong>PAUSE</strong> ESC</p>
-<p class="status" id="engine-status" role="status">INITIALIZING ENGINE…</p>
-</footer></main><script type="module" src="./src/main.js"></script></body></html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#090909">
+  <meta name="description" content="BLT — Belt to Ass, a browser-first 2D fighting game.">
+  <title>BLT — Belt to Ass</title>
+  <link rel="stylesheet" href="./src/ui/styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="site-header">
+      <div class="brand">BLT<span> — BELT TO ASS</span></div>
+      <div class="build-label">ENGINE PROTOTYPE 001</div>
+    </header>
+
+    <section class="game-panel" aria-label="BLT engine preview">
+      <canvas id="game-canvas" aria-label="BLT fighting game arena"></canvas>
+      <div class="canvas-hint">ENGINE TEST ARENA · PLACEHOLDER FIGHTERS</div>
+    </section>
+
+    <aside class="state-debug" id="state-debug" aria-label="Live fighter state inspector">
+      <section class="state-debug__current">
+        <header class="state-debug__header">
+          <h2>STATE INSPECTOR</h2>
+          <span class="state-debug__live">LIVE · 60 HZ</span>
+        </header>
+
+        <div class="state-debug__fighters">
+          <section class="state-debug__fighter" aria-label="Player state">
+            <h3>PLAYER 01</h3>
+            <dl class="state-debug__values">
+              <div><dt>Locomotion</dt><dd data-debug-value="player.locomotion">standing</dd></div>
+              <div><dt>Action</dt><dd data-debug-value="player.action">none</dd></div>
+              <div><dt>Reaction</dt><dd data-debug-value="player.reaction">none</dd></div>
+              <div><dt>Action detail</dt><dd data-debug-value="player.action-detail">—</dd></div>
+            </dl>
+          </section>
+
+          <section class="state-debug__fighter" aria-label="Opponent state">
+            <h3>CPU DUMMY</h3>
+            <dl class="state-debug__values">
+              <div><dt>Locomotion</dt><dd data-debug-value="opponent.locomotion">standing</dd></div>
+              <div><dt>Action</dt><dd data-debug-value="opponent.action">none</dd></div>
+              <div><dt>Reaction</dt><dd data-debug-value="opponent.reaction">none</dd></div>
+              <div><dt>Action detail</dt><dd data-debug-value="opponent.action-detail">—</dd></div>
+            </dl>
+          </section>
+        </div>
+      </section>
+
+      <section class="state-debug__frame-data" aria-label="Upcoming attack frame data">
+        <header class="state-debug__header">
+          <h2>FRAME DATA</h2>
+          <span class="state-debug__pending">COMBAT PENDING</span>
+        </header>
+        <dl class="state-debug__frames">
+          <div><dt>Startup</dt><dd>—</dd></div>
+          <div><dt>Active</dt><dd>—</dd></div>
+          <div><dt>Recovery</dt><dd>—</dd></div>
+          <div><dt>Hit adv.</dt><dd>—</dd></div>
+          <div><dt>Block adv.</dt><dd>—</dd></div>
+        </dl>
+        <p class="state-debug__note">Move frame values will appear here when attacks are implemented.</p>
+      </section>
+    </aside>
+
+    <footer class="controls">
+      <p><strong>MOVE</strong> A / D <span>·</span> <strong>JUMP</strong> W <span>·</span> <strong>CROUCH</strong> S</p>
+      <p><strong>ATTACK</strong> H / J / K / L <span>·</span> <strong>PAUSE</strong> ESC</p>
+      <p class="status" id="engine-status" role="status">INITIALIZING ENGINE…</p>
+    </footer>
+  </main>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
