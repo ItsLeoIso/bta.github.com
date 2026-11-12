@@ -158,7 +158,6 @@ export class MovementController {
       const guardMultiplier =
         fighter.state.locomotion === FIGHTER_STATES.locomotion.CROUCHING
           ? this.crouchSpeedMultiplier
-          
           : 0.25;
       fighter.vx = movingBackward
         ? worldAxis * this.groundSpeed * guardMultiplier
