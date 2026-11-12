@@ -5,10 +5,13 @@ import { FIGHTER_STATES } from "../state/FighterStateController.js";
  * independent of pushboxes, which only keep fighters from passing through one
  * another.
  */
-export const HURTBOX_PROFILES = Object.freeze({
-  standing: Object.freeze({ halfWidth: 34, height: 76 }),
-  crouching: Object.freeze({ halfWidth: 38, height: 48 }),
-  airborne: Object.freeze({ halfWidth: 32, height: 66 })
+// CanvasRenderer draws the fighter at 3x: 42x76 standing and 42x48 crouching.
+ // Combat volumes intentionally cover the complete visible silhouette, not a
+ // limb-accurate anatomical target.
+ export const HURTBOX_PROFILES = Object.freeze({
+  standing: Object.freeze({ halfWidth: 63, height: 228 }),
+  crouching: Object.freeze({ halfWidth: 63, height: 144 }),
+  airborne: Object.freeze({ halfWidth: 63, height: 228 })
 });
 
 export function getHurtbox(fighter, profiles = HURTBOX_PROFILES) {
