@@ -153,3 +153,41 @@ test("attack definitions cover high, mid, and low bands without changing horizon
   assert.ok(moves[0].hitbox.offsetY < moves[1].hitbox.offsetY);
   assert.ok(moves[1].hitbox.offsetY < moves[2].hitbox.offsetY);
 });
+
+
+test("standing guard blocks high and mid attacks from the front", () => {
+  for (const moveId of ["light", "medium"]) {
+    const attacker = activeAttacker({ moveId });
+    const defender = fighter({ x: 200, facing: -1, action: STATES.action.GUARD });
+    defender.guardData = { guardHeight: "high" };
+    const event = resolveAttackCollision(attacker, defender);
+    assert.equal(event.type, "block");
+    assert.equal(attacker.actionData.hitConfirmed, true);
+  }
+});
+
+test("crouch guard blocks mid and low attacks but not high attacks", () => {
+  for (const moveId of ["medium", "heavy"]) {
+    const attacker = activeAttacker({ moveId });
+    const defender = fighter({ x: 200, facing: -1, locomotion: STATES.locomotion.CROUCHING, action: STATES.action.GUARD });
+    defender.guardData = { guardHeight: "low" };
+    assert.equal(resolveAttackCollision(attacker, defender).type, "block");
+  }
+
+  const highAttacker = activeAttacker({ moveId: "light" });
+  const crouchGuard = fighter({ x: 200, facing: -1, locomotion: STATES.locomotion.CROUCHING, action: STATES.action.GUARD });
+  crouchGuard.guardData = { guardHeight: "low" };
+  assert.equal(resolveAttackCollision(highAttacker, crouchGuard).type, "hit");
+});
+
+test("guard fails against attacks from behind or at the wrong height", () => {
+  const rearAttacker = activeAttacker({ moveId: "medium", facing: 1 });
+  const facingAway = fighter({ x: 200, facing: -1, action: STATES.action.GUARD });
+  facingAway.guardData = { guardHeight: "high" };
+  assert.equal(resolveAttackCollision(rearAttacker, facingAway).type, "hit");
+
+  const lowAttacker = activeAttacker({ moveId: "heavy" });
+  const standingGuard = fighter({ x: 200, facing: -1, action: STATES.action.GUARD });
+  standingGuard.guardData = { guardHeight: "high" };
+  assert.equal(resolveAttackCollision(lowAttacker, standingGuard).type, "hit");
+});
