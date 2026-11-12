@@ -2,6 +2,7 @@ import { MovementController } from "../movement/MovementController.js";
 import { AttackController } from "../combat/AttackController.js";
 import { resolveAttackCollision } from "../combat/CombatCollision.js";
 import { DamageController } from "../combat/DamageController.js";
+import { GuardController } from "../combat/GuardController.js";
 import { resolvePushboxes } from "../movement/Pushbox.js";
 import { FIGHTER_STATES, FighterStateController } from "../state/FighterStateController.js";
 
@@ -20,7 +21,8 @@ function createFighter({x,facing}) {
     actionData:{dashType:null,remaining:0,velocity:0},
     dashType:null,dashRemaining:0,dashVelocity:0,
     airDashAvailable:true,airHorizontalVelocity:0,
-    groundDashCooldownRemaining:0,lastAttackData:null
+    groundDashCooldownRemaining:0,lastAttackData:null,
+    guardData:null
   };
 }
 
@@ -37,6 +39,7 @@ export class Arena {
     this.opponent.stateController=this.stateController;
     this.movement=new MovementController({stateController:this.stateController});
     this.attacks=new AttackController({stateController:this.stateController});
+    this.guard=new GuardController({stateController:this.stateController});
     this.damage=new DamageController();
     this.lastCombatEvent=null;
     this.lastHit=null;
@@ -55,6 +58,7 @@ export class Arena {
     this.opponent.previousX=this.opponent.x; this.opponent.previousY=this.opponent.y;
     player.facing=player.x<=this.opponent.x ? 1 : -1;
     this.opponent.facing=-player.facing;
+    this.guard.update(player,input);
     this.attacks.update(player,input);
     this.movement.update(player,input,deltaSeconds,{
       floorY:this.floorY,minX:this.stageMargin,maxX:this.width-this.stageMargin
@@ -66,13 +70,15 @@ export class Arena {
     this.opponent.facing=-player.facing;
 
     // Resolve after movement and pushboxes so both boxes use final frame positions.
-    const hit=resolveAttackCollision(player,this.opponent);
-    if(hit){
-      this.lastCombatEvent=hit;
-      this.damage.applyHit(hit);
+    const event=resolveAttackCollision(player,this.opponent);
+    if(event){
+      this.lastCombatEvent=event;
+      if(event.type==="block") this.guard.applyBlock(event);
+      else this.damage.applyHit(event);
       this.lastHit={
-        moveName:hit.moveName,
-        hitLevel:hit.hitLevel,
+        moveName:event.moveName,
+        hitLevel:event.hitLevel,
+        outcome:event.type,
         x:this.opponent.x,
         y:this.opponent.y-112,
         remaining:0.48
