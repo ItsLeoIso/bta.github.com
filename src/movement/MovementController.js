@@ -82,7 +82,9 @@ export class MovementController {
       states.setLocomotion(fighter, FIGHTER_STATES.locomotion.FALLING);
     }
 
-    if (pressedWorldAxis !== 0) {
+    if (pressedWorldAxis !== 0 &&
+        fighter.state.action === FIGHTER_STATES.action.NONE &&
+        fighter.state.reaction === FIGHTER_STATES.reaction.NONE) {
       const direction = pressedWorldAxis > 0 ? "right" : "left";
       const opposite = direction === "right" ? "left" : "right";
       const previousTap = this.lastTap[direction];
@@ -96,7 +98,10 @@ export class MovementController {
       }
     }
 
-    if (fighter.onGround && input.wasPressed?.("jump")) {
+    if (fighter.onGround &&
+        fighter.state.action === FIGHTER_STATES.action.NONE &&
+        fighter.state.reaction === FIGHTER_STATES.reaction.NONE &&
+        input.wasPressed?.("jump")) {
       fighter.vy = -this.jumpVelocity;
       fighter.onGround = false;
       fighter.y -= 0.001;
@@ -108,7 +113,8 @@ export class MovementController {
 
     const wantsCrouch =
       fighter.onGround &&
-      fighter.state.action !== FIGHTER_STATES.action.DASH &&
+      fighter.state.action === FIGHTER_STATES.action.NONE &&
+      fighter.state.reaction === FIGHTER_STATES.reaction.NONE &&
       input.isDown("crouch");
     if (wantsCrouch) {
       states.setLocomotion(fighter, FIGHTER_STATES.locomotion.CROUCHING);
@@ -141,6 +147,12 @@ export class MovementController {
               : 1)
           : fighter.airHorizontalVelocity ?? 0;
       }
+    } else if (
+      fighter.state.action === FIGHTER_STATES.action.ATTACK ||
+      fighter.state.reaction !== FIGHTER_STATES.reaction.NONE
+    ) {
+      // Attacks and hit reactions lock grounded horizontal control.
+      fighter.vx = fighter.onGround ? 0 : fighter.airHorizontalVelocity ?? 0;
     } else if (fighter.onGround) {
       const speedMultiplier =
         fighter.state.locomotion === FIGHTER_STATES.locomotion.CROUCHING
@@ -175,7 +187,9 @@ export class MovementController {
       }
     }
 
-    if (fighter.onGround && fighter.state.action !== FIGHTER_STATES.action.DASH) {
+    if (fighter.onGround &&
+        fighter.state.action === FIGHTER_STATES.action.NONE &&
+        fighter.state.reaction === FIGHTER_STATES.reaction.NONE) {
       const nextLocomotion = input.isDown("crouch")
         ? FIGHTER_STATES.locomotion.CROUCHING
         : fighter.vx !== 0
