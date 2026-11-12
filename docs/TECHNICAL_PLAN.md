@@ -53,6 +53,20 @@ Tuning values are initial placeholders, not final balance:
 - Air dash: 650 units/s for 0.14 s.
 - Double-tap window: 0.24 s.
 
+## Pushbox collision
+
+Implemented in the prototype:
+
+- Added a dedicated `src/movement/Pushbox.js` system for fighter-to-fighter body-space separation.
+- Standing and crouching use different vertical pushbox heights; pushboxes are anchored at the fighter's feet and remain separate from future hurtboxes and attack hitboxes.
+- Horizontal overlap is split between fighters where possible. Stage-edge constraints transfer the pinned fighter's share to the other fighter.
+- Vertical separation permits jumping over an opponent. Pushboxes resolve after movement on each fixed update.
+- Stage center margin is 68 arena units to keep the current 136-unit ground shadow on-stage.
+- Air dash holds vertical velocity at zero during its burst, restores normal air speed at dash end, and resumes gravity.
+- Opposite-direction taps break a pending double-tap; the two taps are consumed when a dash is attempted.
+
+Initial pushbox values (55 half-width, 70 standing height, 50 crouching height) are tuning placeholders. Validate push sharing, corner behaviour, jump-over distances, and visual overlap in browser playtests.
+
 ## Fighter state architecture
 
 Planned foundation before expanding combat:

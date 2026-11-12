@@ -65,11 +65,11 @@ export class CanvasRenderer {
     ctx.restore();
   }
   drawHud(ctx, arena) {
-    ctx.fillStyle = COLORS.text; ctx.font = "bold 16px monospace"; ctx.textAlign = "left"; ctx.fillText("PLAYER 01",32,36);
-    ctx.textAlign = "right"; ctx.fillText("CPU DUMMY",arena.width-32,36);
-    ctx.fillStyle = "#302d35"; ctx.fillRect(32,48,300,12); ctx.fillRect(arena.width-332,48,300,12);
-    ctx.fillStyle = COLORS.player; ctx.fillRect(32,48,300*arena.player.health,12);
-    ctx.fillStyle = COLORS.opponent; ctx.fillRect(arena.width-332+300*(1-arena.opponent.health),48,300*arena.opponent.health,12);
-    ctx.textAlign = "center"; ctx.fillStyle = COLORS.accent; ctx.font = "bold 24px monospace"; ctx.fillText("99",arena.width/2,54);
+    ctx.fillStyle = COLORS.text; ctx.font = "bold 16px monospace"; ctx.textAlign = "left"; ctx.fillText("PLAYER 01",32,22);
+    ctx.textAlign = "right"; ctx.fillText("CPU DUMMY",arena.width-32,22);
+    ctx.fillStyle = "#302d35"; ctx.fillRect(32,30,300,12); ctx.fillRect(arena.width-332,30,300,12);
+    ctx.fillStyle = COLORS.player; ctx.fillRect(32,30,300*arena.player.health,12);
+    ctx.fillStyle = COLORS.opponent; ctx.fillRect(arena.width-332+300*(1-arena.opponent.health),30,300*arena.opponent.health,12);
+    ctx.textAlign = "center"; ctx.fillStyle = COLORS.accent; ctx.font = "bold 24px monospace"; ctx.fillText("99",arena.width/2,42);
   }
 }

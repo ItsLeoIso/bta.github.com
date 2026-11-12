@@ -60,6 +60,19 @@ State affects gameplay geometry and rules: standing and crouching use different 
 
 Exact state names, transition rules, air-guard availability, and knockdown rules can be finalized alongside the relevant combat mechanics.
 
+## Pushbox collision
+
+- Fighters cannot walk or dash through one another while their pushboxes overlap both horizontally and vertically.
+- Pushboxes are body-space separation volumes, not attack hitboxes or hurtboxes. Those systems remain separate.
+- Initial placeholder dimensions are 55 arena units half-width, 70 units tall while standing, and 50 units tall while crouching. The box is anchored to the fighter's feet.
+- Overlap is shared between both fighters where possible. A fighter pinned against a stage edge is not moved beyond it; the other fighter absorbs the remaining separation.
+- Airborne fighters can pass over an opponent once their vertical pushbox ranges no longer overlap. The initial dimensions and jump-over window require playtesting.
+- Stage center limits use a 68-unit margin to keep the current wide ground shadow inside the stage.
+- Air dash holds vertical position for its 0.14-second burst, then gravity resumes; horizontal velocity returns to normal air speed (260 units/second) in the dash direction.
+- A same-direction double-tap starts a dash; an intervening opposite-direction tap breaks the sequence, and the pair is consumed when a dash is attempted.
+
+These dimensions and movement details are prototype values to validate in the browser, not final balance.
+
 ## Combat and special inputs
 
 - Attack buttons: Light (H), Medium (J), Heavy (K), Special (L).

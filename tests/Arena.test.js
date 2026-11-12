@@ -11,7 +11,7 @@ function input({axis=0,pressed=[],down=[]}={}) {
 }
 
 test("arena moves player and clamps them inside stage bounds",()=>{
-  const arena=new Arena();
+  const arena=new Arena(); arena.opponent.x=800;
   arena.update(1,input({axis:1}));
   assert.equal(arena.player.x,600);
   arena.update(2,input({axis:1}));
@@ -19,7 +19,7 @@ test("arena moves player and clamps them inside stage bounds",()=>{
 });
 
 test("arena updates facing based on relative fighter positions",()=>{
-  const arena=new Arena(); arena.player.x=700;
+  const arena=new Arena(); arena.player.x=800;
   arena.update(0,input());
   assert.equal(arena.player.facing,-1);
   assert.equal(arena.opponent.facing,1);
@@ -136,28 +136,95 @@ test("crouch movement returns to normal speed when the crouch key is released",(
 
 test("screen-left and screen-right movement stay consistent after crossing sides",()=>{
   const arena=new Arena();
-  arena.player.x=700;
+  arena.player.x=800;
   arena.update(0.1,input({axis:1}));
   assert.equal(arena.player.facing,-1);
-  assert.equal(arena.player.x,730);
+  assert.equal(arena.player.x,830);
   arena.update(0.1,input({axis:-1}));
-  assert.equal(arena.player.x,700);
+  assert.equal(arena.player.x,800);
 });
 
 test("directional jump follows the pressed screen direction after crossing sides",()=>{
   const arena=new Arena();
-  arena.player.x=700;
+  arena.player.x=800;
   arena.update(1/60,input({axis:1,pressed:["jump"]}));
-  assert.ok(arena.player.x>700);
+  assert.ok(arena.player.x>800);
   assert.equal(arena.player.facing,-1);
 });
 
 test("double-tap screen-right becomes a backdash when facing left",()=>{
   const arena=new Arena();
-  arena.player.x=700;
+  arena.player.x=800;
   arena.update(1/60,input({pressed:["right"]}));
   arena.update(0.08,input());
   arena.update(1/60,input({pressed:["right"]}));
   assert.equal(arena.player.dashType,"backdash");
   assert.ok(arena.player.vx>0);
+});
+
+
+test("air dash returns to normal air speed and gravity resumes",()=>{
+  const arena=new Arena();
+  arena.update(1/60,input({pressed:["jump"]}));
+  arena.update(1/60,input({pressed:["right"]}));
+  arena.update(0.08,input());
+  arena.update(1/60,input({pressed:["right"]}));
+  for(let i=0;i<10;i++)arena.update(1/60,input());
+  assert.equal(arena.player.dashType,null);
+  assert.equal(arena.player.vx,arena.movement.airSpeed);
+  assert.ok(arena.player.vy>0);
+});
+test("air dash holds vertical position while active",()=>{
+  const arena=new Arena();
+  arena.update(1/60,input({pressed:["jump"]}));
+  arena.update(1/60,input({pressed:["right"]}));
+  arena.update(0.08,input());
+  arena.update(1/60,input({pressed:["right"]}));
+  const dashY=arena.player.y;
+  arena.update(0.05,input());
+  assert.equal(arena.player.y,dashY);
+  assert.equal(arena.player.vy,0);
+});
+test("opposite-direction tap breaks a double-tap sequence",()=>{
+  const arena=new Arena();
+  arena.update(1/60,input({pressed:["right"]}));
+  arena.update(0.05,input({pressed:["left"]}));
+  arena.update(0.05,input({pressed:["right"]}));
+  assert.equal(arena.player.dashType,null);
+});
+test("a dash consumes its tap history",()=>{
+  const arena=new Arena();
+  arena.update(1/60,input({pressed:["right"]}));
+  arena.update(0.08,input());
+  arena.update(1/60,input({pressed:["right"]}));
+  assert.equal(arena.player.dashType,"forward");
+  const remaining=arena.player.dashRemaining;
+  arena.update(0.05,input({pressed:["right"]}));
+  assert.ok(arena.player.dashRemaining<remaining);
+});
+test("walking into the dummy pushes it without passing through",()=>{
+  const arena=new Arena();arena.player.x=500;arena.opponent.x=620;
+  arena.update(0.1,input({axis:1}));
+  assert.ok(arena.player.x<arena.opponent.x);
+  assert.ok(arena.opponent.x>620);
+  assert.equal(arena.opponent.x-arena.player.x,110);
+});
+test("a forward dash cannot pass through the opponent",()=>{
+  const arena=new Arena();arena.player.x=400;arena.opponent.x=520;
+  arena.movement.startDash(arena.player,1);
+  arena.update(0.1,input());
+  assert.ok(arena.player.x<arena.opponent.x);
+  assert.ok(arena.opponent.x-arena.player.x>=110);
+});
+test("a fighter can jump over an opponent and landing resolves overlap",()=>{
+  const arena=new Arena();arena.player.x=400;arena.opponent.x=500;
+  arena.update(0.1,input({pressed:["jump"],axis:1}));
+  let crossed=false;
+  for(let i=0;i<120;i++){
+    arena.update(1/60,input());
+    if(!arena.player.onGround&&arena.player.x>arena.opponent.x)crossed=true;
+  }
+  assert.equal(crossed,true);
+  assert.equal(arena.player.onGround,true);
+  assert.ok(Math.abs(arena.opponent.x-arena.player.x)>=110);
 });

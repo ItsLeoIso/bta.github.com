@@ -53,10 +53,16 @@ export class MovementController {
 
     if (pressedWorldAxis !== 0) {
       const direction = pressedWorldAxis > 0 ? "right" : "left";
+      const opposite = direction === "right" ? "left" : "right";
       const previousTap = this.lastTap[direction];
       const isDoubleTap = this.elapsed - previousTap <= this.doubleTapWindow;
-      this.lastTap[direction] = this.elapsed;
-      if (isDoubleTap) this.startDash(fighter, pressedWorldAxis);
+      this.lastTap[opposite] = -Infinity;
+      if (isDoubleTap) {
+        this.lastTap[direction] = -Infinity;
+        this.startDash(fighter, pressedWorldAxis);
+      } else {
+        this.lastTap[direction] = this.elapsed;
+      }
     }
 
     if (fighter.onGround && input.wasPressed?.("jump")) {
@@ -73,12 +79,20 @@ export class MovementController {
       fighter.dashRemaining <= 0 &&
       input.isDown("crouch");
 
-    if (fighter.dashRemaining > 0) {
+    const dashWasActive = fighter.dashRemaining > 0;
+    if (dashWasActive) {
       fighter.dashRemaining = Math.max(0, fighter.dashRemaining - deltaSeconds);
-      fighter.vx = fighter.dashVelocity;
-      if (fighter.dashRemaining === 0) {
+      if (fighter.dashRemaining > 0) {
+        fighter.vx = fighter.dashVelocity;
+      } else {
+        if (fighter.dashType === "air") {
+          fighter.airHorizontalVelocity = Math.sign(fighter.dashVelocity) * this.airSpeed;
+        }
         fighter.dashVelocity = 0;
         fighter.dashType = null;
+        fighter.vx = fighter.onGround
+          ? worldAxis * this.groundSpeed * (fighter.crouching ? this.crouchSpeedMultiplier : 1)
+          : fighter.airHorizontalVelocity ?? 0;
       }
     } else if (fighter.onGround) {
       const speedMultiplier = fighter.crouching ? this.crouchSpeedMultiplier : 1;
@@ -89,7 +103,11 @@ export class MovementController {
 
     fighter.x = clamp(fighter.x + fighter.vx * deltaSeconds, minX, maxX);
     if (!fighter.onGround) {
-      fighter.vy += this.gravity * deltaSeconds;
+      if (fighter.dashType === "air" && fighter.dashRemaining > 0) {
+        fighter.vy = 0;
+      } else {
+        fighter.vy += this.gravity * deltaSeconds;
+      }
       fighter.y += fighter.vy * deltaSeconds;
       if (fighter.y >= floorY) {
         fighter.y = floorY;
@@ -103,6 +121,7 @@ export class MovementController {
   }
 
   startDash(fighter, worldDirection) {
+    if (fighter.dashRemaining > 0) return false;
     const sign = Math.sign(worldDirection);
     const forward = sign * fighter.facing > 0;
     if (fighter.onGround) {
@@ -111,7 +130,9 @@ export class MovementController {
         fighter.dashType = forward ? "forward" : "backdash";
         fighter.dashRemaining = forward ? this.groundDashDuration : this.backdashDuration;
         fighter.dashVelocity = sign * (forward ? this.groundDashSpeed : this.backdashSpeed);
+        return true;
       }
+      return false;
     } else if (fighter.airDashAvailable) {
       fighter.dashType = "air";
       fighter.dashRemaining = this.airDashDuration;
@@ -120,6 +141,8 @@ export class MovementController {
       // Air dash changes the locked trajectory; it does not enable free steering.
       fighter.airHorizontalVelocity = sign * this.airDashSpeed;
       fighter.airDashAvailable = false;
+      return true;
     }
+    return false;
   }
 }

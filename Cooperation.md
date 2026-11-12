@@ -411,3 +411,50 @@ Copy this template for each new handoff:
 
 **Suggested next step:**
 - When integrating Claude's proposed movement/pushbox bundle, establish the state data model and transition tests without changing confirmed controls or movement feel. Then connect attack phases, guard, hit reactions, and state-specific collision geometry.
+
+
+### 2026-11-12 — ChatGPT — Integrate movement fixes and fighter pushboxes
+**Type:** Completed / Review requested
+**Commit:** See the commit containing this entry.
+**Files / systems:**
+- `src/movement/MovementController.js`
+- `src/movement/Pushbox.js` (new)
+- `src/engine/Arena.js`
+- `src/engine/CanvasRenderer.js`
+- `tests/Arena.test.js`
+- `tests/Pushbox.test.js` (new)
+- `docs/GAME_DESIGN.md`
+- `docs/TECHNICAL_PLAN.md`
+
+**Ownership / collaboration:**
+- ChatGPT owns implementation and integration of gameplay code on `main`; Claude currently has read-only repository access and remains welcome as an independent reviewer.
+- Leandro remains the product owner and final decision-maker for game feel and design.
+- Claude's earlier bundle was not available as committed source files, so this implementation was rebuilt from the findings and design described in Claude's session record rather than copied or assumed to exist.
+
+**What changed:**
+- Fixed air-dash exit speed: after the burst, horizontal velocity returns to normal air speed (260 units/second) in the dash direction.
+- Air dash holds vertical position during its burst; gravity resumes immediately after the dash ends.
+- Opposite-direction taps clear the pending double-tap; a completed pair is consumed even when a cooldown rejects the dash, preventing stale tap reuse.
+- Added pushboxes with placeholder dimensions: half-width 55, standing height 70, crouching height 50 arena units, anchored at the fighter's feet.
+- Pushboxes resolve after movement. Horizontal overlap is shared evenly; a fighter at a stage limit is not pushed outside the stage and the other fighter absorbs the remaining correction.
+- Vertical overlap is required, allowing fighters to jump over one another. Identical-center collisions use previous side order, with stable argument order as a final tie-break.
+- Stage center limits now use a 68-unit margin so the existing 136-unit ground shadow remains inside the stage.
+- Moved HUD labels, health bars, and timer upward to y=22, y=30, and y=42 respectively to reduce overlap with jumping fighters.
+
+**Verification:**
+- Ran `npm test` in a scratch reconstruction of the latest `main` source and test files, with the proposed changes applied: **35 tests passed, 0 failed**.
+- The scratch reconstruction included the current arena, keyboard-input, and game-loop tests, plus the new pushbox tests. It was not a git checkout of the repository.
+- No browser/manual playtest was performed. HUD spacing, collision feel, and visual overlap remain unverified in the hosted game.
+
+**Review notes / known limitations:**
+- Pushbox dimensions and 50/50 push sharing are placeholders. A stationary dummy can now be pushed, so it may drift until later AI/reset behaviour is implemented.
+- The jump-over path is possible with the current movement values, but the approach window and timing need playtesting.
+- No pushbox debug overlay exists yet.
+- The 68-unit margin is based on the current shadow width and may need revisiting with final character art.
+- Explicit layered fighter-state controller is still planned, not implemented by this milestone. It should be introduced before attacks, guard, and hit reactions rely on state transitions.
+- This is pushbox collision only; it does not implement attack hitboxes, hurtboxes, damage, or blocking.
+
+**Suggested next step:**
+- Leandro: playtest walking/dashing into the dummy, pushing it into both corners, jumping over it from several distances, and checking HUD/shadow spacing.
+- ChatGPT: address any playtest tuning, then implement the explicit layered fighter-state controller and its transition tests before the combat foundation.
+- Claude: independently review the committed pushbox corner/tie-break logic and movement changes; report findings here without editing gameplay files unless file ownership is explicitly reassigned.
