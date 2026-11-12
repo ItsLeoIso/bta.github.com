@@ -43,7 +43,7 @@ export class StateDebugPanel {
       actionDetail = `${dashType} · ${remainingFrames}f`;
     } else if (state.action === "attack") {
       const data = fighter.actionData;
-      actionDetail = `${data.moveName} · ${data.phase} ${data.phaseFrame}f`;
+      actionDetail = `${data.moveName} · ${(data.hitLevel ?? "mid").toUpperCase()} · ${data.phase} ${data.phaseFrame}f`;
     } else if (state.action && state.action !== "none") {
       actionDetail = fighter.actionData?.moveName ?? state.action;
     }
@@ -69,12 +69,12 @@ export class StateDebugPanel {
     if (this.frameStatus) {
       this.frameStatus.textContent = !data
         ? "NO ATTACK SELECTED"
-        : `${isAttacking ? "IN PROGRESS" : "LAST MOVE"} · ${data.name}`;
+        : `${isAttacking ? "IN PROGRESS" : "LAST MOVE"} · ${data.name} · ${(data.hitLevel ?? "mid").toUpperCase()}`;
     }
     if (this.frameNote) {
       this.frameNote.textContent = data
-        ? "Prototype timing at 60 Hz. Advantage appears after hit/block resolution."
-        : "Press H, J or K to inspect Light, Medium or Heavy timing.";
+        ? "High can be crouched under; Low misses airborne opponents. Timing is shown at 60 Hz."
+        : "Press H / Light (High), J / Medium (Mid), or K / Heavy (Low).";
     }
   }
 
