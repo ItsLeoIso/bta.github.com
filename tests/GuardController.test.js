@@ -67,3 +67,13 @@ test("Arena holds the player in place while back is held and supports crouch gua
   assert.equal(arena.player.state.action, STATES.action.GUARD);
   assert.equal(arena.player.guardData.guardHeight, "low");
 });
+
+
+test("back is interpreted relative to facing after the fighters cross sides", () => {
+  const guard = new GuardController({ stateController: new FighterStateController() });
+  const target = fighter();
+  target.facing = -1;
+  guard.update(target, input(1));
+  assert.equal(target.state.action, STATES.action.GUARD);
+  assert.equal(target.guardData.guardHeight, "high");
+});
