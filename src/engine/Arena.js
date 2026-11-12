@@ -65,6 +65,7 @@ export class Arena {
       this.lastCombatEvent=hit;
       this.lastHit={
         moveName:hit.moveName,
+        hitLevel:hit.hitLevel,
         x:this.opponent.x,
         y:this.opponent.y-112,
         remaining:0.48
