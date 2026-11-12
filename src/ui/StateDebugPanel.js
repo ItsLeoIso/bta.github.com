@@ -44,6 +44,8 @@ export class StateDebugPanel {
     } else if (state.action === "attack") {
       const data = fighter.actionData;
       actionDetail = `${data.moveName} · ${(data.hitLevel ?? "mid").toUpperCase()} · ${data.phase} ${data.phaseFrame}f`;
+    } else if (state.action === "guard") {
+      actionDetail = `${fighter.guardData?.guardHeight ?? fighter.actionData?.guardHeight ?? "high"} guard`;
     } else if (state.reaction !== "none") {
       const frames = fighter.reactionData?.remainingFrames ?? 0;
       actionDetail = `${state.reaction} · ${frames}f`;
