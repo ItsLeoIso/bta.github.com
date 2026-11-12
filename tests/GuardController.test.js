@@ -58,14 +58,23 @@ test("blocking applies blockstun and pushback without reducing health", () => {
   assert.equal(defender.state.action, STATES.action.NONE);
 });
 
-test("Arena holds the player in place while back is held and supports crouch guard", () => {
+test("Arena allows crouch-guard retreat at 25% walking speed", () => {
   const arena = new Arena();
   const startX = arena.player.x;
   const backInput = { getWorldAxis: () => -1, wasPressed: () => false, isDown: action => action === "crouch" };
   arena.update(0.1, backInput);
-  assert.equal(arena.player.x, startX);
   assert.equal(arena.player.state.action, STATES.action.GUARD);
   assert.equal(arena.player.guardData.guardHeight, "low");
+  assert.equal(arena.player.x, startX - 7.5);
+});
+
+test("standing guard retreat moves at 50% walking speed", () => {
+  const arena = new Arena();
+  const startX = arena.player.x;
+  const backInput = { getWorldAxis: () => -1, wasPressed: () => false, isDown: () => false };
+  arena.update(0.1, backInput);
+  assert.equal(arena.player.state.action, STATES.action.GUARD);
+  assert.equal(arena.player.x, startX - 15);
 });
 
 
