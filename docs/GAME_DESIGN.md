@@ -30,9 +30,9 @@ This document records the decisions confirmed so far. Anything labelled **Open**
 | Jump | W | Neutral jump when no horizontal direction is held |
 | Directional jump | W + A or W + D | Jumps left or right on screen, regardless of facing |
 | Crouch | S | Crouching |
-| Light | H | Light attack |
-| Medium | J | Medium attack |
-| Heavy | K | Heavy attack |
+| Light | H | High attack — can be crouched under |
+| Medium | J | Mid attack — hits standing and crouching opponents |
+| Heavy | K | Low attack — hits grounded opponents, misses airborne opponents |
 | Special | L | Special input / attack |
 
 Movement keys are screen-relative and never reverse when fighters cross: A always means left and D always means right. Fighters automatically turn to face the opponent. Whether a dash is classified as a forward dash or backdash is determined by comparing its screen direction with the fighter's facing direction.
@@ -75,7 +75,8 @@ These dimensions and movement details are prototype values to validate in the br
 
 ## Combat and special inputs
 
-- Attack buttons: Light (H), Medium (J), Heavy (K), Special (L).
+- Attack buttons: Light (H / High), Medium (J / Mid), Heavy (K / Low), Special (L).
+- Attack height is separate from the move's strength and frame data. High attacks occupy the upper body and can be crouched under; Mid attacks cover the torso and catch standing or crouching opponents; Low attacks strike near the feet, hit grounded opponents, and pass under airborne opponents.
 - All three special-input styles are intended to coexist:
   1. **Button-only:** L by itself performs a projectile.
   2. **Direction + button:** a direction combined with L performs a directional special.
