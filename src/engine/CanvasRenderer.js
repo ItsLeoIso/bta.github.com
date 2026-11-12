@@ -95,9 +95,14 @@ export class CanvasRenderer {
 
     const hitbox = getActiveAttackHitbox(arena.player);
     if (hitbox) {
+      const hitLevel = arena.player.actionData.hitLevel;
+      const levelColor = hitLevel === "high" ? "#ff9b9b"
+        : hitLevel === "low" ? "#91c9ff" : "#ffe096";
       ctx.setLineDash([]);
-      ctx.fillStyle = "rgba(255, 224, 150, .16)";
-      ctx.strokeStyle = "#ffe096";
+      ctx.fillStyle = levelColor === "#ff9b9b" ? "rgba(255, 155, 155, .16)"
+        : levelColor === "#91c9ff" ? "rgba(145, 201, 255, .16)"
+          : "rgba(255, 224, 150, .16)";
+      ctx.strokeStyle = levelColor;
       ctx.fillRect(hitbox.left, hitbox.top, hitbox.right-hitbox.left, hitbox.bottom-hitbox.top);
       ctx.strokeRect(hitbox.left, hitbox.top, hitbox.right-hitbox.left, hitbox.bottom-hitbox.top);
     }
@@ -107,7 +112,9 @@ export class CanvasRenderer {
       ctx.fillStyle = "#ffe096";
       ctx.font = "bold 22px monospace";
       ctx.textAlign = "center";
-      ctx.fillText(`${arena.lastHit.moveName.toUpperCase()} HIT`, arena.lastHit.x, arena.lastHit.y);
+      const level = arena.lastHit.hitLevel?.toUpperCase();
+      const label = [level, arena.lastHit.moveName.toUpperCase(), "HIT"].filter(Boolean).join(" ");
+      ctx.fillText(label, arena.lastHit.x, arena.lastHit.y);
     }
     ctx.restore();
   }
