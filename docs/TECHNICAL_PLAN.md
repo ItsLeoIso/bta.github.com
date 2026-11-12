@@ -104,7 +104,7 @@ Implemented as a separate combat geometry layer:
 - The renderer outlines fighter hurtboxes and the current active attack hitbox for tuning. The collision boxes are gameplay geometry; the art slash remains presentation only.
 - This milestone intentionally does not subtract health or apply hitstun/knockback. Those belong to the damage and reaction pass. Pushboxes remain independent and continue to resolve body separation.
 
-Initial hurtbox profiles: standing half-width 34 / height 76; crouching half-width 38 / height 48; airborne half-width 32 / height 66. Attack box dimensions are prototype tuning values and require playtesting.
+Current forgiving collision profiles match the rendered fighter silhouette at 3x scale: standing and airborne hurtboxes are 126 × 228; crouching hurtboxes are 126 × 144. Light, Medium, and Heavy attack hitboxes are respectively 126 × 228, 160 × 228, and 190 × 228, all extending forward from the fighter. These are broad gameplay volumes, not limb-accurate boxes, and remain prototype tuning values for playtesting.
 
 ## Planned combat foundation
 - Add directional blocking and resolve guard direction relative to the opponent, including when fighters cross sides.
