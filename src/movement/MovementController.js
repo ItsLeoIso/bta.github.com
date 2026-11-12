@@ -82,8 +82,14 @@ export class MovementController {
       states.setLocomotion(fighter, FIGHTER_STATES.locomotion.FALLING);
     }
 
+    // A backward double-tap begins with a guard tap. Let that same sequence
+    // continue while guarding, then cancel guard only when the backdash starts.
+    const tappingBackward = pressedWorldAxis * fighter.facing < 0;
+    const canStartDash =
+      fighter.state.action === FIGHTER_STATES.action.NONE ||
+      (fighter.state.action === FIGHTER_STATES.action.GUARD && tappingBackward);
     if (pressedWorldAxis !== 0 &&
-        fighter.state.action === FIGHTER_STATES.action.NONE &&
+        canStartDash &&
         fighter.state.reaction === FIGHTER_STATES.reaction.NONE) {
       const direction = pressedWorldAxis > 0 ? "right" : "left";
       const opposite = direction === "right" ? "left" : "right";
@@ -92,6 +98,10 @@ export class MovementController {
       this.lastTap[opposite] = -Infinity;
       if (isDoubleTap) {
         this.lastTap[direction] = -Infinity;
+        if (fighter.state.action === FIGHTER_STATES.action.GUARD) {
+          states.endAction(fighter, FIGHTER_STATES.action.GUARD);
+          fighter.guardData = null;
+        }
         this.startDash(fighter, pressedWorldAxis);
       } else {
         this.lastTap[direction] = this.elapsed;
