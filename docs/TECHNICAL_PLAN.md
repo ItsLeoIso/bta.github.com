@@ -82,6 +82,17 @@ Implemented foundation:
 
 Next state/combat work should keep facing direction, screen-relative input, timers, and attack phase as distinct data. Pushboxes, hurtboxes, and attack hitboxes remain separate systems, with collision profiles selected from the fighter's current stance/locomotion.
 
+## Attack timing prototype
+
+Implemented as the first combat action system:
+
+- Added `src/combat/AttackController.js` with data-driven Light, Medium, and Heavy definitions, triggered by H, J, and K.
+- The prototype timings are Light 5 startup / 3 active / 10 recovery frames; Medium 8 / 4 / 15; Heavy 12 / 5 / 21. These are initial tuning values at the fixed 60 Hz simulation rate.
+- Attacks start only while grounded and neutral. Startup, active, and recovery are stored as attack action data, and the action ends only after recovery completes.
+- Ground movement, jump, dash, and stance changes are locked during the attack. Existing crouching stance is preserved.
+- The active phase has a temporary visual slash cue. It is not a hitbox and cannot hit the opponent yet.
+- The state inspector displays the current phase and move frame data. Hit and block advantage remain unset until collision and guard resolution can determine real outcomes.
+
 ## Planned combat foundation
 - Implement light, medium, and heavy attacks with explicit startup, active, and recovery phases.
 - Add attack hitboxes and fighter hurtboxes, then resolve hit detection and hit reactions.
