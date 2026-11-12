@@ -120,6 +120,8 @@ export class MovementController {
       states.setLocomotion(fighter, FIGHTER_STATES.locomotion.CROUCHING);
     } else if (
       fighter.onGround &&
+      fighter.state.action === FIGHTER_STATES.action.NONE &&
+      fighter.state.reaction === FIGHTER_STATES.reaction.NONE &&
       fighter.state.locomotion === FIGHTER_STATES.locomotion.CROUCHING
     ) {
       states.setLocomotion(fighter, FIGHTER_STATES.locomotion.STANDING);
