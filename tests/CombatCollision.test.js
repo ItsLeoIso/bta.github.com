@@ -111,7 +111,7 @@ test("misses are not consumed and may connect on a later active frame", () => {
 
 test("attacks do not hit targets outside the vertical volume", () => {
   const attacker = activeAttacker();
-  const highTarget = fighter({ x: 200, y: 80 });
+  const highTarget = fighter({ x: 200, y: -300 });
   assert.equal(resolveAttackCollision(attacker, highTarget), null);
 });
 
