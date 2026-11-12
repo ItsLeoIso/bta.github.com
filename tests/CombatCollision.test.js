@@ -4,6 +4,7 @@ import { getHurtbox } from "../src/combat/Hurtbox.js";
 import { getActiveAttackHitbox } from "../src/combat/Hitbox.js";
 import { boxesOverlap, resolveAttackCollision } from "../src/combat/CombatCollision.js";
 import { FIGHTER_STATES as STATES } from "../src/state/FighterStateController.js";
+import { ATTACK_DEFINITIONS } from "../src/combat/AttackController.js";
 
 function fighter({
   x = 100,
@@ -20,19 +21,20 @@ function fighter({
   };
 }
 
-function activeAttacker({ facing = 1, hitConfirmed = false } = {}) {
+function activeAttacker({ moveId = "light", facing = 1, hitConfirmed = false } = {}) {
+  const move = ATTACK_DEFINITIONS[moveId];
   return fighter({
     x: 100,
     y: 200,
     facing,
     action: STATES.action.ATTACK,
     actionData: {
-      moveId: "light",
-      moveName: "Light",
+      ...move,
+      moveId,
+      moveName: move.name,
       phase: "active",
       phaseFrame: 1,
-      hitConfirmed,
-      hitbox: { offsetX: 24, offsetY: -176, width: 126, height: 100 }
+      hitConfirmed
     }
   });
 }
@@ -53,7 +55,7 @@ test("standing, crouching, and airborne hurtboxes use distinct profiles", () => 
 test("attack hitboxes exist only during active frames and before the first hit", () => {
   const attacker = activeAttacker();
   assert.deepEqual(getActiveAttackHitbox(attacker), {
-    left: 124, right: 250, top: 24, bottom: 124
+    left: 124, right: 250, top: -20, bottom: 52
   });
 
   attacker.actionData.phase = "startup";
@@ -66,7 +68,7 @@ test("attack hitboxes exist only during active frames and before the first hit",
 test("attack hitbox mirrors correctly when the fighter faces left", () => {
   const attacker = activeAttacker({ facing: -1 });
   assert.deepEqual(getActiveAttackHitbox(attacker), {
-    left: -50, right: 76, top: 24, bottom: 124
+    left: -50, right: 76, top: -20, bottom: 52
   });
 });
 
@@ -89,13 +91,23 @@ test("overlapping active hitbox and standing hurtbox produce one hit event", () 
   assert.equal(resolveAttackCollision(attacker, defender), null);
 });
 
-test("standard attacks hit crouching targets at torso height without reaching the floor", () => {
-  const attacker = activeAttacker();
+test("high attacks can be crouched under while mid attacks hit crouching targets", () => {
   const crouching = fighter({ x: 200, y: 200, locomotion: STATES.locomotion.CROUCHING });
-  const airborne = fighter({ x: 200, y: 200, locomotion: STATES.locomotion.FALLING });
 
-  assert.ok(resolveAttackCollision(attacker, crouching));
-  assert.ok(resolveAttackCollision(activeAttacker(), airborne));
+  assert.equal(resolveAttackCollision(activeAttacker({ moveId: "light" }), crouching), null);
+  const midHit = resolveAttackCollision(activeAttacker({ moveId: "medium" }), crouching);
+  assert.equal(midHit.hitLevel, "mid");
+});
+
+test("low attacks hit grounded targets but pass under airborne targets", () => {
+  const standing = fighter({ x: 200, y: 200 });
+  const crouching = fighter({ x: 200, y: 200, locomotion: STATES.locomotion.CROUCHING });
+  const airborne = fighter({ x: 200, y: 200, locomotion: STATES.locomotion.JUMPING });
+
+  assert.equal(resolveAttackCollision(activeAttacker({ moveId: "heavy" }), standing).hitLevel, "low");
+  assert.equal(resolveAttackCollision(activeAttacker({ moveId: "heavy" }), crouching).hitLevel, "low");
+  assert.equal(resolveAttackCollision(activeAttacker({ moveId: "heavy" }), airborne), null);
+  assert.ok(resolveAttackCollision(activeAttacker({ moveId: "medium" }), airborne));
 });
 
 test("misses are not consumed and may connect on a later active frame", () => {
@@ -128,14 +140,13 @@ test("every combat hurtbox is at least as large as the visible fighter silhouett
   assert.equal(airborne.bottom - airborne.top, 228);
 });
 
-test("attack hitboxes keep their reach and stop above the lower-body region", async () => {
-  const { ATTACK_DEFINITIONS } = await import("../src/combat/AttackController.js");
-  const boxes = ["light", "medium", "heavy"].map(id => ATTACK_DEFINITIONS[id].hitbox);
+test("attack definitions cover high, mid, and low bands without changing horizontal reach", () => {
+  const moves = ["light", "medium", "heavy"].map(id => ATTACK_DEFINITIONS[id]);
 
-  assert.deepEqual(boxes.map(box => box.width), [126, 160, 190]);
-  assert.ok(boxes.every(box => box.height === 100));
-  assert.ok(boxes.every(box => box.offsetY === -176));
-  assert.ok(boxes.every(box => box.offsetY + box.height === -76));
-  assert.ok(boxes[0].width < boxes[1].width);
-  assert.ok(boxes[1].width < boxes[2].width);
+  assert.deepEqual(moves.map(move => move.hitLevel), ["high", "mid", "low"]);
+  assert.deepEqual(moves.map(move => move.hitbox.width), [126, 160, 190]);
+  assert.deepEqual(moves.map(move => move.hitbox.height), [72, 80, 72]);
+  assert.deepEqual(moves.map(move => move.hitbox.offsetY), [-220, -152, -72]);
+  assert.ok(moves[0].hitbox.offsetY < moves[1].hitbox.offsetY);
+  assert.ok(moves[1].hitbox.offsetY < moves[2].hitbox.offsetY);
 });
