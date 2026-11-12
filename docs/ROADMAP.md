@@ -23,7 +23,8 @@
 
 ## Phase 3 — Combat foundation
 - [x] Explicit fighter state model (locomotion, action, and reaction) with validated transitions.
-- [ ] Attack state timing (startup, active, recovery, and frame advantage).
+- [x] Frame-based attack phases: startup, active, and recovery (prototype Light / Medium / Heavy timings).
+- [ ] Hit and block advantage calculation after collision and guard resolution.
 - [ ] Hitboxes, hurtboxes, and collision detection.
 - [ ] Light, Medium, and Heavy attacks.
 - [ ] Hit reactions, hitstun, blockstun, knockback, and damage.
