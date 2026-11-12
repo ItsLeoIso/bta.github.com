@@ -121,7 +121,8 @@ export class FighterStateController {
     }
 
     const currentReaction = fighter.state.reaction;
-    if (REACTION_PRIORITY[nextReaction] < REACTION_PRIORITY[currentReaction]) {
+    if (nextReaction !== FIGHTER_STATES.reaction.NONE &&
+        REACTION_PRIORITY[nextReaction] < REACTION_PRIORITY[currentReaction]) {
       return false;
     }
 
