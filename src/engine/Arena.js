@@ -1,24 +1,38 @@
 import { MovementController } from "../movement/MovementController.js";
 import { resolvePushboxes } from "../movement/Pushbox.js";
+import { FIGHTER_STATES, FighterStateController } from "../state/FighterStateController.js";
 
 const clamp = (value,min,max)=>Math.min(max,Math.max(min,value));
 export const STAGE_MARGIN=68;
+
 function createFighter({x,facing}) {
   return {
     x,y:440,previousX:x,previousY:440,facing,health:1,crouching:false,
-    moveSpeed:300,vx:0,vy:0,onGround:true,dashType:null,dashRemaining:0,
-    dashVelocity:0,airDashAvailable:true,airHorizontalVelocity:0,
+    moveSpeed:300,vx:0,vy:0,onGround:true,
+    state:{
+      locomotion:FIGHTER_STATES.locomotion.STANDING,
+      action:FIGHTER_STATES.action.NONE,
+      reaction:FIGHTER_STATES.reaction.NONE
+    },
+    actionData:{dashType:null,remaining:0,velocity:0},
+    dashType:null,dashRemaining:0,dashVelocity:0,
+    airDashAvailable:true,airHorizontalVelocity:0,
     groundDashCooldownRemaining:0
   };
 }
+
 export class Arena {
   constructor() {
     this.width=960; this.height=540; this.floorY=440;
     this.stageMargin=STAGE_MARGIN;
+    this.stateController=new FighterStateController();
     this.player=createFighter({x:300,facing:1});
     this.opponent=createFighter({x:660,facing:-1});
-    this.movement=new MovementController();
+    this.stateController.initialize(this.player);
+    this.stateController.initialize(this.opponent);
+    this.movement=new MovementController({stateController:this.stateController});
   }
+
   update(deltaSeconds,input) {
     const player=this.player;
     player.previousX=player.x; player.previousY=player.y;
