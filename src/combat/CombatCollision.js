@@ -1,5 +1,6 @@
 import { getHurtbox } from "./Hurtbox.js";
 import { getActiveAttackHitbox } from "./Hitbox.js";
+import { FIGHTER_STATES } from "../state/FighterStateController.js";
 
 export function boxesOverlap(first, second) {
   return first.left < second.right &&
@@ -16,6 +17,20 @@ export function resolveAttackCollision(attacker, defender) {
   const hitbox = getActiveAttackHitbox(attacker);
   if (!hitbox) return null;
 
+  const hitLevel = attacker.actionData.hitLevel ?? "mid";
+  const defenderLocomotion = defender.state?.locomotion;
+
+  // Highs can be crouched under; lows pass beneath airborne fighters.
+  if (
+    hitLevel === "high" &&
+    defenderLocomotion === FIGHTER_STATES.locomotion.CROUCHING
+  ) return null;
+  if (
+    hitLevel === "low" &&
+    (defenderLocomotion === FIGHTER_STATES.locomotion.JUMPING ||
+      defenderLocomotion === FIGHTER_STATES.locomotion.FALLING)
+  ) return null;
+
   const hurtbox = getHurtbox(defender);
   if (!boxesOverlap(hitbox, hurtbox)) return null;
 
@@ -24,6 +39,7 @@ export function resolveAttackCollision(attacker, defender) {
     type: "hit",
     moveId: attacker.actionData.moveId,
     moveName: attacker.actionData.moveName,
+    hitLevel,
     attacker,
     defender,
     hitbox,
