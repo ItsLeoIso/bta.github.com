@@ -1,5 +1,6 @@
 import { MovementController } from "../movement/MovementController.js";
 import { AttackController } from "../combat/AttackController.js";
+import { resolveAttackCollision } from "../combat/CombatCollision.js";
 import { resolvePushboxes } from "../movement/Pushbox.js";
 import { FIGHTER_STATES, FighterStateController } from "../state/FighterStateController.js";
 
@@ -33,9 +34,16 @@ export class Arena {
     this.stateController.initialize(this.opponent);
     this.movement=new MovementController({stateController:this.stateController});
     this.attacks=new AttackController({stateController:this.stateController});
+    this.lastCombatEvent=null;
+    this.lastHit=null;
   }
 
   update(deltaSeconds,input) {
+    this.lastCombatEvent=null;
+    if (this.lastHit) {
+      this.lastHit.remaining-=deltaSeconds;
+      if (this.lastHit.remaining<=0) this.lastHit=null;
+    }
     const player=this.player;
     player.previousX=player.x; player.previousY=player.y;
     this.opponent.previousX=this.opponent.x; this.opponent.previousY=this.opponent.y;
@@ -50,5 +58,17 @@ export class Arena {
     resolvePushboxes(player,this.opponent,{minX:this.stageMargin,maxX:this.width-this.stageMargin});
     player.facing=player.x<=this.opponent.x ? 1 : -1;
     this.opponent.facing=-player.facing;
+
+    // Resolve after movement and pushboxes so both boxes use final frame positions.
+    const hit=resolveAttackCollision(player,this.opponent);
+    if(hit){
+      this.lastCombatEvent=hit;
+      this.lastHit={
+        moveName:hit.moveName,
+        x:this.opponent.x,
+        y:this.opponent.y-112,
+        remaining:0.48
+      };
+    }
   }
 }
