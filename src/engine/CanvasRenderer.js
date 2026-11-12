@@ -1,3 +1,6 @@
+import { getHurtbox } from "../combat/Hurtbox.js";
+import { getActiveAttackHitbox } from "../combat/Hitbox.js";
+
 const COLORS = { background:"#090909", grid:"#202020", floor:"#55515a", accent:"#d7d0df", player:"#d9d4e2", opponent:"#8d8798", text:"#aaa4b2" };
 export class CanvasRenderer {
   constructor(canvas) {
@@ -29,6 +32,7 @@ export class CanvasRenderer {
     this.drawBackdrop(ctx, arena);
     this.drawFighter(ctx, arena.player, COLORS.player, alpha);
     this.drawFighter(ctx, arena.opponent, COLORS.opponent, alpha);
+    this.drawCombatBoxes(ctx, arena);
     this.drawHud(ctx, arena);
     if (paused) {
       ctx.fillStyle = "rgba(0,0,0,.68)"; ctx.fillRect(0,0,arena.width,arena.height);
@@ -73,6 +77,41 @@ export class CanvasRenderer {
     }
     ctx.restore();
   }
+  drawCombatBoxes(ctx, arena) {
+    const fighters = [arena.player, arena.opponent];
+    ctx.save();
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 4]);
+    for (const fighter of fighters) {
+      const hurtbox = getHurtbox(fighter);
+      ctx.strokeStyle = fighter === arena.player ? "#8ea6ff" : "#c39aff";
+      ctx.strokeRect(
+        hurtbox.left,
+        hurtbox.top,
+        hurtbox.right - hurtbox.left,
+        hurtbox.bottom - hurtbox.top
+      );
+    }
+
+    const hitbox = getActiveAttackHitbox(arena.player);
+    if (hitbox) {
+      ctx.setLineDash([]);
+      ctx.fillStyle = "rgba(255, 224, 150, .16)";
+      ctx.strokeStyle = "#ffe096";
+      ctx.fillRect(hitbox.left, hitbox.top, hitbox.right-hitbox.left, hitbox.bottom-hitbox.top);
+      ctx.strokeRect(hitbox.left, hitbox.top, hitbox.right-hitbox.left, hitbox.bottom-hitbox.top);
+    }
+
+    if (arena.lastHit) {
+      ctx.globalAlpha = Math.min(1, arena.lastHit.remaining / 0.12);
+      ctx.fillStyle = "#ffe096";
+      ctx.font = "bold 22px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText(`${arena.lastHit.moveName.toUpperCase()} HIT`, arena.lastHit.x, arena.lastHit.y);
+    }
+    ctx.restore();
+  }
+
   drawHud(ctx, arena) {
     ctx.fillStyle = COLORS.text; ctx.font = "bold 16px monospace"; ctx.textAlign = "left"; ctx.fillText("PLAYER 01",32,22);
     ctx.textAlign = "right"; ctx.fillText("CPU DUMMY",arena.width-32,22);
