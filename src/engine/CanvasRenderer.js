@@ -71,6 +71,13 @@ export class CanvasRenderer {
     ctx.fillRect(-17,top,34,27);
     ctx.fillStyle = "#090909";
     ctx.fillRect(fighter.facing*7,top+10,5,5);
+    if (fighter.state?.action === "guard") {
+      ctx.strokeStyle = "#8ecbff";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(fighter.facing * 24, top + 43, 27, -Math.PI / 2, Math.PI / 2);
+      ctx.stroke();
+    }
     if (fighter.state?.action === "attack" && fighter.actionData?.phase === "active") {
       // A temporary animation cue; the active hit-level collision region is drawn separately.
       ctx.strokeStyle = "#f0e7ff";
@@ -114,7 +121,8 @@ export class CanvasRenderer {
       ctx.font = "bold 22px monospace";
       ctx.textAlign = "center";
       const level = arena.lastHit.hitLevel?.toUpperCase();
-      const label = [level, arena.lastHit.moveName.toUpperCase(), "HIT"].filter(Boolean).join(" ");
+      const outcome = arena.lastHit.outcome === "block" ? "BLOCKED" : "HIT";
+      const label = [level, arena.lastHit.moveName.toUpperCase(), outcome].filter(Boolean).join(" ");
       ctx.fillText(label, arena.lastHit.x, arena.lastHit.y);
     }
     ctx.restore();
