@@ -45,8 +45,8 @@ test("standing guard retreat is 25% speed and does not move forward", () => {
   movement.update(fighter, makeInput(-1), 0.1, {
     floorY: 440, minX: 68, maxX: 892
   });
-  assert.equal(fighter.vx, -37.5);
-  assert.equal(fighter.x, 196.25);
+  assert.equal(fighter.vx, -75);
+  assert.equal(fighter.x, 192.5);
   movement.update(fighter, makeInput(1), 0.1, {
     floorY: 440, minX: 68, maxX: 892
   });
@@ -63,6 +63,6 @@ test("crouch guard retreat is 12.5% speed", () => {
   movement.update(fighter, makeInput(-1, true), 0.1, {
     floorY: 440, minX: 68, maxX: 892
   });
-  assert.equal(fighter.vx, -75);
-  assert.equal(fighter.x, 192.5);
+  assert.equal(fighter.vx, -37.5);
+  assert.equal(fighter.x, 196.25);
 });
