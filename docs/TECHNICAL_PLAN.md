@@ -106,11 +106,19 @@ Implemented as a separate combat geometry layer:
 
 Current forgiving collision profiles match the rendered fighter silhouette at 3x scale: standing and airborne hurtboxes are 126 × 228; crouching hurtboxes are 126 × 144. Light / High, Medium / Mid, and Heavy / Low attack hitboxes are respectively 126 × 72 at vertical offset -220, 160 × 80 at -152, and 190 × 72 at -72. Their horizontal widths and forward reach remain distinct by move strength. High hitboxes occupy the upper body and miss crouching targets; Mid hitboxes cover the torso and hit standing or crouching targets; Low hitboxes occupy the foot-level band, hit grounded targets, and explicitly miss airborne targets. These are broad gameplay volumes, not limb-accurate boxes, and remain prototype tuning values for playtesting.
 
-## Planned combat foundation
+## Damage and hit reaction pass
+
+Implemented first pass:
+- Confirmed Light / Medium / Heavy hits subtract 6% / 10% / 15% of the defender's health.
+- Light and Medium hits apply 12 / 18 frames of hitstun; Heavy applies a 30-frame knockdown reaction.
+- Knockback pushes the defender away from the attacker and decays during the reaction. Reactions temporarily interrupt actions and grounded movement.
+- Health bars display the current health values. These values are prototype tuning and will be adjusted during playtesting.
+- Added unit coverage for damage scaling, reaction type and duration, knockback direction, reaction recovery, and health clamping.
+
+Next:
 - Add directional blocking and resolve guard direction relative to the opponent, including when fighters cross sides.
-- Add damage, hitstun, blockstun, knockback, and advantage calculations after hit/block outcomes are defined.
-- Add directional blocking: holding away from the opponent guards automatically based on current facing; this must remain correct when fighters cross sides.
-- Keep movement input screen-relative while interpreting guard direction relative to the opponent. Add regression tests for guarding from both sides before adding blockstun, chip damage, or guard-break rules.
+- Keep movement input screen-relative while interpreting guard direction relative to the opponent. Add regression tests for guarding from both sides.
+- Then add blockstun, chip damage, block advantage, and guard-break rules.
 
 ## Running and testing
 - Run locally: python3 -m http.server 8000, then open http://localhost:8000.
