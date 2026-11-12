@@ -10,7 +10,7 @@
 - Keep simulation/gameplay logic separate from rendering and UI.
 - Use a fixed-step simulation loop (60 updates per second) with render interpolation.
 - Represent controls as logical actions rather than hard-coding gameplay to physical keys throughout the engine.
-- Keep horizontal movement controls screen-relative (A always left, D always right); resolve forward/backward dash classification and combat directions relative to facing.
+- Keep horizontal movement controls screen-relative (A always left, D always right); resolve forward/backward dash classification and combat directions relative to facing. Blocking uses the opposite direction from the opponent, resolved from the fighter's current facing.
 - Track input history and timestamps in the input layer so double-taps and motion commands can be added without coupling them to movement.
 - Make character move definitions extensible and data-driven where practical.
 - Keep networking concerns separate from local simulation so online play can be explored later without entangling the initial prototype.
@@ -52,6 +52,12 @@ Tuning values are initial placeholders, not final balance:
 - Backdash: 540 units/s for 0.22 s.
 - Air dash: 650 units/s for 0.14 s.
 - Double-tap window: 0.24 s.
+
+## Planned combat foundation
+- Implement light, medium, and heavy attacks with explicit startup, active, and recovery phases.
+- Add attack hitboxes and fighter hurtboxes, then resolve hit detection and hit reactions.
+- Add directional blocking: holding away from the opponent guards automatically based on current facing; this must remain correct when fighters cross sides.
+- Keep movement input screen-relative while interpreting guard direction relative to the opponent. Add regression tests for guarding from both sides before adding blockstun, chip damage, or guard-break rules.
 
 ## Running and testing
 - Run locally: python3 -m http.server 8000, then open http://localhost:8000.

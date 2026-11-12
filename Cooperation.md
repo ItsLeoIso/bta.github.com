@@ -247,3 +247,23 @@ Copy this template for each new handoff:
 
 **Suggested next step:**
 - Project owner: cross through the opponent repeatedly and verify A/D, jumps, and double-tap dashes never reverse unexpectedly.
+
+
+### 2026-11-12 — ChatGPT — Lock traditional directional blocking
+**Type:** Design decision / Handoff
+**Commit:** Pending documentation commit.
+**Files / systems:**
+- `docs/GAME_DESIGN.md`
+- `docs/TECHNICAL_PLAN.md`
+
+**What changed / what I noticed:**
+- Leandro selected traditional directional blocking: hold away from the opponent to guard.
+- Guard direction is resolved relative to the fighter's current facing and therefore automatically changes when the fighters cross sides.
+- This does not change screen-relative movement: A always moves left and D always moves right.
+- Blocking will be implemented as part of the combat foundation, after attacks and hitboxes/hurtboxes can produce something to defend against.
+
+**Verification:**
+- Documentation-only decision record; no gameplay code or tests changed.
+
+**Suggested next step:**
+- Implement light, medium, and heavy attacks with startup/active/recovery phases, hitboxes/hurtboxes, hit reactions, then directional guard and regression tests for both facing directions.

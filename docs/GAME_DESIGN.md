@@ -44,6 +44,7 @@ Movement keys are screen-relative and never reverse when fighters cross: A alway
   1. **Button-only:** L by itself performs a projectile.
   2. **Direction + button:** a direction combined with L performs a directional special.
   3. **Motion input:** a traditional motion such as quarter-circle forward + L performs an advanced special.
+- **Blocking:** Hold the screen direction opposite the opponent (away from the opponent) to guard. The required direction is resolved from the fighter's current facing, so the guard direction automatically changes when the fighters cross sides. This is deliberately separate from screen-relative movement: A always moves left and D always moves right.
 - The input system should be data-driven / extensible so different characters can receive different moves later.
 - The game should be easy to learn but offer room for technical mastery.
 - Fast, flashy combat and air combos are core goals.
@@ -81,6 +82,6 @@ These are menu destinations to plan for; their complete functionality will be im
 - Final programming language / framework / rendering technology.
 - Detailed move lists and per-character identities.
 - Exact movement and combat frame data / physics values.
-- Blocking, throws, meter, resource systems, round count, timer, and win conditions.
+- Throws, meter, resource systems, round count, timer, and win conditions.
 - Online networking architecture and matchmaking approach.
 - Audio direction and final sprite specifications.
