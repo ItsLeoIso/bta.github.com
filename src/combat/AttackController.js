@@ -10,7 +10,7 @@ export const ATTACK_DEFINITIONS = Object.freeze({
     recoveryFrames: 10,
     hitAdvantage: null,
     blockAdvantage: null,
-    hitbox: Object.freeze({ offsetX: 28, offsetY: -72, width: 90, height: 52 })
+    hitbox: Object.freeze({ offsetX: 24, offsetY: -228, width: 126, height: 228 })
   }),
   medium: Object.freeze({
     id: "medium",
@@ -20,7 +20,7 @@ export const ATTACK_DEFINITIONS = Object.freeze({
     recoveryFrames: 15,
     hitAdvantage: null,
     blockAdvantage: null,
-    hitbox: Object.freeze({ offsetX: 32, offsetY: -88, width: 112, height: 70 })
+    hitbox: Object.freeze({ offsetX: 30, offsetY: -228, width: 160, height: 228 })
   }),
   heavy: Object.freeze({
     id: "heavy",
@@ -30,7 +30,7 @@ export const ATTACK_DEFINITIONS = Object.freeze({
     recoveryFrames: 21,
     hitAdvantage: null,
     blockAdvantage: null,
-    hitbox: Object.freeze({ offsetX: 40, offsetY: -104, width: 135, height: 88 })
+    hitbox: Object.freeze({ offsetX: 36, offsetY: -228, width: 190, height: 228 })
   })
 });
 
