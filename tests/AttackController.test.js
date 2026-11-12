@@ -23,6 +23,13 @@ function input(pressed = []) {
 
 const noInput = input();
 
+test("Light, Medium, and Heavy are assigned High, Mid, and Low hit levels", () => {
+  assert.deepEqual(
+    Object.fromEntries(Object.entries(ATTACK_DEFINITIONS).map(([id, move]) => [id, move.hitLevel])),
+    { light: "high", medium: "mid", heavy: "low" }
+  );
+});
+
 test("attack definitions expose prototype startup, active, and recovery frames", () => {
   assert.deepEqual(
     Object.fromEntries(Object.entries(ATTACK_DEFINITIONS).map(([id, move]) => [
