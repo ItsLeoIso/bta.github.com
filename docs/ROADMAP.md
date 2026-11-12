@@ -25,8 +25,8 @@
 - [x] Explicit fighter state model (locomotion, action, and reaction) with validated transitions.
 - [x] Frame-based attack phases: startup, active, and recovery (prototype Light / Medium / Heavy timings).
 - [ ] Hit and block advantage calculation after collision and guard resolution.
-- [ ] Hitboxes, hurtboxes, and collision detection.
-- [ ] Light, Medium, and Heavy attacks.
+- [x] Separate standing, crouching, and airborne hurtboxes plus active-frame attack hitboxes and AABB collision detection.
+- [x] Light, Medium, and Heavy prototype attacks with one-hit confirmation per action.
 - [ ] Hit reactions, hitstun, blockstun, knockback, and damage.
 - [ ] Health bars and round flow.
 
