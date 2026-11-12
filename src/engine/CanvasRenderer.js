@@ -2,6 +2,11 @@ import { getHurtbox } from "../combat/Hurtbox.js";
 import { getActiveAttackHitbox } from "../combat/Hitbox.js";
 
 const COLORS = { background:"#090909", grid:"#202020", floor:"#55515a", accent:"#d7d0df", player:"#d9d4e2", opponent:"#8d8798", text:"#aaa4b2" };
+const HITBOX_COLORS = Object.freeze({
+  high: Object.freeze({ fill: "rgba(255, 155, 155, .16)", stroke: "#ff9b9b" }),
+  mid: Object.freeze({ fill: "rgba(255, 224, 150, .16)", stroke: "#ffe096" }),
+  low: Object.freeze({ fill: "rgba(145, 201, 255, .16)", stroke: "#91c9ff" })
+});
 export class CanvasRenderer {
   constructor(canvas) {
     this.canvas = canvas; this.context = canvas.getContext("2d", { alpha:false });
@@ -67,7 +72,7 @@ export class CanvasRenderer {
     ctx.fillStyle = "#090909";
     ctx.fillRect(fighter.facing*7,top+10,5,5);
     if (fighter.state?.action === "attack" && fighter.actionData?.phase === "active") {
-      // A temporary visual cue for active timing; collision boxes arrive in the next combat step.
+      // A temporary animation cue; the active hit-level collision region is drawn separately.
       ctx.strokeStyle = "#f0e7ff";
       ctx.lineWidth = 4;
       ctx.beginPath();
@@ -95,21 +100,17 @@ export class CanvasRenderer {
 
     const hitbox = getActiveAttackHitbox(arena.player);
     if (hitbox) {
-      const hitLevel = arena.player.actionData.hitLevel;
-      const levelColor = hitLevel === "high" ? "#ff9b9b"
-        : hitLevel === "low" ? "#91c9ff" : "#ffe096";
+      const colors = HITBOX_COLORS[arena.player.actionData.hitLevel] ?? HITBOX_COLORS.mid;
       ctx.setLineDash([]);
-      ctx.fillStyle = levelColor === "#ff9b9b" ? "rgba(255, 155, 155, .16)"
-        : levelColor === "#91c9ff" ? "rgba(145, 201, 255, .16)"
-          : "rgba(255, 224, 150, .16)";
-      ctx.strokeStyle = levelColor;
+      ctx.fillStyle = colors.fill;
+      ctx.strokeStyle = colors.stroke;
       ctx.fillRect(hitbox.left, hitbox.top, hitbox.right-hitbox.left, hitbox.bottom-hitbox.top);
       ctx.strokeRect(hitbox.left, hitbox.top, hitbox.right-hitbox.left, hitbox.bottom-hitbox.top);
     }
 
     if (arena.lastHit) {
       ctx.globalAlpha = Math.min(1, arena.lastHit.remaining / 0.12);
-      ctx.fillStyle = "#ffe096";
+      ctx.fillStyle = HITBOX_COLORS[arena.lastHit.hitLevel]?.stroke ?? "#ffe096";
       ctx.font = "bold 22px monospace";
       ctx.textAlign = "center";
       const level = arena.lastHit.hitLevel?.toUpperCase();
