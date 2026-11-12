@@ -40,7 +40,7 @@ Implemented in the code:
 - Moderate gravity and a grounded floor check.
 - Locked air trajectory: neutral jumps stay vertical; directional jumps preserve their takeoff direction until landing. An air dash can change the locked horizontal trajectory.
 - Double-tap A/D for a screen-direction ground dash; whether it is a forward dash or backdash depends on facing. Both share a 0.45-second prototype cooldown between ground dash starts.
-- Ground movement is reduced to 50% of normal walking speed while crouch is held; this modifier does not affect dash bursts or airborne movement.
+- Ground movement is reduced to 25% of normal walking speed while crouch is held; this modifier does not affect dash bursts or airborne movement. Standing guard permits backward retreat at 50% walking speed; crouch guard permits backward retreat at 25%.
 - Double-tap A/D in the air for a screen-direction air dash.
 - One air dash per airtime, refreshed on landing.
 - Screen-relative dash direction, with forward-dash/backdash type classified relative to facing.
@@ -119,7 +119,7 @@ Implemented first pass:
 
 Implemented first pass:
 - Hold the screen direction opposite the opponent to enter standing guard; add S / crouch while holding back to enter low guard.
-- Guard direction is evaluated against current facing, so it remains correct when fighters cross sides. Guard only starts while grounded and neutral; it locks horizontal movement and ends when back is released or the fighter leaves the ground.
+- Guard direction is evaluated against current facing, so it remains correct when fighters cross sides. Guard only starts while grounded and neutral; backward movement remains available at 50% walking speed in standing guard and 25% in crouch guard. Forward movement is locked while guarding, and guard ends when back is released or the fighter leaves the ground.
 - Standing guard blocks High and Mid attacks. Crouch guard blocks Mid and Low attacks. High attacks can still be crouched under; Low attacks pass under airborne fighters. Guarding from behind or choosing the wrong guard height does not block.
 - A successful block consumes the attack's one-hit confirmation, prevents health loss, and applies short blockstun with reduced pushback. The reaction channel interrupts guard/action until blockstun expires.
 - Added a visible guard cue, block feedback, state-inspector details, control hints, and regression tests for guard direction, guard height, blockstun, and damage prevention.
