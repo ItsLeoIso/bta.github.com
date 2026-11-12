@@ -22,7 +22,8 @@
 - [x] Initial moderate-gravity tuning values; further tuning requires playtesting.
 
 ## Phase 3 — Combat foundation
-- [ ] Character state model and attack state timing.
+- [x] Explicit fighter state model (locomotion, action, and reaction) with validated transitions.
+- [ ] Attack state timing (startup, active, recovery, and frame advantage).
 - [ ] Hitboxes, hurtboxes, and collision detection.
 - [ ] Light, Medium, and Heavy attacks.
 - [ ] Hit reactions, hitstun, blockstun, knockback, and damage.
