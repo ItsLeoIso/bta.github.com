@@ -149,11 +149,11 @@ export class MovementController {
               : 1)
           : fighter.airHorizontalVelocity ?? 0;
       }
-    } else if (
-      fighter.state.action === FIGHTER_STATES.action.ATTACK ||
-      fighter.state.reaction !== FIGHTER_STATES.reaction.NONE
-    ) {
-      // Attacks and hit reactions lock grounded horizontal control.
+    } else if (fighter.state.reaction !== FIGHTER_STATES.reaction.NONE) {
+      // Hit reactions control horizontal motion through their knockback velocity.
+      fighter.vx = fighter.reactionData?.knockbackVelocity ?? 0;
+    } else if (fighter.state.action === FIGHTER_STATES.action.ATTACK) {
+      // Attacks lock grounded horizontal control.
       fighter.vx = fighter.onGround ? 0 : fighter.airHorizontalVelocity ?? 0;
     } else if (fighter.onGround) {
       const speedMultiplier =
