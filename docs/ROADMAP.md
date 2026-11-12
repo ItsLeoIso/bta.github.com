@@ -28,7 +28,7 @@
 - [x] Separate standing, crouching, and airborne hurtboxes plus active-frame attack hitboxes and AABB collision detection.
 - [x] Light, Medium, and Heavy prototype attacks with one-hit confirmation per action.
 - [x] High, Mid, and Low attack levels with crouch and airborne interactions.
-- [ ] Hit reactions, hitstun, blockstun, knockback, and damage.
+- [x] First-pass damage, hitstun, knockback, and heavy-hit knockdown reaction.\n- [ ] Directional blocking and blockstun (next combat pass).
 - [ ] Health bars and round flow.
 
 ## Phase 4 — Special moves and combos
