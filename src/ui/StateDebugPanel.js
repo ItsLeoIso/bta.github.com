@@ -17,8 +17,8 @@ export class StateDebugPanel {
         element
       ])
     );
-    this.frameStatus = root.querySelector("[data-debug-frame-status]");
-    this.frameNote = root.querySelector("[data-debug-frame-note]");
+    this.frameStatus = root.querySelector?.("[data-debug-frame-status]") ?? null;
+    this.frameNote = root.querySelector?.("[data-debug-frame-note]") ?? null;
   }
 
   update(arena) {
