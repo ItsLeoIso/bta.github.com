@@ -1,6 +1,7 @@
 import { MovementController } from "../movement/MovementController.js";
 import { AttackController } from "../combat/AttackController.js";
 import { resolveAttackCollision } from "../combat/CombatCollision.js";
+import { DamageController } from "../combat/DamageController.js";
 import { resolvePushboxes } from "../movement/Pushbox.js";
 import { FIGHTER_STATES, FighterStateController } from "../state/FighterStateController.js";
 
@@ -32,8 +33,11 @@ export class Arena {
     this.opponent=createFighter({x:660,facing:-1});
     this.stateController.initialize(this.player);
     this.stateController.initialize(this.opponent);
+    this.player.stateController=this.stateController;
+    this.opponent.stateController=this.stateController;
     this.movement=new MovementController({stateController:this.stateController});
     this.attacks=new AttackController({stateController:this.stateController});
+    this.damage=new DamageController();
     this.lastCombatEvent=null;
     this.lastHit=null;
   }
@@ -45,6 +49,8 @@ export class Arena {
       if (this.lastHit.remaining<=0) this.lastHit=null;
     }
     const player=this.player;
+    this.damage.update(player);
+    this.damage.update(this.opponent);
     player.previousX=player.x; player.previousY=player.y;
     this.opponent.previousX=this.opponent.x; this.opponent.previousY=this.opponent.y;
     player.facing=player.x<=this.opponent.x ? 1 : -1;
@@ -63,6 +69,7 @@ export class Arena {
     const hit=resolveAttackCollision(player,this.opponent);
     if(hit){
       this.lastCombatEvent=hit;
+      this.damage.applyHit(hit);
       this.lastHit={
         moveName:hit.moveName,
         hitLevel:hit.hitLevel,
