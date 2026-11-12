@@ -23,7 +23,7 @@ export class MovementController {
     jumpVelocity = 760,
     gravity = 1800,
     groundSpeed = 300,
-    crouchSpeedMultiplier = 0.5,
+    crouchSpeedMultiplier = 0.25,
     airSpeed = 260,
     groundDashCooldown = 0.45,
     stateController = new FighterStateController()
@@ -153,8 +153,15 @@ export class MovementController {
       // Hit reactions control horizontal motion through their knockback velocity.
       fighter.vx = fighter.reactionData?.knockbackVelocity ?? 0;
     } else if (fighter.state.action === FIGHTER_STATES.action.GUARD) {
-      // A held directional guard is stationary; release back to move again.
-      fighter.vx = 0;
+      // Guarding permits a deliberate retreat, with stance-specific reduced speed.
+      const movingBackward = worldAxis * fighter.facing < 0;
+      const guardMultiplier =
+        fighter.state.locomotion === FIGHTER_STATES.locomotion.CROUCHING
+          ? this.crouchSpeedMultiplier
+          : 0.5;
+      fighter.vx = movingBackward
+        ? worldAxis * this.groundSpeed * guardMultiplier
+        : 0;
     } else if (fighter.state.action === FIGHTER_STATES.action.ATTACK) {
       // Attacks lock grounded horizontal control.
       fighter.vx = fighter.onGround ? 0 : fighter.airHorizontalVelocity ?? 0;
