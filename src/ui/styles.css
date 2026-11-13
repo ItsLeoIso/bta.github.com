@@ -205,6 +205,11 @@ body {
   color: #aaa4b2;
 }
 
+.controls .status[data-error="true"] {
+  color: #ff8f8f;
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 820px) {
   .state-debug { grid-template-columns: 1fr; }
   .state-debug__frame-data {
