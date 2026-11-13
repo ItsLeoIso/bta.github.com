@@ -72,6 +72,22 @@
       <p class="status" id="engine-status" role="status">INITIALIZING ENGINE…</p>
     </footer>
   </main>
+  <script>
+    (() => {
+      const showError = (message) => {
+        const status = document.querySelector("#engine-status");
+        if (!status) return;
+        status.dataset.error = "true";
+        status.textContent = `ENGINE ERROR · ${String(message || "Engine module failed to load").slice(0, 180)}`;
+      };
+      window.addEventListener("error", (event) => {
+        showError(event.message || event.error?.message || "Engine module failed to load");
+      });
+      window.addEventListener("unhandledrejection", (event) => {
+        showError(event.reason?.message || event.reason || "Unhandled startup error");
+      });
+    })();
+  </script>
   <script type="module" src="./src/main.js"></script>
 </body>
 </html>
