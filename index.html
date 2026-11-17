@@ -88,6 +88,20 @@
       });
     })();
   </script>
-  <script type="module" src="./src/main.js"></script>
+  <script type="module">
+    // Catch failures anywhere in the entry module's import graph. A failed
+    // imported module does not reliably reach window's regular error handler.
+    try {
+      await import("./src/main.js");
+    } catch (error) {
+      console.error("BLT engine failed to load:", error);
+      const status = document.querySelector("#engine-status");
+      if (status) {
+        status.dataset.error = "true";
+        const detail = error instanceof Error ? error.message : String(error);
+        status.textContent = `ENGINE ERROR · ${detail.slice(0, 180)}`;
+      }
+    }
+  </script>
 </body>
 </html>
