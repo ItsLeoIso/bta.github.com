@@ -24,13 +24,14 @@
 ## Phase 3 — Combat foundation
 - [x] Explicit fighter state model (locomotion, action, and reaction) with validated transitions.
 - [x] Frame-based attack phases: startup, active, and recovery (prototype Light / Medium / Heavy timings).
-- [ ] Hit and block advantage calculation after collision and guard resolution.
+- [x] Hit and block advantage calculation after collision and guard resolution.
 - [x] Separate standing, crouching, and airborne hurtboxes plus active-frame attack hitboxes and AABB collision detection.
 - [x] Light, Medium, and Heavy prototype attacks with one-hit confirmation per action.
 - [x] High, Mid, and Low attack levels with crouch and airborne interactions.
 - [x] First-pass damage, hitstun, knockback, and heavy-hit knockdown reaction.
 - [x] Directional blocking: hold away for high/mid, hold away + crouch for mid/low; rear attacks and wrong guard heights remain vulnerable.
-- [x] Blockstun and reduced block pushback without health damage.
+- [x] Blockstun and reduced block pushback.
+- [x] Chip damage on block, guard meter, delayed guard recovery, and guard-break reaction.
 - [ ] Health bars and round flow.
 
 ## Phase 4 — Special moves and combos
