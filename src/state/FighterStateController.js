@@ -24,6 +24,7 @@ export const FIGHTER_STATES = Object.freeze({
     NONE: "none",
     HITSTUN: "hitstun",
     BLOCKSTUN: "blockstun",
+    GUARD_BREAK: "guardBreak",
     KNOCKDOWN: "knockdown",
     WAKEUP: "wakeup"
   })
@@ -41,6 +42,7 @@ const REACTION_PRIORITY = {
   none: 0,
   blockstun: 1,
   hitstun: 1,
+  guardBreak: 2,
   wakeup: 2,
   knockdown: 3
 };
@@ -141,7 +143,7 @@ export class FighterStateController {
 
   syncCompatibilityFields(fighter) {
     // These mirrors keep the current physics, renderer, and pushbox interfaces
-    // stable while state-aware systems migrate to fighter.state.
+    // stable while state-aware systems migrate to explicit state.
     fighter.crouching =
       fighter.state.locomotion === FIGHTER_STATES.locomotion.CROUCHING;
 
