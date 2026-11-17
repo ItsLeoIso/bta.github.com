@@ -1,8 +1,8 @@
 import { MovementController } from "../movement/MovementController.js";
 import { AttackController } from "../combat/AttackController.js";
 import { resolveAttackCollision } from "../combat/CombatCollision.js";
-import { DamageController } from "../combat/DamageController.js";
-import { GuardController } from "../combat/GuardController.js";
+import { DAMAGE_PROFILES, DamageController } from "../combat/DamageController.js";
+import { BLOCK_PROFILES, GuardController } from "../combat/GuardController.js";
 import { resolvePushboxes } from "../movement/Pushbox.js";
 import { FIGHTER_STATES, FighterStateController } from "../state/FighterStateController.js";
 
@@ -12,6 +12,7 @@ export const STAGE_MARGIN=68;
 function createFighter({x,facing}) {
   return {
     x,y:440,previousX:x,previousY:440,facing,health:1,crouching:false,
+    guardMeter:100,guardMeterRecoveryDelayFrames:0,
     moveSpeed:300,vx:0,vy:0,onGround:true,
     state:{
       locomotion:FIGHTER_STATES.locomotion.STANDING,
@@ -72,13 +73,35 @@ export class Arena {
     // Resolve after movement and pushboxes so both boxes use final frame positions.
     const event=resolveAttackCollision(player,this.opponent);
     if(event){
+      if(event.type==="block"){
+        const blockProfile=BLOCK_PROFILES[event.hitLevel] ?? BLOCK_PROFILES.mid;
+        event.blockAdvantage=blockProfile.blockstunFrames-event.attackerRecoveryFrames;
+        event.chipDamage=this.damage.applyChipDamage(event)?.damage ?? 0;
+        event.resolution=this.guard.applyBlock(event);
+      } else {
+        const hitProfile=DAMAGE_PROFILES[event.moveId] ?? DAMAGE_PROFILES.medium;
+        event.hitAdvantage=hitProfile.hitstunFrames-event.attackerRecoveryFrames;
+        event.resolution=this.damage.applyHit(event);
+      }
+
+      // Persist the last result so the frame-data inspector can show it after
+      // the attack's active action has ended.
+      player.lastAttackData={
+        ...(player.lastAttackData ?? {}),
+        hitAdvantage:event.hitAdvantage ?? null,
+        blockAdvantage:event.blockAdvantage ?? null
+      };
+      if(player.state.action===FIGHTER_STATES.action.ATTACK){
+        player.actionData.hitAdvantage=event.hitAdvantage ?? null;
+        player.actionData.blockAdvantage=event.blockAdvantage ?? null;
+      }
+
+      event.outcome=event.resolution?.outcome ?? event.type;
       this.lastCombatEvent=event;
-      if(event.type==="block") this.guard.applyBlock(event);
-      else this.damage.applyHit(event);
       this.lastHit={
         moveName:event.moveName,
         hitLevel:event.hitLevel,
-        outcome:event.type,
+        outcome:event.outcome,
         x:this.opponent.x,
         y:this.opponent.y-112,
         remaining:0.48
