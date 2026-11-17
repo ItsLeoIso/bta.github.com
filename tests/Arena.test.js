@@ -134,13 +134,19 @@ test("crouch movement returns to normal speed when the crouch key is released",(
   assert.equal(arena.player.crouching,false);
 });
 
-test("screen-left and screen-right movement stay consistent after crossing sides",()=>{
+test("screen-relative movement remains independent of facing direction",()=>{
   const arena=new Arena();
   arena.player.x=800;
-  arena.update(0.1,input({axis:1}));
+  arena.player.facing=-1;
+  const bounds={floorY:arena.floorY,minX:arena.stageMargin,maxX:arena.width-arena.stageMargin};
+
+  // Exercise the movement layer directly: Arena intentionally interprets
+  // holding away as guard, which is a separate action from walking.
+  arena.movement.update(arena.player,input({axis:1}),0.1,bounds);
   assert.equal(arena.player.facing,-1);
   assert.equal(arena.player.x,830);
-  arena.update(0.1,input({axis:-1}));
+
+  arena.movement.update(arena.player,input({axis:-1}),0.1,bounds);
   assert.equal(arena.player.x,800);
 });
 
