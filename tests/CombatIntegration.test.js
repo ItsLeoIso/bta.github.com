@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { Arena } from "../src/engine/Arena.js";
 import { getActiveAttackHitbox } from "../src/combat/Hitbox.js";
+import { FIGHTER_STATES as STATES } from "../src/state/FighterStateController.js";
 
 function input({ axis = 0, pressed = [], down = [] } = {}) {
   return {
@@ -13,7 +14,7 @@ function input({ axis = 0, pressed = [], down = [] } = {}) {
 
 const neutral = input();
 
-test("Arena resolves a Light hit only when its active frames overlap the opponent hurtbox", () => {
+test("Arena applies hit damage and records attacker frame advantage on contact", () => {
   const arena = new Arena();
   arena.player.x = 400;
   arena.opponent.x = 510;
@@ -31,8 +32,32 @@ test("Arena resolves a Light hit only when its active frames overlap the opponen
   assert.equal(arena.lastCombatEvent?.type, "hit");
   assert.equal(arena.lastCombatEvent?.moveId, "light");
   assert.equal(arena.player.actionData.hitConfirmed, true);
-  assert.equal(arena.opponent.health, 1, "damage is reserved for the next combat milestone");
-  assert.equal(arena.lastHit.moveName, "Light");
+  assert.ok(Math.abs(arena.opponent.health - 0.94) < 1e-9);
+  assert.equal(arena.lastCombatEvent.attackerRecoveryFrames, 12);
+  assert.equal(arena.lastCombatEvent.hitAdvantage, 0);
+  assert.equal(arena.player.lastAttackData.hitAdvantage, 0);
+  assert.equal(arena.lastHit.outcome, "hit");
+});
+
+test("Arena applies chip damage and records block advantage when an attack is guarded", () => {
+  const arena = new Arena();
+  arena.player.x = 400;
+  arena.opponent.x = 510;
+  arena.opponent.state.action = STATES.action.GUARD;
+  arena.opponent.guardData = { guardHeight: "high" };
+
+  arena.update(1 / 60, input({ pressed: ["light"] }));
+  for (let frame = 0; frame < 4; frame += 1) arena.update(1 / 60, neutral);
+  arena.update(1 / 60, neutral);
+
+  assert.equal(arena.lastCombatEvent?.type, "block");
+  assert.equal(arena.lastCombatEvent.attackerRecoveryFrames, 12);
+  assert.equal(arena.lastCombatEvent.blockAdvantage, -4);
+  assert.equal(arena.player.lastAttackData.blockAdvantage, -4);
+  assert.ok(Math.abs(arena.opponent.health - 0.994) < 1e-9);
+  assert.equal(arena.opponent.guardMeter, 80);
+  assert.equal(arena.opponent.state.reaction, STATES.reaction.BLOCKSTUN);
+  assert.equal(arena.lastHit.outcome, "block");
 });
 
 test("Arena preserves a miss so a later active frame can still connect", () => {
