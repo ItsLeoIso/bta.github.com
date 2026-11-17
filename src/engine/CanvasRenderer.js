@@ -121,7 +121,11 @@ export class CanvasRenderer {
       ctx.font = "bold 22px monospace";
       ctx.textAlign = "center";
       const level = arena.lastHit.hitLevel?.toUpperCase();
-      const outcome = arena.lastHit.outcome === "block" ? "BLOCKED" : "HIT";
+      const outcome = arena.lastHit.outcome === "guardBreak"
+        ? "GUARD BREAK"
+        : arena.lastHit.outcome === "block"
+          ? "BLOCKED"
+          : "HIT";
       const label = [level, arena.lastHit.moveName.toUpperCase(), outcome].filter(Boolean).join(" ");
       ctx.fillText(label, arena.lastHit.x, arena.lastHit.y);
     }
@@ -129,11 +133,24 @@ export class CanvasRenderer {
   }
 
   drawHud(ctx, arena) {
+    const guardWidth = fighter => 300 * Math.max(0, Math.min(1, (fighter.guardMeter ?? 100) / 100));
     ctx.fillStyle = COLORS.text; ctx.font = "bold 16px monospace"; ctx.textAlign = "left"; ctx.fillText("PLAYER 01",32,22);
     ctx.textAlign = "right"; ctx.fillText("CPU DUMMY",arena.width-32,22);
     ctx.fillStyle = "#302d35"; ctx.fillRect(32,30,300,12); ctx.fillRect(arena.width-332,30,300,12);
     ctx.fillStyle = COLORS.player; ctx.fillRect(32,30,300*arena.player.health,12);
     ctx.fillStyle = COLORS.opponent; ctx.fillRect(arena.width-332+300*(1-arena.opponent.health),30,300*arena.opponent.health,12);
+
+    // Secondary guard meters sit below the health bars and drain on blocked pressure.
+    ctx.fillStyle = "#302d35";
+    ctx.fillRect(32,51,300,5);
+    ctx.fillRect(arena.width-332,51,300,5);
+    ctx.fillStyle = "#8ecbff";
+    ctx.fillRect(32,51,guardWidth(arena.player),5);
+    const opponentGuardWidth = guardWidth(arena.opponent);
+    ctx.fillRect(arena.width-332+300-opponentGuardWidth,51,opponentGuardWidth,5);
+    ctx.fillStyle = COLORS.text; ctx.font = "8px monospace"; ctx.textAlign = "left"; ctx.fillText("GUARD",32,67);
+    ctx.textAlign = "right"; ctx.fillText("GUARD",arena.width-32,67);
+
     ctx.textAlign = "center"; ctx.fillStyle = COLORS.accent; ctx.font = "bold 24px monospace"; ctx.fillText("99",arena.width/2,42);
   }
 }
