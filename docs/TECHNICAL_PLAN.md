@@ -74,13 +74,10 @@ Implemented foundation:
 - Added `src/state/FighterStateController.js` as the authority for three independent state channels: locomotion, action, and reaction.
 - Locomotion currently covers standing, walking, crouching, jumping, and falling, with transitions validated centrally.
 - Action currently covers neutral, dash, attack, and guard. Dash timing/type/velocity are action data rather than independent state flags.
-- Reaction currently covers neutral, hitstun, blockstun, knockdown, and wake-up. Reactions interrupt actions, and higher-priority reactions cannot be replaced by lower-priority ones.
+- Reaction currently covers neutral, hitstun, blockstun, guard break, knockdown, and wake-up. Reactions interrupt actions and higher-priority reactions cannot be replaced by lower-priority ones.
 - Existing physics and pushbox fields remain synchronized as compatibility mirrors while the rest of the engine migrates to explicit state.
 - Added a live DOM state inspector for both fighters. It displays locomotion, action, reaction, and action detail while the game runs.
-- Added a frame-data area for startup, active, recovery, hit advantage, and block advantage. These values are intentionally placeholders until attack definitions and frame timing are implemented.
-- Added unit tests for legal/illegal transitions, action locking, reaction interruption/priority, compatibility mirrors, and integration with walking, crouching, jumping, falling, landing, and dash completion.
-
-Next state/combat work should keep facing direction, screen-relative input, timers, and attack phase as distinct data. Pushboxes, hurtboxes, and attack hitboxes remain separate systems, with collision profiles selected from the fighter's current stance/locomotion.
+- Added a frame-data area for startup, active, recovery, hit advantage, and block advantage.
 
 ## Attack timing prototype
 
@@ -90,8 +87,6 @@ Implemented as the first combat action system:
 - The prototype timings are Light 5 startup / 3 active / 10 recovery frames; Medium 8 / 4 / 15; Heavy 12 / 5 / 21. These are initial tuning values at the fixed 60 Hz simulation rate.
 - Attacks start only while grounded and neutral. Startup, active, and recovery are stored as attack action data, and the action ends only after recovery completes.
 - Ground movement, jump, dash, and stance changes are locked during the attack. Existing crouching stance is preserved.
-- The active phase has a temporary visual slash cue. It is not a hitbox and cannot hit the opponent yet.
-- The state inspector displays the current phase and move frame data. Hit and block advantage remain unset until collision and guard resolution can determine real outcomes.
 
 ## Hitbox and hurtbox collision prototype
 
@@ -100,33 +95,28 @@ Implemented as a separate combat geometry layer:
 - Added `src/combat/Hurtbox.js` with standing, crouching, and airborne axis-aligned hurtbox profiles. Hurtboxes represent hittable body space and do not reuse the movement pushboxes.
 - Added `src/combat/Hitbox.js` to create a facing-relative attack rectangle only during active frames. Each Light, Medium, and Heavy definition supplies its own prototype box dimensions and reach.
 - Added `src/combat/CombatCollision.js` for strict positive-area rectangle overlap and one-hit-per-action confirmation. A miss remains eligible to connect on a later active frame.
-- Arena collision resolution runs after movement and pushbox separation, using final positions and current facing. A confirmed collision produces a structured hit event and brief on-screen hit label.
-- The renderer outlines fighter hurtboxes and the current active attack hitbox for tuning. The collision boxes are gameplay geometry; the art slash remains presentation only.
-- This milestone intentionally does not subtract health or apply hitstun/knockback. Those belong to the damage and reaction pass. Pushboxes remain independent and continue to resolve body separation.
+- Arena collision resolution runs after movement and pushbox separation, using final positions and current facing. A confirmed collision produces a structured hit event.
+- The renderer outlines fighter hurtboxes and the current active attack hitbox for tuning. Pushboxes, hurtboxes, and attack hitboxes remain separate systems.
 
-Current forgiving collision profiles match the rendered fighter silhouette at 3x scale: standing and airborne hurtboxes are 126 × 228; crouching hurtboxes are 126 × 144. Light / High, Medium / Mid, and Heavy / Low attack hitboxes are respectively 126 × 72 at vertical offset -220, 160 × 80 at -152, and 190 × 72 at -72. Their horizontal widths and forward reach remain distinct by move strength. High hitboxes occupy the upper body and miss crouching targets; Mid hitboxes cover the torso and hit standing or crouching targets; Low hitboxes occupy the foot-level band, hit grounded targets, and explicitly miss airborne targets. These are broad gameplay volumes, not limb-accurate boxes, and remain prototype tuning values for playtesting.
+Current forgiving collision profiles match the rendered fighter silhouette at 3x scale: standing and airborne hurtboxes are 126 × 228; crouching hurtboxes are 126 × 144. Light / High, Medium / Mid, and Heavy / Low attack hitboxes are respectively 126 × 72 at vertical offset -220, 160 × 80 at -152, and 190 × 72 at -72. These are broad gameplay volumes, not limb-accurate boxes, and remain prototype tuning values for playtesting.
 
-## Damage and hit reaction pass
+## Damage, guard, and frame-advantage pass
 
-Implemented first pass:
-- Confirmed Light / Medium / Heavy hits subtract 6% / 10% / 15% of the defender's health.
-- Light and Medium hits apply 12 / 18 frames of hitstun; Heavy applies a 30-frame knockdown reaction.
-- Knockback pushes the defender away from the attacker and decays during the reaction. Reactions temporarily interrupt actions and grounded movement.
-- Health bars display the current health values. These values are prototype tuning and will be adjusted during playtesting.
-- Added unit coverage for damage scaling, reaction type and duration, knockback direction, reaction recovery, and health clamping.
+Implemented as the next combat pressure milestone. These values are initial prototype tuning and should be playtested before balance is treated as final:
 
-## Directional guard and blockstun pass
+- Confirmed Light / Medium / Heavy hits still deal 6% / 10% / 15% health damage. Their hitstun remains 12 / 18 / 30 frames.
+- Blocking applies chip damage equal to 10% of the move's normal damage: Light 0.6%, Medium 1%, Heavy 1.5%. Chip damage is clamped so health never drops below zero.
+- Fighters begin with a 100-point guard meter. A blocked Light / Medium / Heavy removes 20 / 30 / 45 points.
+- Guard meter regeneration is 18 points per second after a 90-frame delay following a block. It does not regenerate while the fighter is guarding or in a reaction.
+- Reaching zero guard meter causes a 45-frame guard-break reaction with 1.5× the normal block pushback. The guard meter recovers after the same delayed regeneration rule.
+- Hit and block advantage are calculated from the attacker's perspective: defender hitstun/blockstun frames minus the attacker's remaining active + recovery frames at the moment of collision. Positive means the attacker recovers first; negative means the defender recovers first.
+- The live frame-data inspector shows signed advantage in frames, and the arena HUD displays both fighters' guard meters.
+- Regression tests cover chip damage, guard meter drain/recovery, guard break, and hit/block advantage.
 
-Implemented first pass:
-- Hold the screen direction opposite the opponent to enter standing guard; add S / crouch while holding back to enter low guard.
-- Guard direction is evaluated against current facing, so it remains correct when fighters cross sides. Guard only starts while grounded and neutral; backward movement remains available at 25% walking speed in standing guard and 12.5% in crouch guard. Forward movement is locked while guarding, and guard ends when back is released or the fighter leaves the ground.
-- Standing guard blocks High and Mid attacks. Crouch guard blocks Mid and Low attacks. High attacks can still be crouched under; Low attacks pass under airborne fighters. Guarding from behind or choosing the wrong guard height does not block.
-- A successful block consumes the attack's one-hit confirmation, prevents health loss, and applies short blockstun with reduced pushback. The reaction channel interrupts guard/action until blockstun expires.
-- Added a visible guard cue, block feedback, state-inspector details, control hints, and regression tests for guard direction, guard height, blockstun, and damage prevention.
+## Next combat milestone
 
-Next:
-- Add chip damage, block advantage calculation, and guard-break rules.
 - Add opponent attack behaviour so the current training dummy can actively exercise the player's guard in the live arena.
+- Continue with health bars and round flow, then begin special moves, input buffering, and combo systems.
 
 ## Running and testing
 - Run locally: python3 -m http.server 8000, then open http://localhost:8000.
