@@ -32,7 +32,8 @@
 - [x] Directional blocking: hold away for high/mid, hold away + crouch for mid/low; rear attacks and wrong guard heights remain vulnerable.
 - [x] Blockstun and reduced block pushback.
 - [x] Chip damage on block, guard meter, delayed guard recovery, and guard-break reaction.
-- [ ] Health bars and round flow.
+- [x] Health and guard bars reflect current fighter values.
+- [ ] Round timer, round flow, and win / round result UI.
 
 ## Phase 4 — Special moves and combos
 - [ ] Special button alone: projectile.
@@ -44,7 +45,7 @@
 ## Phase 5 — First playable match
 - [ ] Two placeholder fighters with distinct test properties.
 - [ ] Complete local 1v1 match loop.
-- [ ] Basic stage presentation, UI, health, timer, and win / round result.
+- [ ] Basic stage presentation, timer, and win / round result UI.
 - [ ] Playtest and fix core movement / combat issues.
 
 ## Phase 6 — Menus and modes
