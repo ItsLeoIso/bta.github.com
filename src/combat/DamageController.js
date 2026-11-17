@@ -1,14 +1,32 @@
 import { FIGHTER_STATES } from "../state/FighterStateController.js";
 
 export const DAMAGE_PROFILES = Object.freeze({
-  light: Object.freeze({ damage: 0.06, hitstunFrames: 12, knockback: 180, reaction: "hitstun" }),
-  medium: Object.freeze({ damage: 0.10, hitstunFrames: 18, knockback: 260, reaction: "hitstun" }),
-  heavy: Object.freeze({ damage: 0.15, hitstunFrames: 30, knockback: 360, reaction: "knockdown" })
+  light: Object.freeze({
+    damage: 0.06,
+    chipDamage: 0.006,
+    hitstunFrames: 12,
+    knockback: 180,
+    reaction: "hitstun"
+  }),
+  medium: Object.freeze({
+    damage: 0.10,
+    chipDamage: 0.01,
+    hitstunFrames: 18,
+    knockback: 260,
+    reaction: "hitstun"
+  }),
+  heavy: Object.freeze({
+    damage: 0.15,
+    chipDamage: 0.015,
+    hitstunFrames: 30,
+    knockback: 360,
+    reaction: "knockdown"
+  })
 });
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
-/** Applies confirmed hits and advances temporary hit reactions at 60 Hz. */
+/** Applies confirmed hits, block chip damage, and temporary hit reactions. */
 export class DamageController {
   applyHit(event) {
     if (!event || event.type !== "hit") return null;
@@ -27,6 +45,16 @@ export class DamageController {
     defender.airHorizontalVelocity = defender.vx;
     defender.stateController?.setReaction?.(defender, FIGHTER_STATES.reaction[profile.reaction.toUpperCase()]);
     return { ...profile, health: defender.health, defender };
+  }
+
+  /** Blocks deal 10% of the move's normal damage as chip in this prototype. */
+  applyChipDamage(event) {
+    if (!event || event.type !== "block") return null;
+    const profile = DAMAGE_PROFILES[event.moveId] ?? DAMAGE_PROFILES.medium;
+    const defender = event.defender;
+    const damage = profile.chipDamage ?? 0;
+    defender.health = clamp((defender.health ?? 1) - damage, 0, 1);
+    return { damage, health: defender.health, defender };
   }
 
   update(fighter) {
