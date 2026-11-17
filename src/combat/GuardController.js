@@ -31,9 +31,8 @@ export class GuardController {
     states.initialize(fighter);
     fighter.guardMeter = clamp(fighter.guardMeter ?? GUARD_METER_MAX, 0, GUARD_METER_MAX);
     fighter.guardMeterRecoveryDelayFrames = Math.max(0, fighter.guardMeterRecoveryDelayFrames ?? 0);
-    if (fighter.guardMeterRecoveryDelayFrames > 0) {
-      fighter.guardMeterRecoveryDelayFrames -= 1;
-    }
+    const recoveryWasDelayed = fighter.guardMeterRecoveryDelayFrames > 0;
+    if (recoveryWasDelayed) fighter.guardMeterRecoveryDelayFrames -= 1;
 
     const axis = input.getWorldAxis
       ? input.getWorldAxis("horizontal")
@@ -74,6 +73,7 @@ export class GuardController {
     }
 
     if (
+      !recoveryWasDelayed &&
       fighter.guardMeterRecoveryDelayFrames === 0 &&
       fighter.state.action !== FIGHTER_STATES.action.GUARD &&
       fighter.state.reaction === FIGHTER_STATES.reaction.NONE
