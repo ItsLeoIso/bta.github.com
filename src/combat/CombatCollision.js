@@ -26,7 +26,8 @@ export function resolveAttackCollision(attacker, defender) {
   const hitbox = getActiveAttackHitbox(attacker);
   if (!hitbox) return null;
 
-  const hitLevel = attacker.actionData.hitLevel ?? "mid";
+  const data = attacker.actionData;
+  const hitLevel = data.hitLevel ?? "mid";
   const defenderLocomotion = defender.state?.locomotion;
 
   // Highs can be crouched under; lows pass beneath airborne fighters.
@@ -46,15 +47,19 @@ export function resolveAttackCollision(attacker, defender) {
 
   attacker.actionData.hitConfirmed = true;
   const blocked = canGuardAttack(attacker, defender, hitLevel);
+  const remainingActiveFrames = Math.max(0, (data.activeFrames ?? 0) - (data.phaseFrame ?? 0));
+  const attackerRecoveryFrames = remainingActiveFrames + Math.max(0, data.recoveryFrames ?? 0);
+
   return {
     type: blocked ? "block" : "hit",
-    moveId: attacker.actionData.moveId,
-    moveName: attacker.actionData.moveName,
+    moveId: data.moveId,
+    moveName: data.moveName,
     hitLevel,
     attacker,
     defender,
     hitbox,
     hurtbox,
-    attackFrame: attacker.actionData.phaseFrame
+    attackFrame: data.phaseFrame,
+    attackerRecoveryFrames
   };
 }
