@@ -1,6 +1,12 @@
 /**
  * DOM-based live inspector for both fighters and the selected move's frame data.
  */
+
+function formatAdvantage(value) {
+  if (!Number.isFinite(value)) return "—";
+  return `${value > 0 ? "+" : ""}${value}f`;
+}
+
 export class StateDebugPanel {
   constructor(root) {
     if (!root) throw new TypeError("StateDebugPanel requires a root element.");
@@ -48,7 +54,7 @@ export class StateDebugPanel {
       actionDetail = `${fighter.guardData?.guardHeight ?? fighter.actionData?.guardHeight ?? "high"} guard`;
     } else if (state.reaction !== "none") {
       const frames = fighter.reactionData?.remainingFrames ?? 0;
-      actionDetail = `${state.reaction} · ${frames}f`;
+      actionDetail = `${String(state.reaction).toUpperCase()} · ${frames}f`;
     } else if (state.action && state.action !== "none") {
       actionDetail = fighter.actionData?.moveName ?? state.action;
     }
@@ -63,8 +69,8 @@ export class StateDebugPanel {
       startup: data?.startupFrames,
       active: data?.activeFrames,
       recovery: data?.recoveryFrames,
-      hit: data?.hitAdvantage,
-      block: data?.blockAdvantage
+      hit: formatAdvantage(data?.hitAdvantage),
+      block: formatAdvantage(data?.blockAdvantage)
     };
 
     for (const [key, value] of Object.entries(entries)) {
@@ -74,11 +80,11 @@ export class StateDebugPanel {
     if (this.frameStatus) {
       this.frameStatus.textContent = !data
         ? "NO ATTACK SELECTED"
-        : `${isAttacking ? "IN PROGRESS" : "LAST MOVE"} · ${data.name} · ${(data.hitLevel ?? "mid").toUpperCase()}`;
+        : `${isAttacking ? "IN PROGRESS" : "LAST MOVE"} · ${data.name ?? data.moveName} · ${(data.hitLevel ?? "mid").toUpperCase()}`;
     }
     if (this.frameNote) {
       this.frameNote.textContent = data
-        ? "High can be crouched under; Low misses airborne opponents. Timing is shown at 60 Hz."
+        ? "Advantage is from the attacker's view: + means the attacker recovers first. Values are frames at 60 Hz."
         : "Press H / Light (High), J / Medium (Mid), or K / Heavy (Low).";
     }
   }
