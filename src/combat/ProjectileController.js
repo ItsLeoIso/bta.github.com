@@ -93,6 +93,7 @@ export class ProjectileController {
   updateFighter(fighter, input) {
     const states = this.stateController;
     states.initialize(fighter);
+    fighter.airVectorAvailable ??= true;
 
     if (fighter.state.action === FIGHTER_STATES.action.SPECIAL) {
       this.advanceSpecial(fighter);
@@ -103,6 +104,9 @@ export class ProjectileController {
 
     const direction = resolveSpecialDirection(input, fighter.facing);
     if (direction.invalid) return false;
+
+    const isAirVector = direction.directional && !fighter.onGround;
+    if (isAirVector && !fighter.airVectorAvailable) return false;
 
     const move = direction.directional
       ? DIRECTIONAL_SPECIAL_DEFAULTS
@@ -127,6 +131,12 @@ export class ProjectileController {
       }
     );
     if (!started) return false;
+
+    if (isAirVector) fighter.airVectorAvailable = false;
+    // Every projectile special cancels stored movement momentum immediately.
+    fighter.vx = 0;
+    fighter.vy = 0;
+    fighter.airHorizontalVelocity = 0;
 
     fighter.lastAttackData = {
       moveId: move.moveId,

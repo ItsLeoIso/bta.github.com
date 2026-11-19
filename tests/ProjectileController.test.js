@@ -231,3 +231,42 @@ test("directional projectiles are removed after leaving the vertical arena bound
   assert.equal(events.length, 0);
   assert.equal(controller.projectiles.length, 0);
 });
+
+
+test("backward Vector Burst points behind a fighter facing left",()=>{
+  const controller=new ProjectileController();
+  const fighter=makeFighter({facing:-1});
+
+  controller.updateFighter(
+    fighter,
+    input({pressed:["special"],down:["right"]})
+  );
+  for(let frame=0;frame<7;frame+=1) {
+    controller.updateFighter(fighter,input());
+  }
+
+  assert.equal(controller.projectiles[0].velocityX,540);
+  assert.equal(controller.projectiles[0].velocityY,0);
+});
+
+test("air Vector Burst can be used once per airtime",()=>{
+  const controller=new ProjectileController();
+  const fighter=makeFighter({onGround:false,y:300});
+
+  assert.equal(
+    controller.updateFighter(fighter,input({pressed:["special"],down:["left"]})),
+    true
+  );
+  assert.equal(fighter.airVectorAvailable,false);
+
+  for(let frame=0;frame<26;frame+=1) {
+    controller.updateFighter(fighter,input());
+  }
+
+  assert.equal(fighter.state.action,STATES.action.NONE);
+  assert.equal(
+    controller.updateFighter(fighter,input({pressed:["special"],down:["left"]})),
+    false
+  );
+  assert.equal(controller.projectiles.length,1);
+});

@@ -61,6 +61,7 @@ export class MovementController {
       fighter.y = floorY;
       fighter.vy = 0;
       fighter.airDashAvailable = true;
+      fighter.airVectorAvailable = true;
 
       // A landing changes locomotion before an action (such as a dash) can start.
       if (
@@ -208,6 +209,7 @@ export class MovementController {
         fighter.vy = 0;
         fighter.onGround = true;
         fighter.airDashAvailable = true;
+        fighter.airVectorAvailable = true;
         if (fighter.state.action === FIGHTER_STATES.action.DASH &&
             fighter.actionData.dashType === "air") {
           states.endAction(fighter, FIGHTER_STATES.action.DASH);

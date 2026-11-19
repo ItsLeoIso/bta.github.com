@@ -574,3 +574,24 @@ Copy this template for each new handoff:
 
 **Suggested next step:**
 - Playtest the Vector Burst in all directions from both sides, confirm that W/S+L is comfortable alongside jump/crouch, and tune its uniqueness and balance before moving on to motion-input recognition.
+
+
+### 2026-11-19 — ChatGPT — Air Vector limit and projectile momentum lock
+**Type:** Gameplay adjustment / Regression tests
+**Files / systems:**
+- `src/combat/ProjectileController.js`
+- `src/movement/MovementController.js`
+- `src/engine/Arena.js`
+- `tests/ProjectileController.test.js`
+- `tests/ProjectileIntegration.test.js`
+- `docs/TECHNICAL_PLAN.md`, `README.md`, `index.html`
+
+**What changed:**
+- Kept the existing eight-way aim controls, including straight-up and backward shots; backward aim is the screen direction opposite the fighter's current facing.
+- Limited directional Vector Burst to one use per airtime. Landing restores the air-vector allowance; grounded Vector Burst use is not restricted by this air-only limit.
+- Starting either projectile special now immediately clears horizontal velocity, vertical velocity, and committed air drift. The fighter remains still during startup/recovery; gravity resumes from zero vertical speed once recovery ends.
+- Left the Forward/Up + L behavior untouched for a later dedicated adjustment.
+
+**Verification:**
+- Added tests for backward aiming while facing left, one Vector Burst per airtime, refresh on landing, and momentum cancellation.
+- Automated workflow verification will be recorded after the new commit runs.

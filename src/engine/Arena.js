@@ -23,7 +23,7 @@ function createFighter({x,facing}) {
     },
     actionData:{dashType:null,remaining:0,velocity:0},
     dashType:null,dashRemaining:0,dashVelocity:0,
-    airDashAvailable:true,airHorizontalVelocity:0,
+    airDashAvailable:true,airVectorAvailable:true,airHorizontalVelocity:0,
     groundDashCooldownRemaining:0,lastAttackData:null,
     guardData:null,reactionData:null
   };
@@ -199,6 +199,7 @@ export class Arena {
     fighter.dashRemaining=0;
     fighter.dashVelocity=0;
     fighter.airDashAvailable=true;
+    fighter.airVectorAvailable=true;
     fighter.airHorizontalVelocity=0;
     fighter.groundDashCooldownRemaining=0;
     fighter.lastAttackData=null;

@@ -48,16 +48,17 @@ test("projectile is blockable from the side it travels in from and deals chip/gu
 });
 
 
-test("air projectile holds the fighter at the same position through recovery, then resumes movement",()=>{
+test("air projectile cancels existing momentum and gravity resumes from rest",()=>{
   const arena=new Arena();
   arena.player.x=300;
   arena.player.y=220;
   arena.player.previousX=300;
   arena.player.previousY=220;
   arena.player.onGround=false;
-  arena.player.vy=180;
+  arena.player.vx=160;
+  arena.player.vy=-180;
   arena.player.airHorizontalVelocity=160;
-  arena.player.state.locomotion=STATES.locomotion.FALLING;
+  arena.player.state.locomotion=STATES.locomotion.JUMPING;
 
   const startX=arena.player.x;
   const startY=arena.player.y;
@@ -66,19 +67,26 @@ test("air projectile holds the fighter at the same position through recovery, th
   assert.equal(arena.player.state.action,STATES.action.SPECIAL);
   assert.equal(arena.player.x,startX);
   assert.equal(arena.player.y,startY);
+  assert.equal(arena.player.vx,0);
+  assert.equal(arena.player.vy,0);
+  assert.equal(arena.player.airHorizontalVelocity,0);
 
-  for(let frame=0;frame<24;frame+=1){
+  for(let frame=0;frame<25;frame+=1){
     arena.update(1/60,input());
     assert.equal(arena.player.x,startX);
     assert.equal(arena.player.y,startY);
+    assert.equal(arena.player.vx,0);
+    assert.equal(arena.player.vy,0);
+    assert.equal(arena.player.airHorizontalVelocity,0);
   }
 
-  assert.equal(arena.player.state.action,STATES.action.SPECIAL);
+  assert.equal(arena.player.state.action,STATES.action.NONE);
   arena.update(1/60,input());
 
-  assert.equal(arena.player.state.action,STATES.action.NONE);
-  assert.ok(arena.player.x>startX);
+  assert.equal(arena.player.x,startX);
   assert.ok(arena.player.y>startY);
+  assert.equal(arena.player.airHorizontalVelocity,0);
+  assert.ok(arena.player.vy>0);
 });
 
 
@@ -119,4 +127,39 @@ test("up plus L fires a Vector Burst vertically and uses its separate damage pro
   assert.equal(arena.lastCombatEvent.type, "hit");
   assert.ok(Math.abs(arena.opponent.health - 0.92) < 1e-9);
   assert.equal(arena.opponent.state.reaction, STATES.reaction.HITSTUN);
+});
+
+
+test("air Vector Burst is limited to one until landing, then becomes available again",()=>{
+  const arena=new Arena();
+  arena.player.y=400;
+  arena.player.previousY=400;
+  arena.player.onGround=false;
+  arena.player.vy=0;
+  arena.player.state.locomotion=STATES.locomotion.JUMPING;
+
+  arena.update(1/60,input({axis:-1,pressed:["special"]}));
+  assert.equal(arena.player.state.action,STATES.action.SPECIAL);
+  assert.equal(arena.player.airVectorAvailable,false);
+
+  // Complete the startup/recovery while holding the fighter in place.
+  for(let frame=0;frame<25;frame+=1) arena.update(1/60,input());
+  assert.equal(arena.player.state.action,STATES.action.NONE);
+
+  arena.update(1/60,input({axis:-1,pressed:["special"]}));
+  assert.equal(arena.player.state.action,STATES.action.NONE);
+  assert.equal(
+    arena.projectileController.projectiles.filter(projectile=>projectile.moveId==="directionalSpecial").length,
+    1
+  );
+
+  // Gravity resumes from rest after the shot; landing restores the air option.
+  for(let frame=0;frame<80 && !arena.player.onGround;frame+=1) {
+    arena.update(1/60,input());
+  }
+  assert.equal(arena.player.onGround,true);
+  assert.equal(arena.player.airVectorAvailable,true);
+
+  arena.update(1/60,input({axis:-1,pressed:["special"]}));
+  assert.equal(arena.player.state.action,STATES.action.SPECIAL);
 });
