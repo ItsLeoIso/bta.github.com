@@ -709,6 +709,9 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 - Forward/Up + L jump-then-shoot behavior remains out of scope and unchanged.
 
 **Verification:**
-- Automated verification will be recorded after CI runs for this change. Browser playtesting at low, mid and apex heights is still needed, especially shot → air dash and landing during startup / recovery.
+- GitHub Actions Node.js tests passed: 134/134 tests, 0 failures — https://github.com/ItsLeoIso/bta.github.com/actions/runs/44508370183
+- GitHub Pages build and deployment completed successfully — https://github.com/ItsLeoIso/bta.github.com/actions/runs/44508368767
+- Gameplay implementation commit: https://github.com/ItsLeoIso/bta.github.com/commit/0c4752d79edf64710c62e8ef09f66075b7a908ed
+- Browser playtesting at low, mid and apex heights is still needed, especially shot → air dash and landing during startup / recovery.
 
 **Claude's remaining review question:** Verify the historical SF6 / DBFZ reference details, especially any game-wide air-projectile cap, before using those claims as final BTA design evidence. The cited Akuma move data alone does not prove a universal Street Fighter 6 rule.
