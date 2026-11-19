@@ -36,9 +36,16 @@ This document records the decisions confirmed so far. Anything labelled **Open**
 | Light | H | High attack — can be crouched under |
 | Medium | J | Mid attack — hits standing and crouching opponents |
 | Heavy | K | Low attack — hits grounded opponents, misses airborne opponents |
-| Special | L | L alone fires Energy Shot; hold a direction with L to fire Vector Burst |
+| Special | L | L alone fires Energy Shot; hold a direction with L to fire Vector Burst; Quarter-Circle Forward + L is recognised for a future advanced special |
 
 Movement keys are screen-relative and never reverse when fighters cross: A always means left and D always means right. Fighters automatically turn to face the opponent. Whether a dash is classified as a forward dash or backdash is determined by comparing its screen direction with the fighter's facing direction.
+
+## Stage and camera
+
+- The prototype stage is 1,920 world units wide; the visible game viewport remains 960 × 540.
+- The horizontal camera tracks the midpoint between both fighters and scrolls through the stage. Camera movement stops at the stage ends and keeps the controlled player within the visible viewport.
+- HUD, timer, round banners, and command feedback are screen-space and do not move with the stage.
+- This is a horizontal follow camera only. Dynamic zoom and vertical camera movement are deferred until browser playtesting shows they are needed.
 
 ## Fighter states and stance
 
@@ -84,8 +91,6 @@ These dimensions and movement details are prototype values to validate in the br
   1. **Button-only:** L by itself performs the forward-facing Energy Shot projectile.
   2. **Direction + button:** hold A, D, W, or S with L to perform the eight-way Vector Burst; diagonal combinations are supported. The aim vector is screen-relative, matching A/D movement, and diagonals are normalized so they do not travel faster than straight shots.
   3. **Motion input:** a traditional motion such as quarter-circle forward + L performs an advanced special.
-  2. **Direction + button:** a direction combined with L performs a directional special.
-  3. **Motion input:** a traditional motion such as quarter-circle forward + L performs an advanced special.
 
 ### Initial projectile special prototype (Phase 4)
 
@@ -97,6 +102,7 @@ These dimensions and movement details are prototype values to validate in the br
 - Prototype projectile values: 540 arena units/second, 18-unit radius, 2.5-second lifetime, 8% hit damage, 18 frames of hitstun, and 280 units/second knockback. A block deals 0.8% chip damage and 25 guard-meter damage.
 - The projectile is a mid and can be guarded with either standing or crouching guard. Once launched, it remains active even if the owner leaves recovery or is interrupted. Prototype values are for playtesting, not final balance.
 - **Blocking:** Hold the screen direction opposite the opponent (away from the opponent) to guard. The required direction is resolved from the fighter's current facing, so the guard direction automatically changes when the fighters cross sides. This is deliberately separate from screen-relative movement: A always moves left and D always moves right.
+- Quarter-Circle Forward + L is currently recognised relative to facing using Down → Down-Forward → Forward within a 24-frame window. The command is consumed and shown in a brief HUD confirmation; it has no assigned gameplay move yet.
 - The input system should be data-driven / extensible so different characters can receive different moves later.
 - The game should be easy to learn but offer room for technical mastery.
 - Fast, flashy combat and air combos are core goals.

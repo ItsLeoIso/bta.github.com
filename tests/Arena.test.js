@@ -10,16 +10,17 @@ function input({axis=0,pressed=[],down=[]}={}) {
   };
 }
 
-test("arena moves player and clamps them inside stage bounds",()=>{
-  const arena=new Arena(); arena.opponent.x=800;
-  arena.update(1,input({axis:1}));
-  assert.equal(arena.player.x,600);
-  arena.update(2,input({axis:1}));
-  assert.equal(arena.player.x,892);
+test("movement uses the extended world bounds rather than viewport bounds",()=>{
+  const arena=new Arena();
+  const bounds={floorY:arena.floorY,minX:arena.stageMargin,maxX:arena.worldWidth-arena.stageMargin};
+  arena.movement.update(arena.player,input({axis:1}),1,bounds);
+  assert.equal(arena.player.x,1080);
+  arena.movement.update(arena.player,input({axis:1}),10,bounds);
+  assert.equal(arena.player.x,arena.worldWidth-arena.stageMargin);
 });
 
 test("arena updates facing based on relative fighter positions",()=>{
-  const arena=new Arena(); arena.player.x=800;
+  const arena=new Arena(); arena.player.x=1200;
   arena.update(0,input());
   assert.equal(arena.player.facing,-1);
   assert.equal(arena.opponent.facing,1);
@@ -159,8 +160,8 @@ test("crouching reduces grounded walking speed to 12.5%",()=>{
   const crouching=new Arena();
   standing.update(0.5,input({axis:1}));
   crouching.update(0.5,input({axis:1,down:["crouch"]}));
-  assert.equal(standing.player.x,450);
-  assert.equal(crouching.player.x,318.75);
+  assert.equal(standing.player.x,930);
+  assert.equal(crouching.player.x,798.75);
   assert.equal(crouching.player.crouching,true);
   assert.equal(crouching.player.vx,37.5);
 });
@@ -178,7 +179,7 @@ test("screen-relative movement remains independent of facing direction",()=>{
   const arena=new Arena();
   arena.player.x=800;
   arena.player.facing=-1;
-  const bounds={floorY:arena.floorY,minX:arena.stageMargin,maxX:arena.width-arena.stageMargin};
+  const bounds={floorY:arena.floorY,minX:arena.stageMargin,maxX:arena.worldWidth-arena.stageMargin};
 
   // Exercise the movement layer directly: Arena intentionally interprets
   // holding away as guard, which is a separate action from walking.
@@ -192,15 +193,15 @@ test("screen-relative movement remains independent of facing direction",()=>{
 
 test("directional jump follows the pressed screen direction after crossing sides",()=>{
   const arena=new Arena();
-  arena.player.x=800;
+  arena.player.x=1500;
   arena.update(1/60,input({axis:1,pressed:["jump"]}));
-  assert.ok(arena.player.x>800);
+  assert.ok(arena.player.x>1500);
   assert.equal(arena.player.facing,-1);
 });
 
 test("double-tap screen-right becomes a backdash when facing left",()=>{
   const arena=new Arena();
-  arena.player.x=800;
+  arena.player.x=1500;
   arena.update(1/60,input({pressed:["right"]}));
   arena.update(0.08,input());
   arena.update(1/60,input({pressed:["right"]}));
@@ -273,4 +274,41 @@ test("a fighter can jump over an opponent and landing resolves overlap",()=>{
   assert.equal(crossed,true);
   assert.equal(arena.player.onGround,true);
   assert.ok(Math.abs(arena.opponent.x-arena.player.x)>=110);
+});
+
+
+test("camera follows the fighters and scrolls through the extended stage",()=>{
+  const arena=new Arena();
+  assert.equal(arena.cameraX,480);
+  arena.player.x=1200;
+  arena.opponent.x=1560;
+  arena.update(0,input());
+  assert.equal(arena.cameraX,900);
+  assert.equal(arena.player.x-arena.cameraX,300);
+  assert.equal(arena.opponent.x-arena.cameraX,660);
+});
+
+test("camera clamps at stage ends and keeps the controlled fighter visible",()=>{
+  const arena=new Arena();
+  arena.player.x=arena.stageMargin;
+  arena.opponent.x=1000;
+  arena.update(0,input());
+  assert.equal(arena.cameraX,0);
+  assert.ok(arena.player.x-arena.cameraX>=0);
+  arena.player.x=arena.worldWidth-arena.stageMargin;
+  arena.opponent.x=arena.player.x-180;
+  arena.update(0,input());
+  assert.equal(arena.cameraX,arena.worldWidth-arena.width);
+  assert.ok(arena.player.x-arena.cameraX<=arena.width);
+});
+
+test("quarter-circle forward plus Special is recognised and does not fall through to Vector Burst",()=>{
+  const arena=new Arena();
+  arena.update(1/60,input({down:["crouch"]}));
+  arena.update(1/60,input({axis:1,down:["crouch","right"]}));
+  arena.update(1/60,input({axis:1,down:["right"],pressed:["special"]}));
+  assert.equal(arena.player.state.action,"none");
+  assert.equal(arena.projectileController.projectiles.length,0);
+  assert.match(arena.commandFeedbackText,/QUARTER-CIRCLE FORWARD/);
+  assert.ok(arena.commandFeedbackRemaining>0);
 });

@@ -38,8 +38,9 @@ test("Arena stops movement and combat during a round result, then resets both fi
   assert.equal(arena.player.health, 1);
   assert.equal(arena.opponent.health, 1);
   assert.equal(arena.player.guardMeter, 100);
-  assert.equal(arena.player.x, 300);
-  assert.equal(arena.opponent.x, 660);
+  assert.equal(arena.player.x, 780);
+  assert.equal(arena.opponent.x, 1140);
+  assert.equal(arena.cameraX, 480);
   assert.equal(arena.player.state.action, FIGHTER_STATES.action.NONE);
   assert.equal(arena.player.state.reaction, FIGHTER_STATES.reaction.NONE);
 });

@@ -17,7 +17,7 @@
 
 ## Source layout
 - src/engine/ — game loop, timing, arena, and Canvas renderer.
-- src/input/ — keyboard state and logical actions; input history/motion recognition to follow.
+- src/input/ — keyboard state, logical actions, and fixed-frame motion-command history.
 - src/movement/ — ground movement, jumping, air control, dashes, gravity.
 - src/combat/ — attacks, hitboxes, hurtboxes, hit reactions, guard, and round flow.
 - src/characters/ — fighter definitions, stats, move data, character state.
@@ -127,10 +127,23 @@ Implemented as a deterministic fixed-step match state machine in `src/combat/Rou
 
 Regression coverage is in `tests/RoundController.test.js` and `tests/ArenaRoundIntegration.test.js`. Browser playtesting is still required for readability, pacing, and match feel.
 
+## World camera and motion-command recognition
+
+Implemented prototype foundation:
+
+- The simulation uses world-space positions across a 1,920-unit stage while the visible game viewport remains 960 × 540.
+- The horizontal camera tracks the midpoint between the player and opponent, clamps to the world ends, and constrains its offset so the controlled player stays inside the viewport. HUD and round overlays remain screen-space.
+- Camera offset is interpolated during rendering; it does not alter fighter coordinates, movement speeds, collision, hitboxes, projectile trajectories, or stage boundaries.
+- Added `src/input/CommandHistory.js`, which samples facing-relative eight-way directions once per fixed simulation frame and keeps a short command history.
+- Quarter-Circle Forward is recognised as Down → Down-Forward → Forward + L within 24 frames. It works relative to either facing direction; brief neutral gaps are allowed.
+- Recognition is currently a feedback-only prototype. The input is consumed rather than silently firing Energy Shot / Vector Burst, because the advanced move's gameplay properties have not yet been designed.
+- The command recogniser is independent of the existing double-tap dash detector. Input buffering and execution during recovery are not implemented yet.
+
 ## Next combat milestone
 
-- Add opponent attack behaviour so the current training dummy can actively exercise the player's guard in the live arena.
-- Then move on to the Phase 4 special-input, buffering, and combo systems.
+- Add input buffering so a valid command can be entered shortly before recovery ends and execute on the first legal frame.
+- Define the first advanced motion special (move identity, hit level, timing, projectile / hit properties) before connecting the recognised command to a gameplay action.
+- Add basic opponent behaviour so the training dummy can exercise the player's guard, then build air combos, cancel windows, and combo tracking.
 
 ## Running and testing
 - Run locally: python3 -m http.server 8000, then open http://localhost:8000.

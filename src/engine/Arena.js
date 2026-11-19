@@ -7,6 +7,7 @@ import { resolvePushboxes } from "../movement/Pushbox.js";
 import { FIGHTER_STATES, FighterStateController } from "../state/FighterStateController.js";
 import { ROUND_PHASES, RoundController } from "../combat/RoundController.js";
 import { ProjectileController } from "../combat/ProjectileController.js";
+import { CommandHistory } from "../input/CommandHistory.js";
 
 const clamp = (value,min,max)=>Math.min(max,Math.max(min,value));
 export const STAGE_MARGIN=68;
@@ -34,8 +35,9 @@ export class Arena {
     this.width=960; this.height=540; this.floorY=440;
     this.stageMargin=STAGE_MARGIN;
     this.stateController=new FighterStateController();
-    this.player=createFighter({x:300,facing:1});
-    this.opponent=createFighter({x:660,facing:-1});
+    this.worldWidth=1920;
+    this.player=createFighter({x:780,facing:1});
+    this.opponent=createFighter({x:1140,facing:-1});
     this.stateController.initialize(this.player);
     this.stateController.initialize(this.opponent);
     this.player.stateController=this.stateController;
@@ -46,11 +48,17 @@ export class Arena {
     this.damage=new DamageController();
     this.rounds=new RoundController();
     this.projectileController=new ProjectileController({stateController:this.stateController});
+    this.commandHistory=new CommandHistory();
+    this.commandFeedbackText="";
+    this.commandFeedbackRemaining=0;
+    this.cameraX=(this.player.x+this.opponent.x)/2-this.width/2;
+    this.previousCameraX=this.cameraX;
     this.lastCombatEvent=null;
     this.lastHit=null;
   }
 
   update(deltaSeconds,input) {
+    this.previousCameraX=this.cameraX;
     // The round controller owns all non-active transitions. Combat and physics
     // stay frozen during result/ready-up screens and after the match is decided.
     if (this.rounds.phase !== ROUND_PHASES.ACTIVE) {
@@ -66,6 +74,8 @@ export class Arena {
     }
 
     this.lastCombatEvent=null;
+    this.commandFeedbackRemaining=Math.max(0,this.commandFeedbackRemaining-deltaSeconds);
+    if (this.commandFeedbackRemaining===0) this.commandFeedbackText="";
     if (this.lastHit) {
       this.lastHit.remaining-=deltaSeconds;
       if (this.lastHit.remaining<=0) this.lastHit=null;
@@ -77,15 +87,29 @@ export class Arena {
     this.opponent.previousX=this.opponent.x; this.opponent.previousY=this.opponent.y;
     player.facing=player.x<=this.opponent.x ? 1 : -1;
     this.opponent.facing=-player.facing;
+    this.commandHistory.update(input,player.facing);
+    const quarterCircleSpecial =
+      Boolean(input.wasPressed?.("special")) &&
+      this.commandHistory.consumeQuarterCircleForward();
+    if (quarterCircleSpecial) {
+      this.commandFeedbackText="QUARTER-CIRCLE FORWARD + SPECIAL";
+      this.commandFeedbackRemaining=0.9;
+    }
     this.guard.update(player,input);
     this.attacks.update(player,input);
-    this.projectileController.updateFighter(player,input);
+    const projectileInput = quarterCircleSpecial
+      ? {
+          isDown: action => Boolean(input.isDown?.(action)),
+          wasPressed: action => action === "special" ? false : Boolean(input.wasPressed?.(action))
+        }
+      : input;
+    this.projectileController.updateFighter(player,projectileInput);
     this.movement.update(player,input,deltaSeconds,{
-      floorY:this.floorY,minX:this.stageMargin,maxX:this.width-this.stageMargin
+      floorY:this.floorY,minX:this.stageMargin,maxX:this.worldWidth-this.stageMargin
     });
-    player.x=clamp(player.x,this.stageMargin,this.width-this.stageMargin);
-    this.opponent.x=clamp(this.opponent.x,this.stageMargin,this.width-this.stageMargin);
-    resolvePushboxes(player,this.opponent,{minX:this.stageMargin,maxX:this.width-this.stageMargin});
+    player.x=clamp(player.x,this.stageMargin,this.worldWidth-this.stageMargin);
+    this.opponent.x=clamp(this.opponent.x,this.stageMargin,this.worldWidth-this.stageMargin);
+    resolvePushboxes(player,this.opponent,{minX:this.stageMargin,maxX:this.worldWidth-this.stageMargin});
     player.facing=player.x<=this.opponent.x ? 1 : -1;
     this.opponent.facing=-player.facing;
 
@@ -98,7 +122,7 @@ export class Arena {
       [player,this.opponent],
       {
         minX:-this.stageMargin,
-        maxX:this.width+this.stageMargin,
+        maxX:this.worldWidth+this.stageMargin,
         minY:-this.stageMargin,
         maxY:this.height+this.stageMargin
       }
@@ -109,10 +133,22 @@ export class Arena {
 
     // Check KO/timeout after combat resolution so a hit that empties health
     // ends the round on this fixed simulation step.
+    this.updateCamera();
     this.rounds.update(deltaSeconds,{
       playerHealth:this.player.health,
       opponentHealth:this.opponent.health
     });
+  }
+
+  updateCamera() {
+    const maxCameraX=Math.max(0,this.worldWidth-this.width);
+    const midpoint=(this.player.x+this.opponent.x)/2;
+    const minForPlayer=Math.max(0,this.player.x-(this.width-this.stageMargin));
+    const maxForPlayer=Math.min(maxCameraX,this.player.x-this.stageMargin);
+    const lower=Math.min(minForPlayer,maxForPlayer);
+    const upper=Math.max(minForPlayer,maxForPlayer);
+    this.cameraX=clamp(midpoint-this.width/2,lower,upper);
+    this.cameraX=clamp(this.cameraX,0,maxCameraX);
   }
 
   resolveCombatEvent(event) {
@@ -168,10 +204,15 @@ export class Arena {
   }
 
   resetFighters() {
-    this.resetFighter(this.player,300,1);
-    this.resetFighter(this.opponent,660,-1);
+    this.resetFighter(this.player,780,1);
+    this.resetFighter(this.opponent,1140,-1);
     this.movement.lastTap={left:-Infinity,right:-Infinity};
     this.projectileController.clear();
+    this.commandHistory.reset();
+    this.commandFeedbackText="";
+    this.commandFeedbackRemaining=0;
+    this.cameraX=(this.player.x+this.opponent.x)/2-this.width/2;
+    this.previousCameraX=this.cameraX;
     this.lastCombatEvent=null;
     this.lastHit=null;
   }

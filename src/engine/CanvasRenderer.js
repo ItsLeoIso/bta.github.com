@@ -35,12 +35,17 @@ export class CanvasRenderer {
     const offsetX = (width - arena.width * scale) / 2, offsetY = (height - arena.height * scale) / 2;
     ctx.fillStyle = COLORS.background; ctx.fillRect(0, 0, width, height);
     ctx.save(); ctx.translate(offsetX, offsetY); ctx.scale(scale, scale);
+    const cameraX = (arena.previousCameraX ?? arena.cameraX ?? 0) +
+      ((arena.cameraX ?? 0) - (arena.previousCameraX ?? arena.cameraX ?? 0)) * alpha;
+    ctx.save(); ctx.translate(-cameraX, 0);
     this.drawBackdrop(ctx, arena);
     this.drawFighter(ctx, arena.player, COLORS.player, alpha);
     this.drawFighter(ctx, arena.opponent, COLORS.opponent, alpha);
     this.drawProjectiles(ctx, arena);
     this.drawCombatBoxes(ctx, arena);
+    ctx.restore();
     this.drawHud(ctx, arena);
+    this.drawCommandFeedback(ctx, arena);
     this.drawRoundOverlay(ctx, arena);
     if (paused) {
       ctx.fillStyle = "rgba(0,0,0,.68)"; ctx.fillRect(0,0,arena.width,arena.height);
@@ -50,13 +55,16 @@ export class CanvasRenderer {
     ctx.restore();
   }
   drawBackdrop(ctx, arena) {
-    ctx.fillStyle = COLORS.background; ctx.fillRect(0,0,arena.width,arena.height);
+    const worldWidth=arena.worldWidth ?? arena.width;
+    ctx.fillStyle = COLORS.background; ctx.fillRect(0,0,worldWidth,arena.height);
     ctx.strokeStyle = COLORS.grid; ctx.lineWidth = 1;
-    for (let x=0; x<=arena.width; x+=48) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,arena.floorY); ctx.stroke(); }
-    for (let y=0; y<=arena.floorY; y+=48) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(arena.width,y); ctx.stroke(); }
-    ctx.fillStyle = "#151419"; ctx.fillRect(0,arena.floorY,arena.width,arena.height-arena.floorY);
-    ctx.strokeStyle = COLORS.floor; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0,arena.floorY); ctx.lineTo(arena.width,arena.floorY); ctx.stroke();
-    ctx.fillStyle = "#302b36"; ctx.fillRect(arena.width/2-1,0,2,arena.floorY);
+    for (let x=0; x<=worldWidth; x+=48) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,arena.floorY); ctx.stroke(); }
+    for (let y=0; y<=arena.floorY; y+=48) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(worldWidth,y); ctx.stroke(); }
+    ctx.fillStyle = "#151419"; ctx.fillRect(0,arena.floorY,worldWidth,arena.height-arena.floorY);
+    ctx.strokeStyle = COLORS.floor; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0,arena.floorY); ctx.lineTo(worldWidth,arena.floorY); ctx.stroke();
+    ctx.fillStyle = "#302b36"; ctx.fillRect(worldWidth/2-1,0,2,arena.floorY);
+    ctx.strokeStyle = "#77707e"; ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,arena.floorY); ctx.moveTo(worldWidth,0); ctx.lineTo(worldWidth,arena.floorY); ctx.stroke();
   }
   drawFighter(ctx, fighter, color, alpha) {
     const x = fighter.previousX + (fighter.x-fighter.previousX)*alpha;
@@ -177,6 +185,16 @@ export class CanvasRenderer {
     ctx.fillText("ROUND " + rounds.roundNumber,arena.width/2,66);
     ctx.font = "bold 11px monospace";
     ctx.fillText(rounds.score.player + "  -  " + rounds.score.opponent,arena.width/2,82);
+  }
+
+  drawCommandFeedback(ctx, arena) {
+    if (!(arena.commandFeedbackRemaining > 0) || !arena.commandFeedbackText) return;
+    ctx.save();
+    ctx.fillStyle = "#8ecbff";
+    ctx.font = "bold 12px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText(arena.commandFeedbackText + " · RECOGNISED", arena.width/2, arena.height-18);
+    ctx.restore();
   }
 
   drawRoundOverlay(ctx, arena) {

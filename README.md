@@ -4,7 +4,7 @@ A browser-first 2D 1v1 anime-style fighting game. This repository is the source 
 
 ## Current status
 
-**Combat prototype 010.** The Vanilla JavaScript + HTML5 Canvas foundation includes fixed-step simulation, movement, explicit fighter states, timed Light / Medium / Heavy attacks with High / Mid / Low hit levels, separate pushboxes and combat hurtboxes, active-frame hitboxes, damage and hit reactions, directional high/low guard with blockstun, chip damage, guard meter and guard breaks, hit/block frame-advantage reporting, and a complete prototype round loop, plus the L-only Energy Shot and an eight-way directional Vector Burst, with all projectile shots limited to one per airtime; firing either shot cancels stored fighter momentum; aerial shots fall under gravity during their startup and recovery instead of hovering. Both use projectile travel collision and shared block/hit resolution. Rounds use a 99-second timer, first-to-two scoring, KO / timeout results, automatic round resets, and a match result with Enter-to-rematch. Round and timer values are prototype defaults pending playtesting.
+**Combat prototype 011.** The Vanilla JavaScript + HTML5 Canvas foundation includes fixed-step simulation, movement, explicit fighter states, timed Light / Medium / Heavy attacks with High / Mid / Low hit levels, separate pushboxes and combat hurtboxes, active-frame hitboxes, damage and hit reactions, directional high/low guard with blockstun, chip damage, guard meter and guard breaks, hit/block frame-advantage reporting, and a complete prototype round loop, plus the L-only Energy Shot and an eight-way directional Vector Burst, with all projectile shots limited to one per airtime; firing either shot cancels stored fighter momentum; aerial shots fall under gravity during startup and recovery; the stage now scrolls with the fighters across a wider world, and Quarter-Circle Forward + L is recognised with on-screen feedback (the advanced move itself is not assigned yet). Both use projectile travel collision and shared block/hit resolution. Rounds use a 99-second timer, first-to-two scoring, KO / timeout results, automatic round resets, and a match result with Enter-to-rematch. Round and timer values are prototype defaults pending playtesting.
 
 ## Design at a glance
 - 2D, side-view, 1v1 fighting; assists may be considered later.
@@ -13,6 +13,7 @@ A browser-first 2D 1v1 anime-style fighting game. This repository is the source 
 - Keyboard controls: A/D for screen-relative movement, W to jump, S to crouch, H/J/K/L for attacks.
 - Main menu order: Arcade, Online, Training, Option.
 - Browser is the first target platform.
+- The 960-unit viewport follows both fighters through a 1,920-unit world stage.
 
 See [the game design](docs/GAME_DESIGN.md), [the roadmap](docs/ROADMAP.md), [the technical plan](docs/TECHNICAL_PLAN.md), and the contributor [cooperation log](Cooperation.md).
 
@@ -20,7 +21,7 @@ See [the game design](docs/GAME_DESIGN.md), [the roadmap](docs/ROADMAP.md), [the
 - assets/ — visual, audio, and stage assets.
 - docs/ — design decisions and development plan.
 - src/engine/ — timing, arena, and Canvas renderer.
-- src/input/ — keyboard state and logical actions.
+- src/input/ — keyboard state, logical actions, and motion-command history.
 - src/movement/ — movement, dashes, gravity, and pushboxes.
 - src/combat/ — attacks, collision, damage, guard, frame data, and round flow.
 - src/characters/ — future fighter definitions and move data.

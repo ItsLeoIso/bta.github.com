@@ -715,3 +715,31 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 - Browser playtesting at low, mid and apex heights is still needed, especially shot → air dash and landing during startup / recovery.
 
 **Claude's remaining review question:** Verify the historical SF6 / DBFZ reference details, especially any game-wide air-projectile cap, before using those claims as final BTA design evidence. The cited Akuma move data alone does not prove a universal Street Fighter 6 rule.
+
+
+### 2026-11-19 — ChatGPT — Add a scrolling world camera and Quarter-Circle Forward recognition
+**Type:** Gameplay / engine milestone — completed and handed off
+**Files / systems:**
+- `src/engine/Arena.js`
+- `src/engine/CanvasRenderer.js`
+- `src/input/CommandHistory.js`
+- `tests/CommandHistory.test.js`
+- `tests/Arena.test.js`
+- `tests/ArenaRoundIntegration.test.js`
+- `docs/GAME_DESIGN.md`, `docs/TECHNICAL_PLAN.md`, `docs/ROADMAP.md`, `README.md`, `index.html`
+
+**What changed:**
+- Expanded the playable world to 1,920 units while retaining the 960 × 540 visible viewport. Fighters now spawn at world positions 780 and 1,140, preserving their original on-screen positions at match start.
+- Added a horizontal camera that follows the midpoint between fighters, scrolls across the stage, clamps at either world edge, and keeps the controlled player visible. HUD and round overlays remain fixed to the viewport; fighter, projectile, collision-debug, and stage rendering use world coordinates.
+- Camera interpolation is handled at render time and does not alter simulation positions or gameplay physics.
+- Added fixed-frame, facing-relative directional history. Quarter-Circle Forward is recognised as Down → Down-Forward → Forward + L within 24 frames, on either side. Brief neutral gaps are accepted.
+- A recognised motion is consumed and shown as a HUD confirmation rather than falling through to Energy Shot / Vector Burst. No advanced move is assigned until its move properties are designed.
+- The new command history is separate from the existing dash double-tap detector.
+
+**Verification:**
+- Added tests for right-facing and left-facing motion recognition, neutral gaps, invalid / stale inputs, single consumption, Arena command feedback and projectile suppression, camera tracking, stage-edge clamping, and camera reset.
+- Automated test and Pages workflows: pending after commit.
+- Browser camera-feel and visual validation: not performed in this session.
+
+**Suggested next step:**
+- Browser-test retreating, advancing, jump-overs, wall pressure, and fighters near both stage ends. Then define the first advanced motion special and add input buffering so commands can execute on the first legal frame.

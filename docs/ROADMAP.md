@@ -38,8 +38,8 @@
 ## Phase 4 — Special moves and combos
 - [x] Special button alone: projectile (initial button-only prototype).
 - [x] Direction + Special moves (eight-way Vector Burst).
-- [ ] Motion-input recognition (e.g. quarter-circle forward + Special).
-- [ ] Input buffer and command history.
+- [x] Facing-relative command history and Quarter-Circle Forward + Special recognition (24-frame window; feedback prototype only).
+- [ ] Input buffering (queue commands for execution when the fighter becomes available).
 - [ ] Air combos, cancels, combo tracking, and recovery rules.
 
 ## Phase 5 — First playable match
