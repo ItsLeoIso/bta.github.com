@@ -181,10 +181,11 @@ export class ProjectileController {
     const directionY = requestedY / magnitude;
     // Vertical shots still approach from the fighter's facing side for guard checks.
     const direction = Math.sign(directionX) || Math.sign(fighter.facing) || 1;
+    const spawnDirectionX = Math.sign(directionX) || Math.sign(fighter.facing) || 1;
     const projectile = {
       id: this.nextProjectileId++,
       owner: fighter,
-      x: fighter.x + directionX * this.spawnOffsetX,
+      x: fighter.x + spawnDirectionX * this.spawnOffsetX,
       y: fighter.y + this.spawnOffsetY + directionY * this.spawnOffsetX,
       direction,
       directionX,
