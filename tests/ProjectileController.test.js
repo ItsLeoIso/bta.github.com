@@ -293,3 +293,21 @@ test("an airborne Energy Shot also consumes the shared projectile allowance",()=
   );
   assert.equal(controller.projectiles.length,1);
 });
+
+test("starting an aerial projectile clears existing horizontal and upward momentum",()=>{
+  const controller=new ProjectileController();
+  const fighter=makeFighter({onGround:false,y:300});
+  fighter.vx=160;
+  fighter.vy=-180;
+  fighter.airHorizontalVelocity=160;
+
+  assert.equal(
+    controller.updateFighter(fighter,input({pressed:["special"]})),
+    true
+  );
+
+  assert.equal(fighter.vx,0);
+  assert.equal(fighter.vy,0);
+  assert.equal(fighter.airHorizontalVelocity,0);
+  assert.equal(fighter.airProjectileAvailable,false);
+});

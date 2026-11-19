@@ -106,7 +106,7 @@ These dimensions and movement details are prototype values to validate in the br
 - **Movement style:** Anime-fighter air control — fast movement, air combos, air dashes, and long combo possibilities.
 - **Gravity:** Moderate — enough time for air combos, while falling should still feel natural.
 - Ground forward dashes and backdashes share a cooldown so players cannot chain them continuously to cross the arena; the prototype starts at 0.45 seconds, subject to playtesting.
-- Crouch-walking uses 50% of normal grounded walking speed; dash speed and airborne movement are unaffected.
+- Crouch-walking uses 12.5% of normal grounded walking speed; dash speed and airborne movement are unaffected.
 - Air control is an intentional core mechanic.
 
 Exact movement speeds, acceleration, jump height, gravity values, dash duration, hitstun, and cancel windows are **Open / to be tuned through playtesting**.
@@ -137,3 +137,12 @@ These are menu destinations to plan for; their complete functionality will be im
 - Throws, meter, resource systems, and final competitive round/timer rules beyond the prototype defaults.
 - Online networking architecture and matchmaking approach.
 - Audio direction and final sprite specifications.
+
+
+## Aerial projectile behavior (prototype)
+
+- Energy Shot (L alone) and directional Vector Burst (direction + L) share one air-projectile allowance. Starting either move while airborne consumes the allowance; landing refreshes it. The projectile allowance is independent of the air-dash allowance.
+- Starting an aerial projectile cancels horizontal drift and upward momentum. Horizontal movement remains locked for the special, but gravity continues during startup and recovery; the fighter falls naturally instead of hovering.
+- The special keeps its existing startup and recovery timer if the fighter lands early. It remains locked on the ground until the original recovery finishes. No extra landing-recovery frames are applied in this prototype.
+- A projectile started close to the floor still completes its startup and spawns on frame 8 even if the fighter lands first. The action remains locked until its normal recovery ends.
+- The Forward/Up + L jump-then-shoot behavior remains out of scope for this rule change.

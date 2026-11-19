@@ -179,8 +179,8 @@ export class MovementController {
       // Grounded attacks lock movement; airborne attacks retain committed drift.
       fighter.vx = fighter.onGround ? 0 : fighter.airHorizontalVelocity ?? 0;
     } else if (fighter.state.action === FIGHTER_STATES.action.SPECIAL) {
-      // Freeze horizontal position during an airborne projectile special.
-      // The committed air velocity is preserved and resumes after recovery.
+      // Projectile startup cancels horizontal momentum; keep x locked for the move.
+      // Gravity still runs below, so an airborne fighter falls during the special.
       fighter.vx = 0;
     } else if (fighter.onGround) {
       const speedMultiplier =
@@ -193,7 +193,7 @@ export class MovementController {
     }
 
     fighter.x = clamp(fighter.x + fighter.vx * deltaSeconds, minX, maxX);
-    if (!fighter.onGround && fighter.state.action !== FIGHTER_STATES.action.SPECIAL) {
+    if (!fighter.onGround) {
       if (
         fighter.state.action === FIGHTER_STATES.action.DASH &&
         fighter.actionData.dashType === "air" &&
@@ -210,6 +210,15 @@ export class MovementController {
         fighter.onGround = true;
         fighter.airDashAvailable = true;
         fighter.airProjectileAvailable = true;
+        // Keep locomotion in sync on the touchdown frame even when special
+        // recovery continues to lock the fighter on the ground.
+        if (
+          fighter.state.action === FIGHTER_STATES.action.SPECIAL &&
+          (fighter.state.locomotion === FIGHTER_STATES.locomotion.JUMPING ||
+            fighter.state.locomotion === FIGHTER_STATES.locomotion.FALLING)
+        ) {
+          states.setLocomotion(fighter, FIGHTER_STATES.locomotion.STANDING);
+        }
         if (fighter.state.action === FIGHTER_STATES.action.DASH &&
             fighter.actionData.dashType === "air") {
           states.endAction(fighter, FIGHTER_STATES.action.DASH);

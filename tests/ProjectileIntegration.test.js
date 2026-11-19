@@ -48,15 +48,15 @@ test("projectile is blockable from the side it travels in from and deals chip/gu
 });
 
 
-test("air projectile cancels existing momentum and gravity resumes from rest",()=>{
+test("air projectile cancels launch momentum but gravity continues through the move",()=>{
   const arena=new Arena();
   arena.player.x=300;
-  arena.player.y=220;
+  arena.player.y=280; // At the jump apex.
   arena.player.previousX=300;
-  arena.player.previousY=220;
+  arena.player.previousY=280;
   arena.player.onGround=false;
   arena.player.vx=160;
-  arena.player.vy=-180;
+  arena.player.vy=0;
   arena.player.airHorizontalVelocity=160;
   arena.player.state.locomotion=STATES.locomotion.JUMPING;
 
@@ -66,28 +66,37 @@ test("air projectile cancels existing momentum and gravity resumes from rest",()
 
   assert.equal(arena.player.state.action,STATES.action.SPECIAL);
   assert.equal(arena.player.x,startX);
-  assert.equal(arena.player.y,startY);
+  assert.ok(arena.player.y>startY);
   assert.equal(arena.player.vx,0);
-  assert.equal(arena.player.vy,0);
+  assert.ok(arena.player.vy>0);
   assert.equal(arena.player.airHorizontalVelocity,0);
 
-  for(let frame=0;frame<24;frame+=1){
+  let previousY=arena.player.y;
+  for(let frame=0;frame<23;frame+=1){
     arena.update(1/60,input());
     assert.equal(arena.player.x,startX);
-    assert.equal(arena.player.y,startY);
+    assert.ok(arena.player.y>previousY);
     assert.equal(arena.player.vx,0);
-    assert.equal(arena.player.vy,0);
+    assert.ok(arena.player.vy>=0);
     assert.equal(arena.player.airHorizontalVelocity,0);
+    previousY=arena.player.y;
   }
 
+  // The fighter lands on frame 25, but the original 26-frame special action
+  // remains active for its final recovery frame.
   assert.equal(arena.player.state.action,STATES.action.SPECIAL);
   arena.update(1/60,input());
-  assert.equal(arena.player.state.action,STATES.action.NONE);
+  assert.equal(arena.player.onGround,true);
+  assert.equal(arena.player.y,arena.floorY);
+  assert.equal(arena.player.state.action,STATES.action.SPECIAL);
+  assert.equal(arena.player.state.locomotion,STATES.locomotion.STANDING);
+  assert.equal(arena.player.vx,0);
+  assert.equal(arena.player.vy,0);
+  assert.equal(arena.player.airProjectileAvailable,true);
 
+  arena.update(1/60,input());
+  assert.equal(arena.player.state.action,STATES.action.NONE);
   assert.equal(arena.player.x,startX);
-  assert.ok(arena.player.y>startY);
-  assert.equal(arena.player.airHorizontalVelocity,0);
-  assert.ok(arena.player.vy>0);
 });
 
 
@@ -133,8 +142,8 @@ test("up plus L fires a Vector Burst vertically and uses its separate damage pro
 
 test("any air projectile is limited to one until landing, then becomes available again",()=>{
   const arena=new Arena();
-  arena.player.y=400;
-  arena.player.previousY=400;
+  arena.player.y=220;
+  arena.player.previousY=220;
   arena.player.onGround=false;
   arena.player.vy=0;
   arena.player.state.locomotion=STATES.locomotion.JUMPING;
@@ -143,16 +152,19 @@ test("any air projectile is limited to one until landing, then becomes available
   assert.equal(arena.player.state.action,STATES.action.SPECIAL);
   assert.equal(arena.player.airProjectileAvailable,false);
 
-  // Complete the startup/recovery while holding the fighter in place.
+  // Gravity runs during startup/recovery, but the player remains airborne
+  // when the original 26-frame special action finishes.
   for(let frame=0;frame<25;frame+=1) arena.update(1/60,input());
   assert.equal(arena.player.state.action,STATES.action.NONE);
+  assert.equal(arena.player.onGround,false);
+  assert.equal(arena.player.airProjectileAvailable,false);
 
   // A neutral L-only Energy Shot is also blocked by the same air-use limit.
   arena.update(1/60,input({pressed:["special"]}));
   assert.equal(arena.player.state.action,STATES.action.NONE);
   assert.equal(arena.projectileController.projectiles.length,1);
 
-  // Gravity resumes from rest after the shot; landing restores the air option.
+  // Landing restores the shared air-projectile allowance.
   for(let frame=0;frame<80 && !arena.player.onGround;frame+=1) {
     arena.update(1/60,input());
   }
@@ -163,4 +175,31 @@ test("any air projectile is limited to one until landing, then becomes available
   arena.update(1/60,input({pressed:["special"]}));
   assert.equal(arena.player.state.action,STATES.action.SPECIAL);
   assert.equal(arena.player.actionData.moveId,"special");
+});
+
+test("a projectile started near the floor still spawns on startup frame eight",()=>{
+  const arena=new Arena();
+  arena.player.y=435;
+  arena.player.previousY=435;
+  arena.player.onGround=false;
+  arena.player.vy=0;
+  arena.player.state.locomotion=STATES.locomotion.FALLING;
+
+  arena.update(1/60,input({pressed:["special"]}));
+  assert.equal(arena.player.state.action,STATES.action.SPECIAL);
+
+  for(let frame=0;frame<6;frame+=1) {
+    arena.update(1/60,input());
+  }
+
+  assert.equal(arena.player.onGround,true);
+  assert.equal(arena.player.y,arena.floorY);
+  assert.equal(arena.projectileController.projectiles.length,0);
+  assert.equal(arena.player.state.action,STATES.action.SPECIAL);
+
+  arena.update(1/60,input());
+  assert.equal(arena.projectileController.projectiles.length,1);
+  assert.equal(arena.projectileController.projectiles[0].moveId,"special");
+  assert.equal(arena.player.state.action,STATES.action.SPECIAL);
+  assert.equal(arena.player.actionData.elapsedFrames,8);
 });

@@ -619,7 +619,7 @@ Copy this template for each new handoff:
 
 ### 2026-11-19 — ChatGPT — Research note: Street Fighter 6 and Dragon Ball FighterZ projectile design
 **Type:** Design research / Owner-approved direction pending independent review
-**Status:** Proposal only. This entry records reference-game research and a recommended BTA direction; it does not implement new gameplay behavior.
+**Status:** Research proposal reviewed by Claude. The aerial-gravity and landing-recovery recommendations are incorporated in the implementation handoff below; projectile clash / durability and per-move landing recovery remain future proposals.
 **Purpose:** Provide Claude with a concrete reference summary and review questions before the next aerial-projectile implementation pass.
 
 #### 1. Street Fighter 6 — Akuma's Zanku Hadoken
@@ -630,7 +630,7 @@ Reference: [Akuma move list and frame data](https://streetfighterv.github.io/bot
 - The EX entry also documents an initial two-hit projectile box that nullifies projectiles before launching the multi-hit fireball. This is a useful example of projectile interaction rules being move-specific.
 - Frame data can change with balance patches and the linked community data is a reference, not a target for BTA's exact timings.
 
-**Design lesson:** An aerial projectile should be treated as a committed aerial move with its own startup / recovery and landing consequences. Its angle, speed, strength and projectile interaction can be tuned per move. Street Fighter 6 does not imply a universal one-air-projectile limit for every character; this is not the source of BTA's shared cap.
+**Design lesson:** An aerial projectile should be treated as a committed aerial move with its own startup / recovery and landing consequences. Its angle, speed, strength and projectile interaction can be tuned per move. The cited Akuma move entry alone does not establish a universal SF6 air-projectile allowance; avoid treating a game-wide rule as verified without an authoritative system reference. BTA's shared one-air-projectile cap is our own design decision to prevent the current prototype's airborne shot spam.
 
 #### 2. Dragon Ball FighterZ — shared air options and move-specific limits
 References: [System mechanics](https://mail.dustloop.com/w/DBFZ/Mechanics), [SS4 / DAIMA Goku move data](https://mail.dustloop.com/w/DBFZ/Goku_%28SS4%2C_DAIMA%29)
@@ -671,9 +671,44 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 - What minimal projectile clash / durability rules should BTA plan for without overengineering the current prototype?
 - Please flag any inaccurate reference-game claims, balance concerns, or likely implementation pitfalls before code changes are made.
 
-**Owner direction so far:** Leandro agreed that all aerial projectile shots should share one use per jump. The rest of this entry is a research-backed proposal for Claude's review, not yet a final implementation specification.
+**Owner direction so far:** Leandro agreed that all aerial projectile shots should share one use per jump. Claude reviewed the proposal and recommended immediate gravity during the special, retaining the existing action timer on landing, and keeping projectile and air-dash allowances independent. The subsequent implementation handoff records what has been accepted and changed.
 
 **Primary reference pages consulted:**
 - Street Fighter 6 Akuma frame data: https://streetfighterv.github.io/bot/AKUMA.html
 - Dragon Ball FighterZ system mechanics: https://mail.dustloop.com/w/DBFZ/Mechanics
 - Dragon Ball FighterZ SS4 / DAIMA Goku move data: https://mail.dustloop.com/w/DBFZ/Goku_%28SS4%2C_DAIMA%29
+
+
+### 2026-11-19 — ChatGPT — Implement aerial projectile gravity and landing commitment (Claude review)
+**Type:** Gameplay implementation / Regression tests
+**Review source:** Claude's second-opinion response in the collaboration handoff. Claude reviewed `Cooperation.md`, `ProjectileController.js`, and `MovementController.js`; did not run tests or browser checks.
+**Files / systems:**
+- `src/movement/MovementController.js`
+- `tests/ProjectileIntegration.test.js`
+- `tests/ProjectileController.test.js`
+- `docs/TECHNICAL_PLAN.md`, `docs/GAME_DESIGN.md`, `README.md`
+
+**Review findings accepted:**
+- Momentum cancellation was already in `ProjectileController`; the remaining hover came from the movement layer skipping gravity while the action was `SPECIAL`.
+- With 8 startup + 18 recovery frames at 60 Hz, a projectile fired at the apex or lower can land before the special action completes. That should be normal behavior, not a separate edge-case timer.
+- Preserve the existing special action timer on landing. Do not end the special or start a second landing-recovery timer in this increment.
+- Keep the one-per-air-projectile allowance independent of the air-dash allowance. A later air dash may still reset vertical speed during its own dash frames; this interaction remains for browser playtesting.
+- Keep projectile durability / clash resolution as a later, separate milestone.
+
+**What changed:**
+- Removed the `SPECIAL` exception from airborne gravity integration. Aerial projectile use still locks horizontal movement and starts from zeroed horizontal / vertical momentum, but gravity now acts during startup and recovery so the player immediately descends.
+- If the fighter reaches the floor during the special, `SPECIAL` remains active and continues counting its original frame timer. The fighter stays grounded and movement-locked until the 26-frame action completes.
+- Corrected locomotion to `STANDING` on the same frame that an aerial special lands, avoiding one frame of stale `FALLING` state. Ground hurtbox and pushbox selection now observe the grounded state immediately.
+- Added coverage for falling from the jump apex while the projectile special is active, landing before recovery completes without ending the action early, and landing near the floor before the projectile's frame-8 spawn.
+- Corrected the current game-design crouch-walk speed from 50% to 12.5% to match the live movement constant and regression tests. The earlier 50% cooperation entry remains as a historical record of the initial value.
+
+**Not changed / still deferred:**
+- No additional `landingRecoveryFrames` value yet. Tune the existing recovery feel in browser playtests before adding per-move landing penalties.
+- No shared air-option resource; air dash and projectile allowances stay independent.
+- No projectile durability, clashes, deflects, beams, or melee-vs-projectile interactions.
+- Forward/Up + L jump-then-shoot behavior remains out of scope and unchanged.
+
+**Verification:**
+- Automated verification will be recorded after CI runs for this change. Browser playtesting at low, mid and apex heights is still needed, especially shot → air dash and landing during startup / recovery.
+
+**Claude's remaining review question:** Verify the historical SF6 / DBFZ reference details, especially any game-wide air-projectile cap, before using those claims as final BTA design evidence. The cited Akuma move data alone does not prove a universal Street Fighter 6 rule.
