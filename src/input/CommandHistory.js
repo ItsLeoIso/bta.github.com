@@ -43,6 +43,7 @@ export class CommandHistory {
   }
 
   consumeQuarterCircleForward() {
+    if (this.entries[this.entries.length - 1]?.direction !== "forward") return false;
     const directional = this.entries.filter(entry => entry.direction !== "neutral");
     if (directional.length < 3) return false;
     const sequence = directional.slice(-3);

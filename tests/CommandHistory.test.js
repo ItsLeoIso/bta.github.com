@@ -43,6 +43,15 @@ test("does not recognise an incorrect or stale directional sequence",()=>{
   assert.equal(history.consumeQuarterCircleForward(),false);
 });
 
+test("requires forward to still be held when the motion button is pressed",()=>{
+  const history=new CommandHistory();
+  history.update(input(["crouch"]),1);
+  history.update(input(["crouch","right"]),1);
+  history.update(input(["right"]),1);
+  history.update(input(),1);
+  assert.equal(history.consumeQuarterCircleForward(),false);
+});
+
 test("a command cannot be consumed twice without entering a new motion",()=>{
   const history=new CommandHistory();
   history.update(input(["crouch"]),1);
