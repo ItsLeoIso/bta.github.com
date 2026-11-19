@@ -37,7 +37,7 @@
 
 ## Phase 4 — Special moves and combos
 - [x] Special button alone: projectile (initial button-only prototype).
-- [ ] Direction + Special moves.
+- [x] Direction + Special moves (eight-way Vector Burst).
 - [ ] Motion-input recognition (e.g. quarter-circle forward + Special).
 - [ ] Input buffer and command history.
 - [ ] Air combos, cancels, combo tracking, and recovery rules.
