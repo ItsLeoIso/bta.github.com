@@ -550,7 +550,7 @@ Copy this template for each new handoff:
 
 ### 2026-11-19 — ChatGPT — Phase 4 direction + Special implemented
 **Type:** Completed / Handoff
-**Commit:** Committed to `main` with this entry; see the repository history for the dated feature changes.
+**Commit:** https://github.com/ItsLeoIso/bta.github.com/commit/a6c091bf9eadcbc3f10c15796cfd683a1d682f1a
 **Files / systems:**
 - `src/combat/ProjectileController.js`
 - `src/combat/GuardController.js`
@@ -570,7 +570,7 @@ Copy this template for each new handoff:
 **Verification:**
 - Added unit tests for eight-way aim, normalized diagonals, opposing-direction suppression, and vertical bounds cleanup.
 - Added Arena integration tests for back+L guard cancellation and a vertical Vector Burst hit using the separate damage profile.
-- GitHub Actions verification is pending; no manual browser playtest has been performed in this session.
+- Automated tests are committed, but the latest CI result could not be confirmed from the commit-status information available at handoff. No manual browser playtest has been performed in this session.
 
 **Suggested next step:**
 - Playtest the Vector Burst in all directions from both sides, confirm that W/S+L is comfortable alongside jump/crouch, and tune its uniqueness and balance before moving on to motion-input recognition.
