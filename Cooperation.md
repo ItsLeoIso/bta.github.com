@@ -546,3 +546,31 @@ Copy this template for each new handoff:
 
 **Verification:**
 - CI result pending; please browser-test backward/forward diagonal jumps and an airborne Energy Shot after deployment.
+
+
+### 2026-11-19 — ChatGPT — Phase 4 direction + Special implemented
+**Type:** Completed / Handoff
+**Commit:** Committed to `main` with this entry; see the repository history for the dated feature changes.
+**Files / systems:**
+- `src/combat/ProjectileController.js`
+- `src/combat/GuardController.js`
+- `src/combat/DamageController.js`
+- `src/engine/Arena.js`
+- `tests/ProjectileController.test.js`
+- `tests/ProjectileIntegration.test.js`
+- `docs/GAME_DESIGN.md`, `docs/TECHNICAL_PLAN.md`, `docs/ROADMAP.md`, `README.md`, `index.html`
+
+**What changed:**
+- Kept L by itself as the original forward-facing Energy Shot.
+- Added the eight-way Vector Burst: A/D aim screen-left/right, W/S aim up/down, and diagonal combinations are normalized to the same projectile speed.
+- Gave Vector Burst its own move ID, display name, damage profile, and guard-meter entry while keeping its initial timing and damage equal to Energy Shot.
+- Direction+L now takes priority over back-guard and can release an already-active guard. Conflicting opposing directions do not start a move.
+- Projectiles now travel vertically as well as horizontally and are removed at vertical arena bounds. Vertical shots spawn forward of the fighter to account for pushbox spacing.
+
+**Verification:**
+- Added unit tests for eight-way aim, normalized diagonals, opposing-direction suppression, and vertical bounds cleanup.
+- Added Arena integration tests for back+L guard cancellation and a vertical Vector Burst hit using the separate damage profile.
+- GitHub Actions verification is pending; no manual browser playtest has been performed in this session.
+
+**Suggested next step:**
+- Playtest the Vector Burst in all directions from both sides, confirm that W/S+L is comfortable alongside jump/crouch, and tune its uniqueness and balance before moving on to motion-input recognition.
