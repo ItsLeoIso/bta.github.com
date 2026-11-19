@@ -66,18 +66,28 @@ test("projectile direction follows the fighter's facing when fired", () => {
   assert.equal(controller.projectiles[0].x, 324);
 });
 
-test("direction plus L does not fall back to the button-only projectile", () => {
+test("direction plus L starts a distinct Vector Burst aimed in the held direction", () => {
   const controller = new ProjectileController();
   const fighter = makeFighter();
 
   const started = controller.updateFighter(
     fighter,
-    input({ pressed: ["special"], down: ["right"] })
+    input({ pressed: ["special"], down: ["left"] })
   );
 
-  assert.equal(started, false);
-  assert.equal(fighter.state.action, STATES.action.NONE);
-  assert.equal(controller.projectiles.length, 0);
+  assert.equal(started, true);
+  assert.equal(fighter.state.action, STATES.action.SPECIAL);
+  assert.equal(fighter.actionData.moveId, "directionalSpecial");
+  assert.equal(fighter.actionData.moveName, "Vector Burst");
+
+  for (let frame = 0; frame < 7; frame += 1) {
+    controller.updateFighter(fighter, input());
+  }
+
+  assert.equal(controller.projectiles.length, 1);
+  assert.equal(controller.projectiles[0].velocityX, -540);
+  assert.equal(controller.projectiles[0].velocityY, 0);
+  assert.equal(controller.projectiles[0].moveId, "directionalSpecial");
 });
 
 test("special remains locked through startup and recovery, then returns to neutral", () => {
@@ -151,5 +161,73 @@ test("clear removes active projectiles between rounds", () => {
   const controller = new ProjectileController();
   controller.spawnProjectile(makeFighter());
   controller.clear();
+  assert.equal(controller.projectiles.length, 0);
+});
+
+
+test("Vector Burst supports all eight screen-relative directions at a normalized speed", () => {
+  const diagonalSpeed = 540 / Math.sqrt(2);
+  const cases = [
+    { down: ["right"], x: 540, y: 0 },
+    { down: ["left"], x: -540, y: 0 },
+    { down: ["jump"], x: 0, y: -540 },
+    { down: ["crouch"], x: 0, y: 540 },
+    { down: ["right", "jump"], x: diagonalSpeed, y: -diagonalSpeed },
+    { down: ["left", "jump"], x: -diagonalSpeed, y: -diagonalSpeed },
+    { down: ["right", "crouch"], x: diagonalSpeed, y: diagonalSpeed },
+    { down: ["left", "crouch"], x: -diagonalSpeed, y: diagonalSpeed }
+  ];
+
+  for (const scenario of cases) {
+    const controller = new ProjectileController();
+    const fighter = makeFighter({ facing: -1 });
+    controller.updateFighter(
+      fighter,
+      input({ pressed: ["special"], down: scenario.down })
+    );
+    for (let frame = 0; frame < 7; frame += 1) {
+      controller.updateFighter(fighter, input());
+    }
+
+    const projectile = controller.projectiles[0];
+    assert.ok(projectile, "directional projectile should spawn");
+    assert.ok(Math.abs(projectile.velocityX - scenario.x) < 1e-9);
+    assert.ok(Math.abs(projectile.velocityY - scenario.y) < 1e-9);
+    assert.ok(Math.abs(Math.hypot(projectile.velocityX, projectile.velocityY) - 540) < 1e-9);
+  }
+});
+
+test("opposing directional inputs do not fall back to the button-only shot", () => {
+  const controller = new ProjectileController();
+  const fighter = makeFighter();
+
+  const started = controller.updateFighter(
+    fighter,
+    input({ pressed: ["special"], down: ["left", "right"] })
+  );
+
+  assert.equal(started, false);
+  assert.equal(fighter.state.action, STATES.action.NONE);
+  assert.equal(controller.projectiles.length, 0);
+});
+
+test("directional projectiles are removed after leaving the vertical arena bounds", () => {
+  const controller = new ProjectileController();
+  const attacker = makeFighter({ y: 100 });
+  const projectile = controller.spawnProjectile(attacker, {
+    directionX: 0,
+    directionY: -1,
+    moveId: "directionalSpecial",
+    moveName: "Vector Burst"
+  });
+  projectile.y = 5;
+
+  const events = controller.updateProjectiles(
+    0.05,
+    [attacker],
+    { minX: 0, maxX: 960, minY: 0, maxY: 540 }
+  );
+
+  assert.equal(events.length, 0);
   assert.equal(controller.projectiles.length, 0);
 });
