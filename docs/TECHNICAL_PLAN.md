@@ -147,7 +147,9 @@ Implemented in the first Phase 4 increment:
 - Projectile contacts reuse the existing standing/crouching/airborne hurtboxes and shared damage, chip-damage, guard-meter, blockstun, and hitstun controllers.
 - The launched projectile preserves its original travel direction for guard-side checks and knockback even if its owner later changes position.
 - Prototype values: 540 units/second speed, 18-unit radius, 2.5-second lifetime, 8% damage, 18 hitstun frames, 280 knockback, 0.8% chip damage, and 25 guard-meter damage.
-- Direction+L is deliberately not treated as the button-only projectile; it is reserved for the next directional-special milestone. Motion-input recognition, buffering, and combos remain unimplemented.
+- Direction+L is handled as the separate eight-way Vector Burst. A/D, W/S, and diagonal combinations set a screen-relative aim vector; diagonal velocity is normalized. Opposing directions on one axis cancel the special instead of falling back to the button-only projectile.
+- Vector Burst shares the Energy Shot's initial 8-frame startup, 18-frame recovery, 540-unit/second speed, 18-unit radius, 2.5-second lifetime, and 8% damage profile, but uses a separate move ID / damage profile for later tuning. Vertical shots spawn from the fighter's forward side to clear pushbox spacing.
+- Pressing a directional special while holding back releases or suppresses guard so back+L can start the move. Motion-input recognition, buffering, and combos remain unimplemented.
 - Added unit and Arena integration coverage for startup/recovery, facing direction, direction+button suppression, airborne use, action locks, projectile movement/contact/expiry, hit damage, and blocking.
 
 
@@ -157,3 +159,15 @@ Implemented in the first Phase 4 increment:
 - Jump also takes priority over reading the same directional keydown as the second tap of a backdash.
 - During airborne projectile startup and recovery, the fighter's horizontal and vertical positions remain fixed. The existing airborne velocities are preserved and movement/gravity resume unchanged after the special ends.
 - Regression tests cover backward and forward diagonal jumps, jumping out of guard, jump priority over a pending backdash, and the airborne projectile position hold/resume behaviour.
+
+
+## Phase 4 — Direction + Special (eight-way Vector Burst)
+
+Implemented as the second Phase 4 increment:
+
+- L with no direction held continues to fire the original forward-facing Energy Shot.
+- A/D + L aim left or right on screen; W/S + L aim up or down; two held directions create a normalized diagonal trajectory. The aim is captured on the input frame.
+- The directional move uses a separate `directionalSpecial` move ID and `Vector Burst` display name. It initially reuses Energy Shot timing and damage values so the new direction mechanic can be tested without introducing a second round of balance changes.
+- Directional input plus L takes priority over back-guard, including releasing an already-active guard. Conflicting opposing directions suppress the move.
+- Projectile updates now move in both axes and remove shots that leave vertical as well as horizontal arena bounds. Vertical shots spawn from the fighter's forward side so pushbox separation does not make them miss an opponent directly ahead.
+- Unit and Arena integration tests cover all eight aim directions, normalized diagonal speed, ambiguous inputs, guard cancellation, vertical hits, shared damage, and vertical cleanup.
