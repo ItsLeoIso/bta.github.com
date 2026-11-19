@@ -176,6 +176,6 @@ Implemented as the second Phase 4 increment:
 ## Phase 4 — Air Vector limit and shot momentum lock
 
 - Directional aim remains screen-relative: W+L fires upward, and the direction away from the opponent fires behind the fighter. Existing diagonal aim behavior, including Forward/Up + L, is left unchanged in this increment.
-- A fighter may start one directional Vector Burst during an airtime. The air-vector allowance is consumed when the move starts and restored only after landing. Grounded Vector Bursts remain available after the normal special recovery.
+- A fighter may start one projectile special of any kind during an airtime, whether it is the neutral L-only Energy Shot or a directional Vector Burst. The shared air-projectile allowance is consumed when the move starts and restored only after landing. Grounded projectile use remains available after the normal special recovery.
 - Starting any projectile special (L-only Energy Shot or directional Vector Burst) immediately zeros horizontal velocity, vertical velocity, and committed air drift. The fighter remains in place during the special; after recovery, gravity resumes from rest rather than restoring pre-shot momentum.
 - Automated regression coverage checks backward aim from both facing orientations, one Vector Burst per airtime, landing refresh, and full momentum cancellation for projectile specials.

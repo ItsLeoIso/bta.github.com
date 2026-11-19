@@ -249,7 +249,7 @@ test("backward Vector Burst points behind a fighter facing left",()=>{
   assert.equal(controller.projectiles[0].velocityY,0);
 });
 
-test("air Vector Burst can be used once per airtime",()=>{
+test("any projectile special can be used once per airtime",()=>{
   const controller=new ProjectileController();
   const fighter=makeFighter({onGround:false,y:300});
 
@@ -257,7 +257,30 @@ test("air Vector Burst can be used once per airtime",()=>{
     controller.updateFighter(fighter,input({pressed:["special"],down:["left"]})),
     true
   );
-  assert.equal(fighter.airVectorAvailable,false);
+  assert.equal(fighter.airProjectileAvailable,false);
+
+  for(let frame=0;frame<26;frame+=1) {
+    controller.updateFighter(fighter,input());
+  }
+
+  assert.equal(fighter.state.action,STATES.action.NONE);
+  // The lock applies to L-only shots as well as another Vector Burst.
+  assert.equal(
+    controller.updateFighter(fighter,input({pressed:["special"]})),
+    false
+  );
+  assert.equal(controller.projectiles.length,1);
+});
+
+test("an airborne Energy Shot also consumes the shared projectile allowance",()=>{
+  const controller=new ProjectileController();
+  const fighter=makeFighter({onGround:false,y:300});
+
+  assert.equal(
+    controller.updateFighter(fighter,input({pressed:["special"]})),
+    true
+  );
+  assert.equal(fighter.airProjectileAvailable,false);
 
   for(let frame=0;frame<26;frame+=1) {
     controller.updateFighter(fighter,input());
@@ -265,7 +288,7 @@ test("air Vector Burst can be used once per airtime",()=>{
 
   assert.equal(fighter.state.action,STATES.action.NONE);
   assert.equal(
-    controller.updateFighter(fighter,input({pressed:["special"],down:["left"]})),
+    controller.updateFighter(fighter,input({pressed:["special"],down:["up"]})),
     false
   );
   assert.equal(controller.projectiles.length,1);

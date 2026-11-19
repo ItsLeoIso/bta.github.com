@@ -588,10 +588,30 @@ Copy this template for each new handoff:
 
 **What changed:**
 - Kept the existing eight-way aim controls, including straight-up and backward shots; backward aim is the screen direction opposite the fighter's current facing.
-- Limited directional Vector Burst to one use per airtime. Landing restores the air-vector allowance; grounded Vector Burst use is not restricted by this air-only limit.
+- Limited all projectile specials to one use per airtime, including both neutral L-only Energy Shot and directional Vector Burst. They share one allowance, consumed when either move starts and restored only after landing. Grounded projectile use remains available.
 - Starting either projectile special now immediately clears horizontal velocity, vertical velocity, and committed air drift. The fighter remains still during startup/recovery; gravity resumes from zero vertical speed once recovery ends.
 - Left the Forward/Up + L behavior untouched for a later dedicated adjustment.
 
 **Verification:**
 - Added tests for backward aiming while facing left, one Vector Burst per airtime, refresh on landing, and momentum cancellation.
 - Automated workflow verification will be recorded after the new commit runs.
+
+
+### 2026-11-19 — ChatGPT — Share the one-air-projectile limit across all shots
+**Type:** Gameplay rule refinement / Regression tests
+**Files / systems:**
+- `src/combat/ProjectileController.js`
+- `src/engine/Arena.js`
+- `src/movement/MovementController.js`
+- `tests/ProjectileController.test.js`
+- `tests/ProjectileIntegration.test.js`
+- `docs/TECHNICAL_PLAN.md`, `README.md`
+
+**What changed:**
+- Replaced the Vector-only air allowance with one shared air-projectile allowance.
+- Either neutral L-only Energy Shot or directional Vector Burst consumes the allowance when started airborne.
+- The player cannot switch shot types to bypass the limit; the shared allowance refreshes on landing. Grounded projectile use is unaffected.
+
+**Verification:**
+- Tests cover Vector Burst followed by a blocked Energy Shot, Energy Shot followed by a blocked upward Vector Burst, and refresh on landing.
+- CI verification is pending for this commit.

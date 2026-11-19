@@ -131,7 +131,7 @@ test("up plus L fires a Vector Burst vertically and uses its separate damage pro
 });
 
 
-test("air Vector Burst is limited to one until landing, then becomes available again",()=>{
+test("any air projectile is limited to one until landing, then becomes available again",()=>{
   const arena=new Arena();
   arena.player.y=400;
   arena.player.previousY=400;
@@ -141,26 +141,26 @@ test("air Vector Burst is limited to one until landing, then becomes available a
 
   arena.update(1/60,input({axis:-1,pressed:["special"]}));
   assert.equal(arena.player.state.action,STATES.action.SPECIAL);
-  assert.equal(arena.player.airVectorAvailable,false);
+  assert.equal(arena.player.airProjectileAvailable,false);
 
   // Complete the startup/recovery while holding the fighter in place.
   for(let frame=0;frame<25;frame+=1) arena.update(1/60,input());
   assert.equal(arena.player.state.action,STATES.action.NONE);
 
-  arena.update(1/60,input({axis:-1,pressed:["special"]}));
+  // A neutral L-only Energy Shot is also blocked by the same air-use limit.
+  arena.update(1/60,input({pressed:["special"]}));
   assert.equal(arena.player.state.action,STATES.action.NONE);
-  assert.equal(
-    arena.projectileController.projectiles.filter(projectile=>projectile.moveId==="directionalSpecial").length,
-    1
-  );
+  assert.equal(arena.projectileController.projectiles.length,1);
 
   // Gravity resumes from rest after the shot; landing restores the air option.
   for(let frame=0;frame<80 && !arena.player.onGround;frame+=1) {
     arena.update(1/60,input());
   }
   assert.equal(arena.player.onGround,true);
-  assert.equal(arena.player.airVectorAvailable,true);
+  assert.equal(arena.player.airProjectileAvailable,true);
 
-  arena.update(1/60,input({axis:-1,pressed:["special"]}));
+  // Landing refreshes the allowance for either projectile type.
+  arena.update(1/60,input({pressed:["special"]}));
   assert.equal(arena.player.state.action,STATES.action.SPECIAL);
+  assert.equal(arena.player.actionData.moveId,"special");
 });
