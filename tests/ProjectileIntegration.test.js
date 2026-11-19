@@ -46,3 +46,37 @@ test("projectile is blockable from the side it travels in from and deals chip/gu
   assert.equal(arena.lastCombatEvent.type, "block");
   assert.equal(arena.lastCombatEvent.outcome, "block");
 });
+
+
+test("air projectile holds the fighter at the same position through recovery, then resumes movement",()=>{
+  const arena=new Arena();
+  arena.player.x=300;
+  arena.player.y=220;
+  arena.player.previousX=300;
+  arena.player.previousY=220;
+  arena.player.onGround=false;
+  arena.player.vy=180;
+  arena.player.airHorizontalVelocity=160;
+  arena.player.state.locomotion=STATES.locomotion.FALLING;
+
+  const startX=arena.player.x;
+  const startY=arena.player.y;
+  arena.update(1/60,input({pressed:["special"]}));
+
+  assert.equal(arena.player.state.action,STATES.action.SPECIAL);
+  assert.equal(arena.player.x,startX);
+  assert.equal(arena.player.y,startY);
+
+  for(let frame=0;frame<24;frame+=1){
+    arena.update(1/60,input());
+    assert.equal(arena.player.x,startX);
+    assert.equal(arena.player.y,startY);
+  }
+
+  assert.equal(arena.player.state.action,STATES.action.SPECIAL);
+  arena.update(1/60,input());
+
+  assert.equal(arena.player.state.action,STATES.action.NONE);
+  assert.ok(arena.player.x>startX);
+  assert.ok(arena.player.y>startY);
+});

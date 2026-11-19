@@ -149,3 +149,11 @@ Implemented in the first Phase 4 increment:
 - Prototype values: 540 units/second speed, 18-unit radius, 2.5-second lifetime, 8% damage, 18 hitstun frames, 280 knockback, 0.8% chip damage, and 25 guard-meter damage.
 - Direction+L is deliberately not treated as the button-only projectile; it is reserved for the next directional-special milestone. Motion-input recognition, buffering, and combos remain unimplemented.
 - Added unit and Arena integration coverage for startup/recovery, facing direction, direction+button suppression, airborne use, action locks, projectile movement/contact/expiry, hit damage, and blocking.
+
+
+## Movement regression fixes after the first projectile playtest
+
+- Directional jump input takes priority over defensive guard. Pressing W+A or W+D starts that screen-relative jump even when the direction would ordinarily start guard; pressing jump while already guarding releases guard first.
+- Jump also takes priority over reading the same directional keydown as the second tap of a backdash.
+- During airborne projectile startup and recovery, the fighter's horizontal and vertical positions remain fixed. The existing airborne velocities are preserved and movement/gravity resume unchanged after the special ends.
+- Regression tests cover backward and forward diagonal jumps, jumping out of guard, jump priority over a pending backdash, and the airborne projectile position hold/resume behaviour.

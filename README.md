@@ -4,7 +4,7 @@ A browser-first 2D 1v1 anime-style fighting game. This repository is the source 
 
 ## Current status
 
-**Combat prototype 007.** The Vanilla JavaScript + HTML5 Canvas foundation includes fixed-step simulation, movement, explicit fighter states, timed Light / Medium / Heavy attacks with High / Mid / Low hit levels, separate pushboxes and combat hurtboxes, active-frame hitboxes, damage and hit reactions, directional high/low guard with blockstun, chip damage, guard meter and guard breaks, hit/block frame-advantage reporting, and a complete prototype round loop, plus an L-only Energy Shot projectile special with its own travel collision and block/hit resolution. Rounds use a 99-second timer, first-to-two scoring, KO / timeout results, automatic round resets, and a match result with Enter-to-rematch. Round and timer values are prototype defaults pending playtesting.
+**Combat prototype 008.** The Vanilla JavaScript + HTML5 Canvas foundation includes fixed-step simulation, movement, explicit fighter states, timed Light / Medium / Heavy attacks with High / Mid / Low hit levels, separate pushboxes and combat hurtboxes, active-frame hitboxes, damage and hit reactions, directional high/low guard with blockstun, chip damage, guard meter and guard breaks, hit/block frame-advantage reporting, and a complete prototype round loop, plus an L-only Energy Shot projectile special with its own travel collision and block/hit resolution. Rounds use a 99-second timer, first-to-two scoring, KO / timeout results, automatic round resets, and a match result with Enter-to-rematch. Round and timer values are prototype defaults pending playtesting.
 
 ## Design at a glance
 - 2D, side-view, 1v1 fighting; assists may be considered later.

@@ -54,6 +54,7 @@ export class MovementController {
     const pressedWorldAxis =
       Number(input.wasPressed?.("right") ?? false) -
       Number(input.wasPressed?.("left") ?? false);
+    const jumpPressed = Boolean(input.wasPressed?.("jump"));
 
     fighter.onGround = fighter.y >= floorY && fighter.vy >= 0;
     if (fighter.onGround) {
@@ -89,6 +90,7 @@ export class MovementController {
       fighter.state.action === FIGHTER_STATES.action.NONE ||
       (fighter.state.action === FIGHTER_STATES.action.GUARD && tappingBackward);
     if (pressedWorldAxis !== 0 &&
+        !jumpPressed &&
         canStartDash &&
         fighter.state.reaction === FIGHTER_STATES.reaction.NONE) {
       const direction = pressedWorldAxis > 0 ? "right" : "left";
@@ -111,7 +113,7 @@ export class MovementController {
     if (fighter.onGround &&
         fighter.state.action === FIGHTER_STATES.action.NONE &&
         fighter.state.reaction === FIGHTER_STATES.reaction.NONE &&
-        input.wasPressed?.("jump")) {
+        jumpPressed) {
       fighter.vy = -this.jumpVelocity;
       fighter.onGround = false;
       fighter.y -= 0.001;
@@ -172,13 +174,13 @@ export class MovementController {
       fighter.vx = movingBackward
         ? worldAxis * this.groundSpeed * guardMultiplier
         : 0;
-    } else if (
-      fighter.state.action === FIGHTER_STATES.action.ATTACK ||
-      fighter.state.action === FIGHTER_STATES.action.SPECIAL
-    ) {
-      // Attacks and specials lock grounded horizontal control while preserving
-      // the fighter's committed airborne trajectory.
+    } else if (fighter.state.action === FIGHTER_STATES.action.ATTACK) {
+      // Grounded attacks lock movement; airborne attacks retain committed drift.
       fighter.vx = fighter.onGround ? 0 : fighter.airHorizontalVelocity ?? 0;
+    } else if (fighter.state.action === FIGHTER_STATES.action.SPECIAL) {
+      // Freeze horizontal position during an airborne projectile special.
+      // The committed air velocity is preserved and resumes after recovery.
+      fighter.vx = 0;
     } else if (fighter.onGround) {
       const speedMultiplier =
         fighter.state.locomotion === FIGHTER_STATES.locomotion.CROUCHING
@@ -191,7 +193,9 @@ export class MovementController {
 
     fighter.x = clamp(fighter.x + fighter.vx * deltaSeconds, minX, maxX);
     if (!fighter.onGround) {
-      if (
+      if (fighter.state.action === FIGHTER_STATES.action.SPECIAL) {
+        // Preserve both y and vy until the projectile special has recovered.
+      } else if (
         fighter.state.action === FIGHTER_STATES.action.DASH &&
         fighter.actionData.dashType === "air" &&
         fighter.actionData.remaining > 0

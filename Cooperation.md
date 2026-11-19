@@ -523,3 +523,26 @@ Copy this template for each new handoff:
 **Suggested next step:**
 - Browser-playtest L from both sides, grounded and airborne, plus standing/crouching block. Tune projectile speed, startup, recovery, hit reaction and visual scale based on feel.
 - Then implement direction+L specials before building motion-input recognition and command buffering.
+
+
+### 2026-11-19 — ChatGPT — Restore directional jumps and hold position during air projectile
+**Type:** Bug fix / Regression tests  
+**Files / systems:**
+- `src/combat/GuardController.js`
+- `src/movement/MovementController.js`
+- `tests/Arena.test.js`
+- `tests/ProjectileIntegration.test.js`
+- `docs/TECHNICAL_PLAN.md`
+- `README.md`, `index.html`
+
+**Findings:**
+- Guard began or maintained before movement processed jump. W+A could therefore enter guard instead of launching a backward diagonal jump.
+- The airborne projectile action only locked grounded movement. Airborne gravity and committed horizontal drift continued during the shot.
+
+**What changed:**
+- A jump press now cancels existing guard and suppresses starting guard for that frame. Jump also outranks a simultaneous directional double-tap.
+- While an airborne projectile special is in startup/recovery, the fighter's position is frozen in both axes. Existing horizontal and vertical velocities are preserved; movement resumes with the same trajectory after recovery.
+- Added regression tests for W+A, W+D, jumping out of back-guard, jump priority over a backdash, and air-special position hold followed by resumed movement.
+
+**Verification:**
+- CI result pending; please browser-test backward/forward diagonal jumps and an airborne Energy Shot after deployment.

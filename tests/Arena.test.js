@@ -25,6 +25,46 @@ test("arena updates facing based on relative fighter positions",()=>{
   assert.equal(arena.opponent.facing,1);
 });
 
+test("W+A starts a backward diagonal jump instead of entering guard",()=>{
+  const arena=new Arena();
+  const startX=arena.player.x;
+  arena.update(1/60,input({axis:-1,pressed:["jump","left"]}));
+  assert.ok(arena.player.y<arena.floorY);
+  assert.ok(arena.player.x<startX);
+  assert.ok(arena.player.airHorizontalVelocity<0);
+  assert.equal(arena.player.state.action,"none");
+});
+
+test("jumping out of an existing back-guard starts the backward jump",()=>{
+  const arena=new Arena();
+  arena.update(1/60,input({axis:-1,pressed:["left"]}));
+  assert.equal(arena.player.state.action,"guard");
+  const startX=arena.player.x;
+  arena.update(1/60,input({axis:-1,pressed:["jump"]}));
+  assert.ok(arena.player.y<arena.floorY);
+  assert.ok(arena.player.x<startX);
+  assert.equal(arena.player.state.action,"none");
+});
+
+test("W+D starts a forward diagonal jump",()=>{
+  const arena=new Arena();
+  const startX=arena.player.x;
+  arena.update(1/60,input({axis:1,pressed:["jump","right"]}));
+  assert.ok(arena.player.y<arena.floorY);
+  assert.ok(arena.player.x>startX);
+  assert.ok(arena.player.airHorizontalVelocity>0);
+});
+
+test("jump input wins over a pending backdash double-tap",()=>{
+  const arena=new Arena();
+  arena.movement.lastTap.left=arena.movement.elapsed;
+  const startX=arena.player.x;
+  arena.update(1/60,input({axis:-1,pressed:["jump","left"]}));
+  assert.ok(arena.player.y<arena.floorY);
+  assert.ok(arena.player.x<startX);
+  assert.equal(arena.player.dashType,null);
+});
+
 test("W jumps and gravity returns the fighter to the floor",()=>{
   const arena=new Arena();
   arena.update(1/60,input({pressed:["jump"]}));
