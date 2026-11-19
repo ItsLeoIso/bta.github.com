@@ -614,4 +614,66 @@ Copy this template for each new handoff:
 
 **Verification:**
 - Tests cover Vector Burst followed by a blocked Energy Shot, Energy Shot followed by a blocked upward Vector Burst, and refresh on landing.
-- CI verification is pending for this commit.
+- GitHub Actions test workflow passed: 132/132 tests. Pages deployment status is tracked in the workflow run for commit `be07692beb6ace9831b941c39496ff2531e1f1e9`.
+
+
+### 2026-11-19 — ChatGPT — Research note: Street Fighter 6 and Dragon Ball FighterZ projectile design
+**Type:** Design research / Owner-approved direction pending independent review
+**Status:** Proposal only. This entry records reference-game research and a recommended BTA direction; it does not implement new gameplay behavior.
+**Purpose:** Provide Claude with a concrete reference summary and review questions before the next aerial-projectile implementation pass.
+
+#### 1. Street Fighter 6 — Akuma's Zanku Hadoken
+Reference: [Akuma move list and frame data](https://streetfighterv.github.io/bot/AKUMA.html)
+
+- Akuma has a dedicated air fireball, Zanku Hadoken, with LP / MP / HP versions and an EX version. It is a distinct aerial special, not simply the grounded fireball reused in mid-air.
+- The referenced frame-data listing gives the standard aerial versions 11 frames of startup, 9 frames of recovery, and 9 frames of landing recovery. Its EX entry has different properties, including 4 frames of landing recovery.
+- The EX entry also documents an initial two-hit projectile box that nullifies projectiles before launching the multi-hit fireball. This is a useful example of projectile interaction rules being move-specific.
+- Frame data can change with balance patches and the linked community data is a reference, not a target for BTA's exact timings.
+
+**Design lesson:** An aerial projectile should be treated as a committed aerial move with its own startup / recovery and landing consequences. Its angle, speed, strength and projectile interaction can be tuned per move. Street Fighter 6 does not imply a universal one-air-projectile limit for every character; this is not the source of BTA's shared cap.
+
+#### 2. Dragon Ball FighterZ — shared air options and move-specific limits
+References: [System mechanics](https://mail.dustloop.com/w/DBFZ/Mechanics), [SS4 / DAIMA Goku move data](https://mail.dustloop.com/w/DBFZ/Goku_%28SS4%2C_DAIMA%29)
+
+- FighterZ has a general Air Option resource governing air movement choices such as a double jump or air dash. The system description says every character has one air option, restored by touching the ground, air recovery, or air guarding.
+- This general movement resource is separate from projectile usage. It should not be described as a universal projectile quota.
+- FighterZ also has individual aerial specials with their own usage restrictions. For SS4 / DAIMA Goku, each of j.214L, j.214M and j.214H can be used once before touching the ground.
+- FighterZ distinguishes standard landing recovery from Special Landing Recovery. The system reference gives Goku's Air Kamehameha as an example of a move that applies 30 frames of special landing recovery. Some aerial attacks also have mid-attack landing recovery if the character touches down before the move finishes recovering.
+
+**Design lesson:** Keep universal air-movement options separate from move-specific air-special rules. Landing is a meaningful combat state: a move may remain punishable on landing even if its airborne animation has ended or its ordinary recovery would otherwise have finished.
+
+#### 3. Projectile interaction ideas to borrow later
+
+- Use move-specific projectile properties rather than assuming every projectile has identical priority. FighterZ distinguishes Ki Blast / beam interactions and some moves can deflect or nullify projectiles; SF6 Akuma's EX Zanku Hadoken is another example of a projectile with a dedicated nullification phase.
+- Future BTA projectile definitions should be able to express speed, trajectory, durability / clash strength, number of hits, startup, recovery, block interaction and landing recovery.
+- These clash / durability rules are a later milestone. The immediate task is to make current Energy Shot and Vector Burst airtime behavior feel fair and readable.
+
+#### 4. Recommended BTA ruleset
+
+This is a deliberate BTA adaptation of the references, not a claim that either game uses precisely the same rule:
+
+1. **One shared air projectile per airtime.** Energy Shot and Vector Burst consume the same allowance when started airborne. Switching shot type cannot bypass the limit. Refresh only on landing for the first implementation. Grounded shots remain usable again after their ordinary move recovery.
+2. **Aerial shots commit the player.** On starting an aerial projectile, clear the fighter's existing horizontal momentum / air drift and upward velocity. Do not preserve the pre-shot trajectory.
+3. **Do not freeze the fighter in the air.** Once the old momentum is cancelled, normal gravity should continue during startup / firing / recovery. This replaces the current prototype behavior that freezes both x and y for the entire projectile action. The fighter should visibly stop rising and begin falling while the shot plays.
+4. **Keep the action lock.** The aerial special still owns its normal startup and recovery; the player cannot immediately jump, attack or fire again while that action remains active.
+5. **Make landing matter.** If the fighter touches down before the aerial special's recovery completes, the remaining recovery should continue to lock actions on the ground. Later, individual aerial moves may receive explicit additional landing recovery, similar to DBFZ's Special Landing Recovery. Avoid silently resetting the move or making landing cancel its commitment.
+6. **Keep move data extensible.** Energy Shot and Vector Burst can start with common timings, but store their projectile and landing properties separately so character-specific moves can diverge later.
+7. **Keep the current controls for now.** L alone remains Energy Shot; direction + L remains Vector Burst. The Forward/Up + L jump-then-shoot behavior is explicitly out of scope for this pass and should not be changed without a separate decision.
+
+#### 5. Requested second opinion from Claude
+
+Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's current code. In particular:
+
+- Is one shared projectile per airtime a good BTA-specific restriction, or would a move-specific limit / cooldown be fairer while still preventing the current 8–10-shot air spam?
+- Should the projectile allowance remain independent of BTA's air-dash allowance, or should BTA eventually adopt a shared air-option resource like FighterZ? Do not merge these resources without an explicit owner decision.
+- Does cancelling upward and horizontal momentum while continuing gravity produce the clearest aerial fireball feel? Are there edge cases when the character is close to the floor?
+- How should remaining special recovery behave when the fighter lands before it expires? Would a distinct post-landing recovery timer be better than simply continuing the existing action timer?
+- What minimal projectile clash / durability rules should BTA plan for without overengineering the current prototype?
+- Please flag any inaccurate reference-game claims, balance concerns, or likely implementation pitfalls before code changes are made.
+
+**Owner direction so far:** Leandro agreed that all aerial projectile shots should share one use per jump. The rest of this entry is a research-backed proposal for Claude's review, not yet a final implementation specification.
+
+**Primary reference pages consulted:**
+- Street Fighter 6 Akuma frame data: https://streetfighterv.github.io/bot/AKUMA.html
+- Dragon Ball FighterZ system mechanics: https://mail.dustloop.com/w/DBFZ/Mechanics
+- Dragon Ball FighterZ SS4 / DAIMA Goku move data: https://mail.dustloop.com/w/DBFZ/Goku_%28SS4%2C_DAIMA%29
