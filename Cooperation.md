@@ -737,8 +737,10 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 - The new command history is separate from the existing dash double-tap detector.
 
 **Verification:**
-- Added tests for right-facing and left-facing motion recognition, neutral gaps, invalid / stale inputs, single consumption, Arena command feedback and projectile suppression, camera tracking, stage-edge clamping, and camera reset.
-- Automated test and Pages workflows: pending after commit.
+- Added tests for right-facing and left-facing motion recognition, neutral gaps, invalid / stale inputs, single consumption, requiring forward still held at trigger time, Arena command feedback and projectile suppression, camera tracking, stage-edge clamping, and camera reset.
+- GitHub Actions Node.js tests passed: 143/143, 0 failures — https://github.com/ItsLeoIso/bta.github.com/actions/runs/44517180115
+- GitHub Pages build and deployment succeeded — https://github.com/ItsLeoIso/bta.github.com/actions/runs/44517178709
+- The first run exposed one stale backdash test fixture after the world expanded; the fixture was updated to the new world coordinates before the successful run.
 - Browser camera-feel and visual validation: not performed in this session.
 
 **Suggested next step:**
