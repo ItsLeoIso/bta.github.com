@@ -96,7 +96,12 @@ export class Arena {
     const projectileEvents=this.projectileController.updateProjectiles(
       deltaSeconds,
       [player,this.opponent],
-      {minX:-this.stageMargin,maxX:this.width+this.stageMargin}
+      {
+        minX:-this.stageMargin,
+        maxX:this.width+this.stageMargin,
+        minY:-this.stageMargin,
+        maxY:this.height+this.stageMargin
+      }
     );
     for(const projectileEvent of projectileEvents){
       this.resolveCombatEvent(projectileEvent);
