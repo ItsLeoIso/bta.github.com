@@ -5,6 +5,7 @@ import { DAMAGE_PROFILES, DamageController } from "../combat/DamageController.js
 import { BLOCK_PROFILES, GuardController } from "../combat/GuardController.js";
 import { resolvePushboxes } from "../movement/Pushbox.js";
 import { FIGHTER_STATES, FighterStateController } from "../state/FighterStateController.js";
+import { ROUND_PHASES, RoundController } from "../combat/RoundController.js";
 
 const clamp = (value,min,max)=>Math.min(max,Math.max(min,value));
 export const STAGE_MARGIN=68;
@@ -23,7 +24,7 @@ function createFighter({x,facing}) {
     dashType:null,dashRemaining:0,dashVelocity:0,
     airDashAvailable:true,airHorizontalVelocity:0,
     groundDashCooldownRemaining:0,lastAttackData:null,
-    guardData:null
+    guardData:null,reactionData:null
   };
 }
 
@@ -42,11 +43,26 @@ export class Arena {
     this.attacks=new AttackController({stateController:this.stateController});
     this.guard=new GuardController({stateController:this.stateController});
     this.damage=new DamageController();
+    this.rounds=new RoundController();
     this.lastCombatEvent=null;
     this.lastHit=null;
   }
 
   update(deltaSeconds,input) {
+    // The round controller owns all non-active transitions. Combat and physics
+    // stay frozen during result/ready-up screens and after the match is decided.
+    if (this.rounds.phase !== ROUND_PHASES.ACTIVE) {
+      const transition=this.rounds.update(deltaSeconds,{
+        playerHealth:this.player.health,
+        opponentHealth:this.opponent.health,
+        confirmPressed:Boolean(input.wasPressed?.("Enter") || input.wasPressed?.("Space"))
+      });
+      if (transition?.type==="nextRound" || transition?.type==="matchReset") {
+        this.resetFighters();
+      }
+      return;
+    }
+
     this.lastCombatEvent=null;
     if (this.lastHit) {
       this.lastHit.remaining-=deltaSeconds;
@@ -84,8 +100,6 @@ export class Arena {
         event.resolution=this.damage.applyHit(event);
       }
 
-      // Persist the last result so the frame-data inspector can show it after
-      // the attack's active action has ended.
       player.lastAttackData={
         ...(player.lastAttackData ?? {}),
         hitAdvantage:event.hitAdvantage ?? null,
@@ -107,5 +121,51 @@ export class Arena {
         remaining:0.48
       };
     }
+
+    // Check KO/timeout after combat resolution so a hit that empties health
+    // ends the round on this fixed simulation step.
+    this.rounds.update(deltaSeconds,{
+      playerHealth:this.player.health,
+      opponentHealth:this.opponent.health
+    });
+  }
+
+  resetFighters() {
+    this.resetFighter(this.player,300,1);
+    this.resetFighter(this.opponent,660,-1);
+    this.movement.lastTap={left:-Infinity,right:-Infinity};
+    this.lastCombatEvent=null;
+    this.lastHit=null;
+  }
+
+  resetFighter(fighter,x,facing) {
+    fighter.x=x;
+    fighter.y=this.floorY;
+    fighter.previousX=x;
+    fighter.previousY=this.floorY;
+    fighter.facing=facing;
+    fighter.health=1;
+    fighter.crouching=false;
+    fighter.guardMeter=100;
+    fighter.guardMeterRecoveryDelayFrames=0;
+    fighter.vx=0;
+    fighter.vy=0;
+    fighter.onGround=true;
+    fighter.state={
+      locomotion:FIGHTER_STATES.locomotion.STANDING,
+      action:FIGHTER_STATES.action.NONE,
+      reaction:FIGHTER_STATES.reaction.NONE
+    };
+    fighter.actionData={dashType:null,remaining:0,velocity:0};
+    fighter.dashType=null;
+    fighter.dashRemaining=0;
+    fighter.dashVelocity=0;
+    fighter.airDashAvailable=true;
+    fighter.airHorizontalVelocity=0;
+    fighter.groundDashCooldownRemaining=0;
+    fighter.lastAttackData=null;
+    fighter.guardData=null;
+    fighter.reactionData=null;
+    this.stateController.initialize(fighter);
   }
 }

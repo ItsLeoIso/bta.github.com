@@ -1,5 +1,6 @@
 import { getHurtbox } from "../combat/Hurtbox.js";
 import { getActiveAttackHitbox } from "../combat/Hitbox.js";
+import { ROUND_PHASES } from "../combat/RoundController.js";
 
 const COLORS = { background:"#090909", grid:"#202020", floor:"#55515a", accent:"#d7d0df", player:"#d9d4e2", opponent:"#8d8798", text:"#aaa4b2" };
 const HITBOX_COLORS = Object.freeze({
@@ -39,6 +40,7 @@ export class CanvasRenderer {
     this.drawFighter(ctx, arena.opponent, COLORS.opponent, alpha);
     this.drawCombatBoxes(ctx, arena);
     this.drawHud(ctx, arena);
+    this.drawRoundOverlay(ctx, arena);
     if (paused) {
       ctx.fillStyle = "rgba(0,0,0,.68)"; ctx.fillRect(0,0,arena.width,arena.height);
       ctx.fillStyle = COLORS.accent; ctx.textAlign = "center"; ctx.font = "bold 34px monospace";
@@ -61,7 +63,6 @@ export class CanvasRenderer {
     const fighterScale = 3;
     const bodyWidth = 42, bodyHeight = fighter.crouching ? 48 : 76, top = -bodyHeight;
     ctx.save();
-    // Keep the ground shadow broad but flat while scaling the fighter itself.
     ctx.fillStyle = "#3b3542";
     ctx.fillRect(x-(bodyWidth* fighterScale+10)/2,y-8,bodyWidth*fighterScale+10,8);
     ctx.translate(x,y);
@@ -79,7 +80,6 @@ export class CanvasRenderer {
       ctx.stroke();
     }
     if (fighter.state?.action === "attack" && fighter.actionData?.phase === "active") {
-      // A temporary animation cue; the active hit-level collision region is drawn separately.
       ctx.strokeStyle = "#f0e7ff";
       ctx.lineWidth = 4;
       ctx.beginPath();
@@ -140,7 +140,6 @@ export class CanvasRenderer {
     ctx.fillStyle = COLORS.player; ctx.fillRect(32,30,300*arena.player.health,12);
     ctx.fillStyle = COLORS.opponent; ctx.fillRect(arena.width-332+300*(1-arena.opponent.health),30,300*arena.opponent.health,12);
 
-    // Secondary guard meters sit below the health bars and drain on blocked pressure.
     ctx.fillStyle = "#302d35";
     ctx.fillRect(32,51,300,5);
     ctx.fillRect(arena.width-332,51,300,5);
@@ -151,6 +150,67 @@ export class CanvasRenderer {
     ctx.fillStyle = COLORS.text; ctx.font = "8px monospace"; ctx.textAlign = "left"; ctx.fillText("GUARD",32,67);
     ctx.textAlign = "right"; ctx.fillText("GUARD",arena.width-32,67);
 
-    ctx.textAlign = "center"; ctx.fillStyle = COLORS.accent; ctx.font = "bold 24px monospace"; ctx.fillText("99",arena.width/2,42);
+    const rounds = arena.rounds;
+    ctx.textAlign = "center";
+    ctx.fillStyle = COLORS.accent;
+    ctx.font = "bold 24px monospace";
+    ctx.fillText(String(Math.ceil(rounds.timerRemaining)),arena.width/2,42);
+    ctx.fillStyle = COLORS.text;
+    ctx.font = "bold 9px monospace";
+    ctx.fillText("ROUND " + rounds.roundNumber,arena.width/2,66);
+    ctx.font = "bold 11px monospace";
+    ctx.fillText(rounds.score.player + "  -  " + rounds.score.opponent,arena.width/2,82);
+  }
+
+  drawRoundOverlay(ctx, arena) {
+    const rounds = arena.rounds;
+    let headline = null;
+    let detail = "";
+    let prompt = "";
+
+    if (rounds.phase === ROUND_PHASES.ROUND_INTRO) {
+      headline = "ROUND " + rounds.roundNumber;
+      detail = "GET READY";
+    } else if (rounds.phase === ROUND_PHASES.ROUND_OVER) {
+      headline = rounds.roundWinner
+        ? (rounds.roundWinner === "player" ? "PLAYER 01 WINS ROUND" : "CPU DUMMY WINS ROUND")
+        : "ROUND DRAW";
+      detail = rounds.resultReason === "timeout"
+        ? "TIME UP"
+        : rounds.resultReason === "doubleKO"
+          ? "DOUBLE K.O."
+          : "K.O.";
+    } else if (rounds.phase === ROUND_PHASES.MATCH_OVER) {
+      headline = rounds.matchWinner === "player" ? "PLAYER 01 WINS" : "CPU DUMMY WINS";
+      detail = "MATCH COMPLETE";
+      prompt = "PRESS ENTER TO REMATCH";
+    } else if (rounds.phase === ROUND_PHASES.ACTIVE && rounds.bannerRemaining > 0) {
+      headline = rounds.bannerText;
+    }
+
+    if (!headline) return;
+
+    const isFightBanner = rounds.phase === ROUND_PHASES.ACTIVE;
+    ctx.save();
+    ctx.fillStyle = isFightBanner ? "rgba(0,0,0,.48)" : "rgba(0,0,0,.76)";
+    ctx.fillRect(150,190,660,160);
+    ctx.strokeStyle = "#51495b";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(150,190,660,160);
+    ctx.textAlign = "center";
+    ctx.fillStyle = COLORS.accent;
+    ctx.font = "bold " + (isFightBanner ? "30px" : "28px") + " monospace";
+    ctx.fillText(headline,arena.width/2,252);
+    if (detail) {
+      ctx.fillStyle = COLORS.text;
+      ctx.font = "bold 13px monospace";
+      ctx.fillText(detail,arena.width/2,286);
+    }
+    if (prompt) {
+      ctx.fillStyle = COLORS.accent;
+      ctx.font = "bold 12px monospace";
+      ctx.fillText(prompt,arena.width/2,316);
+    }
+    ctx.restore();
   }
 }

@@ -19,7 +19,7 @@
 - src/engine/ — game loop, timing, arena, and Canvas renderer.
 - src/input/ — keyboard state and logical actions; input history/motion recognition to follow.
 - src/movement/ — ground movement, jumping, air control, dashes, gravity.
-- src/combat/ — attacks, hitboxes, hurtboxes, hit reactions, combo state.
+- src/combat/ — attacks, hitboxes, hurtboxes, hit reactions, guard, and round flow.
 - src/characters/ — fighter definitions, stats, move data, character state.
 - src/ui/ — browser presentation and later menus/HUD.
 - assets/ — sprites, stages, sound, and music.
@@ -59,10 +59,10 @@ Implemented in the prototype:
 
 - Added a dedicated `src/movement/Pushbox.js` system for fighter-to-fighter body-space separation.
 - Standing and crouching use different vertical pushbox heights; pushboxes are anchored at the fighter's feet and remain separate from future hurtboxes and attack hitboxes.
-- Horizontal overlap is split between fighters where possible. Stage-edge constraints transfer the pinned fighter's share to the other fighter.
+- Horizontal overlap is shared between fighters where possible. Stage-edge constraints transfer the pinned fighter's share to the other fighter.
 - Vertical separation permits jumping over an opponent. Pushboxes resolve after movement on each fixed update.
 - Stage center margin is 68 arena units to keep the current 136-unit ground shadow on-stage.
-- Air dash holds vertical velocity at zero during its burst, restores normal air speed at dash end, and resumes gravity.
+- Air dash holds vertical velocity at zero during the burst, restores normal air speed at dash end, and resumes gravity.
 - Opposite-direction taps break a pending double-tap; the two taps are consumed when a dash is attempted.
 
 Initial pushbox values (55 half-width, 70 standing height, 50 crouching height) are tuning placeholders. Validate push sharing, corner behaviour, jump-over distances, and visual overlap in browser playtests.
@@ -104,19 +104,33 @@ Current forgiving collision profiles match the rendered fighter silhouette at 3x
 
 Implemented as the next combat pressure milestone. These values are initial prototype tuning and should be playtested before balance is treated as final:
 
-- Confirmed Light / Medium / Heavy hits still deal 6% / 10% / 15% health damage. Their hitstun remains 12 / 18 / 30 frames.
+- Confirmed Light / Medium / Heavy hits deal 6% / 10% / 15% health damage. Their hitstun remains 12 / 18 / 30 frames.
 - Blocking applies chip damage equal to 10% of the move's normal damage: Light 0.6%, Medium 1%, Heavy 1.5%. Chip damage is clamped so health never drops below zero.
 - Fighters begin with a 100-point guard meter. A blocked Light / Medium / Heavy removes 20 / 30 / 45 points.
 - Guard meter regeneration is 18 points per second after a 90-frame delay following a block. It does not regenerate while the fighter is guarding or in a reaction.
-- Reaching zero guard meter causes a 45-frame guard-break reaction with 1.5× the normal block pushback. The guard meter recovers after the same delayed regeneration rule.
+- Reaching zero guard meter causes a 45-frame guard-break reaction with 1.5× the normal block pushback. The guard meter recovers after that delayed regeneration rule.
 - Hit and block advantage are calculated from the attacker's perspective: defender hitstun/blockstun frames minus the attacker's remaining active + recovery frames at the moment of collision. Positive means the attacker recovers first; negative means the defender recovers first.
 - The live frame-data inspector shows signed advantage in frames, and the arena HUD displays both fighters' guard meters.
 - Regression tests cover chip damage, guard meter drain/recovery, guard break, and hit/block advantage.
 
+## Round flow prototype
+
+Implemented as a deterministic fixed-step match state machine in `src/combat/RoundController.js`:
+
+- The first round begins immediately with a brief "ROUND 1 · FIGHT!" banner, preserving the current playable preview and existing combat entry behaviour.
+- The round timer starts at 99 seconds and counts down only while the round is active. KO takes precedence if it happens on the same update as timeout.
+- A KO ends a round immediately. At timeout, the fighter with more remaining health wins; a simultaneous KO or tied timeout is a draw and awards no point.
+- The prototype match is first to two round wins (best of three). Drawn rounds do not change either score.
+- A short result display freezes player movement, attacks, guard, reactions, and the round timer. The next round automatically resets positions, health, guard meter, movement/action/reaction data, then shows a short ready-up display.
+- The match result remains on screen until Enter (or Space) is pressed to reset the score and begin a rematch.
+- These timer/scoring/display durations are prototype defaults, intentionally isolated in `RoundController` for later owner tuning.
+
+Regression coverage is in `tests/RoundController.test.js` and `tests/ArenaRoundIntegration.test.js`. Browser playtesting is still required for readability, pacing, and match feel.
+
 ## Next combat milestone
 
 - Add opponent attack behaviour so the current training dummy can actively exercise the player's guard in the live arena.
-- Continue with health bars and round flow, then begin special moves, input buffering, and combo systems.
+- Then move on to the Phase 4 special-input, buffering, and combo systems.
 
 ## Running and testing
 - Run locally: python3 -m http.server 8000, then open http://localhost:8000.

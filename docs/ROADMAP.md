@@ -33,7 +33,7 @@
 - [x] Blockstun and reduced block pushback.
 - [x] Chip damage on block, guard meter, delayed guard recovery, and guard-break reaction.
 - [x] Health and guard bars reflect current fighter values.
-- [ ] Round timer, round flow, and win / round result UI.
+- [x] Round timer, round flow, automatic fighter reset, and win / round result UI.
 
 ## Phase 4 — Special moves and combos
 - [ ] Special button alone: projectile.
@@ -44,8 +44,8 @@
 
 ## Phase 5 — First playable match
 - [ ] Two placeholder fighters with distinct test properties.
-- [ ] Complete local 1v1 match loop.
-- [ ] Basic stage presentation, timer, and win / round result UI.
+- [ ] Complete local 1v1 match loop with active opponent behaviour.
+- [ ] Basic stage presentation and match playtesting.
 - [ ] Playtest and fix core movement / combat issues.
 
 ## Phase 6 — Menus and modes

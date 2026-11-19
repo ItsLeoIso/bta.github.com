@@ -3,6 +3,7 @@ import { CanvasRenderer } from "./engine/CanvasRenderer.js";
 import { Arena } from "./engine/Arena.js";
 import { KeyboardInput } from "./input/KeyboardInput.js";
 import { StateDebugPanel } from "./ui/StateDebugPanel.js";
+import { ROUND_PHASES } from "./combat/RoundController.js";
 
 const canvas = document.querySelector("#game-canvas");
 const status = document.querySelector("#engine-status");
@@ -13,7 +14,7 @@ function reportEngineError(error) {
   console.error("BLT engine error:", error);
   if (status) {
     status.dataset.error = "true";
-    status.textContent = `ENGINE ERROR · ${message.slice(0, 180)}`;
+    status.textContent = "ENGINE ERROR · " + message.slice(0, 180);
   }
 }
 
@@ -48,7 +49,9 @@ try {
       status.dataset.error = "false";
       status.textContent = paused
         ? "PAUSED · PRESS ESC TO RESUME"
-        : "ENGINE RUNNING · FIXED 60 HZ SIMULATION";
+        : arena.rounds.phase === ROUND_PHASES.MATCH_OVER
+          ? "MATCH COMPLETE · PRESS ENTER TO REMATCH"
+          : "ENGINE RUNNING · FIXED 60 HZ SIMULATION";
     },
     onError: reportEngineError
   });

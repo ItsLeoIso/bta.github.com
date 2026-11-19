@@ -18,6 +18,9 @@ This document records the decisions confirmed so far. Anything labelled **Open**
 - 1v1 only for the initial game.
 - Assist mechanics are a possible future addition, not part of the initial implementation.
 - No tag-team system is planned for the initial version.
+- **Round-flow prototype defaults (not final balance rules):** 99 seconds per round; first to two round wins (best of three); a KO ends the round immediately; timeout awards the round to the fighter with more remaining health.
+- A simultaneous KO or exact health tie at timeout is a drawn round and awards no point. The next round starts automatically after a short result/ready-up display.
+- The match result remains visible until Enter is pressed to start a rematch. Space is also accepted as a confirmation key in the prototype.
 
 ## Controls
 
@@ -67,7 +70,7 @@ Exact state names, transition rules, air-guard availability, and knockdown rules
 - Initial placeholder dimensions are 55 arena units half-width, 70 units tall while standing, and 50 units tall while crouching. The box is anchored to the fighter's feet.
 - Overlap is shared between both fighters where possible. A fighter pinned against a stage edge is not moved beyond it; the other fighter absorbs the remaining separation.
 - Airborne fighters can pass over an opponent once their vertical pushbox ranges no longer overlap. The initial dimensions and jump-over window require playtesting.
-- Stage center limits use a 68-unit margin to keep the current wide ground shadow inside the stage.
+- Stage center limits use a 68-unit margin to keep the current 136-unit ground shadow on-stage.
 - Air dash holds vertical position for its 0.14-second burst, then gravity resumes; horizontal velocity returns to normal air speed (260 units/second) in the dash direction.
 - A same-direction double-tap starts a dash; an intervening opposite-direction tap breaks the sequence, and the pair is consumed when a dash is attempted.
 
@@ -119,6 +122,6 @@ These are menu destinations to plan for; their complete functionality will be im
 - Final programming language / framework / rendering technology.
 - Detailed move lists and per-character identities.
 - Exact movement and combat frame data / physics values.
-- Throws, meter, resource systems, round count, timer, and win conditions.
+- Throws, meter, resource systems, and final competitive round/timer rules beyond the prototype defaults.
 - Online networking architecture and matchmaking approach.
 - Audio direction and final sprite specifications.
