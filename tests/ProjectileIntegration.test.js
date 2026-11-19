@@ -71,7 +71,7 @@ test("air projectile cancels existing momentum and gravity resumes from rest",()
   assert.equal(arena.player.vy,0);
   assert.equal(arena.player.airHorizontalVelocity,0);
 
-  for(let frame=0;frame<25;frame+=1){
+  for(let frame=0;frame<24;frame+=1){
     arena.update(1/60,input());
     assert.equal(arena.player.x,startX);
     assert.equal(arena.player.y,startY);
@@ -80,8 +80,9 @@ test("air projectile cancels existing momentum and gravity resumes from rest",()
     assert.equal(arena.player.airHorizontalVelocity,0);
   }
 
-  assert.equal(arena.player.state.action,STATES.action.NONE);
+  assert.equal(arena.player.state.action,STATES.action.SPECIAL);
   arena.update(1/60,input());
+  assert.equal(arena.player.state.action,STATES.action.NONE);
 
   assert.equal(arena.player.x,startX);
   assert.ok(arena.player.y>startY);
