@@ -41,11 +41,14 @@ export class GuardController {
     const holdingBack = axis * fighter.facing < 0;
     const crouchGuard = Boolean(input.isDown?.("crouch"));
     const jumpPressed = Boolean(input.wasPressed?.("jump"));
+    const specialPressed = Boolean(input.wasPressed?.("special"));
+    const directionalInput = ["left", "right", "jump", "crouch"]
+      .some(action => Boolean(input.isDown?.(action)));
+    const directionalSpecialPressed = specialPressed && directionalInput;
 
     if (fighter.state.action === FIGHTER_STATES.action.GUARD) {
-      // Jump takes priority over holding back: release guard so W+A / W+D
-      // can always start a directional jump, including out of guard.
-      if (!fighter.onGround || jumpPressed || !holdingBack) {
+      // Jump and directional specials take priority over holding back.
+      if (!fighter.onGround || jumpPressed || directionalSpecialPressed || !holdingBack) {
         states.endAction(fighter, FIGHTER_STATES.action.GUARD);
         fighter.guardData = null;
       } else {
@@ -59,6 +62,7 @@ export class GuardController {
       }
     } else if (
       !jumpPressed &&
+      !directionalSpecialPressed &&
       holdingBack &&
       fighter.onGround &&
       fighter.state.action === FIGHTER_STATES.action.NONE &&
