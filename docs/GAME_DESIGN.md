@@ -36,7 +36,7 @@ This document records the decisions confirmed so far. Anything labelled **Open**
 | Light | H | High attack — can be crouched under |
 | Medium | J | Mid attack — hits standing and crouching opponents |
 | Heavy | K | Low attack — hits grounded opponents, misses airborne opponents |
-| Special | L | Special input / attack |
+| Special | L | L alone fires Energy Shot; hold a direction with L to fire Vector Burst |
 
 Movement keys are screen-relative and never reverse when fighters cross: A always means left and D always means right. Fighters automatically turn to face the opponent. Whether a dash is classified as a forward dash or backdash is determined by comparing its screen direction with the fighter's facing direction.
 
@@ -81,13 +81,18 @@ These dimensions and movement details are prototype values to validate in the br
 - Attack buttons: Light (H / High), Medium (J / Mid), Heavy (K / Low), Special (L).
 - Attack height is separate from the move's strength and frame data. High attacks occupy the upper body and can be crouched under; Mid attacks cover the torso and catch standing or crouching opponents; Low attacks strike near the feet, hit grounded opponents, and pass under airborne opponents.
 - All three special-input styles are intended to coexist:
-  1. **Button-only:** L by itself performs a projectile.
+  1. **Button-only:** L by itself performs the forward-facing Energy Shot projectile.
+  2. **Direction + button:** hold A, D, W, or S with L to perform the eight-way Vector Burst; diagonal combinations are supported. The aim vector is screen-relative, matching A/D movement, and diagonals are normalized so they do not travel faster than straight shots.
+  3. **Motion input:** a traditional motion such as quarter-circle forward + L performs an advanced special.
   2. **Direction + button:** a direction combined with L performs a directional special.
   3. **Motion input:** a traditional motion such as quarter-circle forward + L performs an advanced special.
 
 ### Initial projectile special prototype (Phase 4)
 
-- Pressing L without a horizontal direction held fires an \`Energy Shot\` projectile. Direction+L is intentionally not treated as the button-only move; directional specials will be added in the next input milestone.
+- Pressing L with no direction held fires an `Energy Shot` projectile toward the fighter's facing.
+- Holding a direction with L performs the eight-way `Vector Burst`. A/D aim screen-left/right, W aims up, S aims down, and diagonal combinations aim between those axes. The direction is captured when L is pressed; later movement or facing changes do not bend an active projectile.
+- If both opposing directions on the same axis are held, the special does not start rather than silently falling back to Energy Shot.
+- Vector Burst uses the same initial startup, recovery, speed, projectile size, lifetime, hit level, and damage as Energy Shot, but has its own move ID and balance profile so it can be tuned separately. It can be used grounded or airborne, and a directional special takes priority over back-guard on the input frame.
 - The initial projectile can be used from the ground or air when the fighter has no active action or reaction. It uses 8 startup frames and 18 recovery frames at 60 Hz.
 - Prototype projectile values: 540 arena units/second, 18-unit radius, 2.5-second lifetime, 8% hit damage, 18 frames of hitstun, and 280 units/second knockback. A block deals 0.8% chip damage and 25 guard-meter damage.
 - The projectile is a mid and can be guarded with either standing or crouching guard. Once launched, it remains active even if the owner leaves recovery or is interrupted. Prototype values are for playtesting, not final balance.
