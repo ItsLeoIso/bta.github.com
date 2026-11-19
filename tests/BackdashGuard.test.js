@@ -33,7 +33,7 @@ test("standing backward double-tap cancels guard and starts a backdash", () => {
 
 test("standing backward double-tap still backdashes when facing left", () => {
   const arena = new Arena();
-  arena.player.x = 800;
+  arena.player.x = 1200;
 
   arena.update(1 / 60, input(1, ["right"]));
   arena.update(0.08, input());
