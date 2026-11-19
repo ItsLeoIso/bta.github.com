@@ -28,6 +28,13 @@ export const DAMAGE_PROFILES = Object.freeze({
     hitstunFrames: 18,
     knockback: 280,
     reaction: "hitstun"
+  }),
+  directionalSpecial: Object.freeze({
+    damage: 0.08,
+    chipDamage: 0.008,
+    hitstunFrames: 18,
+    knockback: 280,
+    reaction: "hitstun"
   })
 });
 
