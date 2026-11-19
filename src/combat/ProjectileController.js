@@ -15,9 +15,39 @@ export const PROJECTILE_DEFAULTS = Object.freeze({
   hitLevel: "mid"
 });
 
+export const DIRECTIONAL_SPECIAL_DEFAULTS = Object.freeze({
+  moveId: "directionalSpecial",
+  moveName: "Vector Burst",
+  hitLevel: "mid"
+});
+
+function resolveSpecialDirection(input, facing) {
+  const isDown = action => Boolean(input.isDown?.(action));
+  const left = isDown("left");
+  const right = isDown("right");
+  const up = isDown("jump");
+  const down = isDown("crouch");
+
+  // Opposing directions are ambiguous; do not silently turn them into L-only.
+  if ((left && right) || (up && down)) return { invalid: true };
+
+  const horizontal = Number(right) - Number(left);
+  const vertical = Number(down) - Number(up);
+  if (horizontal === 0 && vertical === 0) {
+    return { x: Math.sign(facing) || 1, y: 0, directional: false };
+  }
+
+  const magnitude = Math.hypot(horizontal, vertical);
+  return {
+    x: horizontal / magnitude,
+    y: vertical / magnitude,
+    directional: true
+  };
+}
+
 /**
- * Button-only special prototype. Direction+button and motion inputs are
- * deliberately left to the later Phase 4 input-recognition milestones.
+ * Handles both the button-only Energy Shot and the eight-way Vector Burst.
+ * Movement directions stay screen-relative, matching A/D movement controls.
  */
 export class ProjectileController {
   constructor({
@@ -71,23 +101,27 @@ export class ProjectileController {
 
     if (!input.wasPressed?.("special")) return false;
 
-    // L by itself is the button-only projectile. Direction+L is reserved for
-    // the directional-special recognizer and must not silently become a shot.
-    if (input.isDown?.("left") || input.isDown?.("right")) return false;
+    const direction = resolveSpecialDirection(input, fighter.facing);
+    if (direction.invalid) return false;
 
+    const move = direction.directional
+      ? DIRECTIONAL_SPECIAL_DEFAULTS
+      : PROJECTILE_DEFAULTS;
     const started = states.startAction(
       fighter,
       FIGHTER_STATES.action.SPECIAL,
       {
-        moveId: PROJECTILE_DEFAULTS.moveId,
-        moveName: PROJECTILE_DEFAULTS.moveName,
-        hitLevel: PROJECTILE_DEFAULTS.hitLevel,
+        moveId: move.moveId,
+        moveName: move.moveName,
+        hitLevel: move.hitLevel,
         startupFrames: this.startupFrames,
         recoveryFrames: this.recoveryFrames,
         elapsedFrames: 0,
         phase: "startup",
         phaseFrame: 0,
         projectileSpawned: false,
+        directionX: direction.x,
+        directionY: direction.y,
         hitAdvantage: null,
         blockAdvantage: null
       }
@@ -95,9 +129,9 @@ export class ProjectileController {
     if (!started) return false;
 
     fighter.lastAttackData = {
-      moveId: PROJECTILE_DEFAULTS.moveId,
-      moveName: PROJECTILE_DEFAULTS.moveName,
-      hitLevel: PROJECTILE_DEFAULTS.hitLevel,
+      moveId: move.moveId,
+      moveName: move.moveName,
+      hitLevel: move.hitLevel,
       startupFrames: this.startupFrames,
       activeFrames: null,
       recoveryFrames: this.recoveryFrames,
@@ -116,7 +150,13 @@ export class ProjectileController {
       data.phase = "startup";
       data.phaseFrame = data.elapsedFrames;
       if (data.elapsedFrames === this.startupFrames) {
-        this.spawnProjectile(fighter);
+        this.spawnProjectile(fighter, {
+          directionX: data.directionX,
+          directionY: data.directionY,
+          moveId: data.moveId,
+          moveName: data.moveName,
+          hitLevel: data.hitLevel
+        });
         data.projectileSpawned = true;
         data.phase = "recovery";
         data.phaseFrame = 0;
@@ -131,20 +171,31 @@ export class ProjectileController {
     }
   }
 
-  spawnProjectile(fighter) {
-    const direction = Math.sign(fighter.facing) || 1;
+  spawnProjectile(fighter, moveData = {}) {
+    const requestedX = Number.isFinite(moveData.directionX)
+      ? moveData.directionX
+      : Math.sign(fighter.facing) || 1;
+    const requestedY = Number.isFinite(moveData.directionY) ? moveData.directionY : 0;
+    const magnitude = Math.hypot(requestedX, requestedY) || 1;
+    const directionX = requestedX / magnitude;
+    const directionY = requestedY / magnitude;
+    // Vertical shots still approach from the fighter's facing side for guard checks.
+    const direction = Math.sign(directionX) || Math.sign(fighter.facing) || 1;
     const projectile = {
       id: this.nextProjectileId++,
       owner: fighter,
-      x: fighter.x + direction * this.spawnOffsetX,
-      y: fighter.y + this.spawnOffsetY,
+      x: fighter.x + directionX * this.spawnOffsetX,
+      y: fighter.y + this.spawnOffsetY + directionY * this.spawnOffsetX,
       direction,
-      velocityX: direction * this.speed,
+      directionX,
+      directionY,
+      velocityX: directionX * this.speed,
+      velocityY: directionY * this.speed,
       radius: this.radius,
       remainingSeconds: this.lifetimeSeconds,
-      moveId: PROJECTILE_DEFAULTS.moveId,
-      moveName: PROJECTILE_DEFAULTS.moveName,
-      hitLevel: PROJECTILE_DEFAULTS.hitLevel
+      moveId: moveData.moveId ?? PROJECTILE_DEFAULTS.moveId,
+      moveName: moveData.moveName ?? PROJECTILE_DEFAULTS.moveName,
+      hitLevel: moveData.hitLevel ?? PROJECTILE_DEFAULTS.hitLevel
     };
     this.projectiles.push(projectile);
     return projectile;
@@ -152,7 +203,9 @@ export class ProjectileController {
 
   updateProjectiles(deltaSeconds, fighters = [], {
     minX = -68,
-    maxX = 1028
+    maxX = 1028,
+    minY = -Infinity,
+    maxY = Infinity
   } = {}) {
     const delta = Number.isFinite(deltaSeconds) ? Math.max(0, deltaSeconds) : 0;
     const events = [];
@@ -160,12 +213,15 @@ export class ProjectileController {
     for (let index = this.projectiles.length - 1; index >= 0; index -= 1) {
       const projectile = this.projectiles[index];
       projectile.x += projectile.velocityX * delta;
+      projectile.y += projectile.velocityY * delta;
       projectile.remainingSeconds -= delta;
 
       if (
         projectile.remainingSeconds <= 0 ||
         projectile.x + projectile.radius < minX ||
-        projectile.x - projectile.radius > maxX
+        projectile.x - projectile.radius > maxX ||
+        projectile.y + projectile.radius < minY ||
+        projectile.y - projectile.radius > maxY
       ) {
         this.projectiles.splice(index, 1);
         continue;
