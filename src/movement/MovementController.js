@@ -192,10 +192,8 @@ export class MovementController {
     }
 
     fighter.x = clamp(fighter.x + fighter.vx * deltaSeconds, minX, maxX);
-    if (!fighter.onGround) {
-      if (fighter.state.action === FIGHTER_STATES.action.SPECIAL) {
-        // Preserve both y and vy until the projectile special has recovered.
-      } else if (
+    if (!fighter.onGround && fighter.state.action !== FIGHTER_STATES.action.SPECIAL) {
+      if (
         fighter.state.action === FIGHTER_STATES.action.DASH &&
         fighter.actionData.dashType === "air" &&
         fighter.actionData.remaining > 0
