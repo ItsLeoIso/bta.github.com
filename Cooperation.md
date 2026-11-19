@@ -491,3 +491,35 @@ Copy this template for each new handoff:
 - Keep Phase 5's active opponent behaviour separate from this round-management milestone.
 
 ---
+
+
+### 2026-11-19 — ChatGPT — Phase 4 started: button-only projectile special
+**Type:** Implemented / Handoff  
+**Files / systems:**
+- \`src/combat/ProjectileController.js\` (new)
+- \`src/state/FighterStateController.js\`
+- \`src/movement/MovementController.js\`
+- \`src/combat/CombatCollision.js\`
+- \`src/combat/DamageController.js\`
+- \`src/combat/GuardController.js\`
+- \`src/engine/Arena.js\`
+- \`src/engine/CanvasRenderer.js\`
+- \`tests/ProjectileController.test.js\` (new)
+- \`tests/ProjectileIntegration.test.js\` (new)
+- \`docs/GAME_DESIGN.md\`, \`docs/TECHNICAL_PLAN.md\`, \`docs/ROADMAP.md\`, \`README.md\`, \`index.html\`
+
+**What changed:**
+- Implemented L alone as a button-only \`Energy Shot\` projectile. Holding A or D while pressing L suppresses this move; directional specials remain a separate next step.
+- The projectile starts after 8 startup frames, travels at 540 arena units/second, has an 18-unit radius and 2.5-second lifetime, and is removed on contact or expiry.
+- Added the explicit \`special\` action state and an 18-frame recovery lockout. The special can be fired from grounded or airborne neutral.
+- Projectile contacts reuse the existing hurtboxes, damage, chip, guard meter, blockstun, hitstun, and result-feedback path. Projectile-side direction remains correct if the owner later changes sides.
+- Prototype tuning: 8% damage, 18 hitstun frames, 280 knockback, 0.8% chip damage and 25 guard-meter damage. These values are not final balance.
+- Updated the roadmap to mark only the button-only projectile item complete. Direction+button, motion recognition, input buffering, air combos and cancels remain open.
+
+**Verification:**
+- Added controller unit tests and Arena integration tests for projectile startup/recovery, facing, direction suppression, air use, contact, expiry, hit damage and blocking.
+- Automated CI result is pending at the time of this handoff; no browser playtest has been performed in this implementation session.
+
+**Suggested next step:**
+- Browser-playtest L from both sides, grounded and airborne, plus standing/crouching block. Tune projectile speed, startup, recovery, hit reaction and visual scale based on feel.
+- Then implement direction+L specials before building motion-input recognition and command buffering.

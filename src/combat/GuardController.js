@@ -15,7 +15,8 @@ export const GUARD_BREAK_FRAMES = 45;
 export const GUARD_DAMAGE = Object.freeze({
   light: 20,
   medium: 30,
-  heavy: 45
+  heavy: 45,
+  special: 25
 });
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
@@ -90,7 +91,8 @@ export class GuardController {
     if (!event || event.type !== "block") return null;
     const defender = event.defender;
     const profile = BLOCK_PROFILES[event.hitLevel] ?? BLOCK_PROFILES.mid;
-    const direction = Math.sign(defender.x - event.attacker.x) || defender.facing || 1;
+    const direction = Math.sign(event.knockbackDirection ?? 0) ||
+      Math.sign(defender.x - event.attacker.x) || defender.facing || 1;
     const guardDamage = GUARD_DAMAGE[event.moveId] ?? GUARD_DAMAGE.medium;
 
     defender.guardMeter = clamp(

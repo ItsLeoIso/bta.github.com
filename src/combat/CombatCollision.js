@@ -9,9 +9,12 @@ export function boxesOverlap(first, second) {
     first.bottom > second.top;
 }
 
-function canGuardAttack(attacker, defender, hitLevel) {
+export function canGuardAttack(attacker, defender, hitLevel, projectileDirection = null) {
   if (defender.state?.action !== FIGHTER_STATES.action.GUARD) return false;
-  const incomingDirection = Math.sign(attacker.x - defender.x);
+  // A launched projectile keeps its original incoming side even after its owner moves.
+  const incomingDirection = projectileDirection === null
+    ? Math.sign(attacker.x - defender.x)
+    : -Math.sign(projectileDirection);
   if (incomingDirection === 0 || incomingDirection !== defender.facing) return false;
 
   const guardHeight = defender.guardData?.guardHeight ??

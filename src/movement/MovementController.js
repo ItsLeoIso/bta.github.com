@@ -172,8 +172,12 @@ export class MovementController {
       fighter.vx = movingBackward
         ? worldAxis * this.groundSpeed * guardMultiplier
         : 0;
-    } else if (fighter.state.action === FIGHTER_STATES.action.ATTACK) {
-      // Attacks lock grounded horizontal control.
+    } else if (
+      fighter.state.action === FIGHTER_STATES.action.ATTACK ||
+      fighter.state.action === FIGHTER_STATES.action.SPECIAL
+    ) {
+      // Attacks and specials lock grounded horizontal control while preserving
+      // the fighter's committed airborne trajectory.
       fighter.vx = fighter.onGround ? 0 : fighter.airHorizontalVelocity ?? 0;
     } else if (fighter.onGround) {
       const speedMultiplier =

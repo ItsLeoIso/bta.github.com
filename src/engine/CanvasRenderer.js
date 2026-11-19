@@ -38,6 +38,7 @@ export class CanvasRenderer {
     this.drawBackdrop(ctx, arena);
     this.drawFighter(ctx, arena.player, COLORS.player, alpha);
     this.drawFighter(ctx, arena.opponent, COLORS.opponent, alpha);
+    this.drawProjectiles(ctx, arena);
     this.drawCombatBoxes(ctx, arena);
     this.drawHud(ctx, arena);
     this.drawRoundOverlay(ctx, arena);
@@ -89,6 +90,22 @@ export class CanvasRenderer {
     }
     ctx.restore();
   }
+  drawProjectiles(ctx, arena) {
+    for (const projectile of arena.projectileController.projectiles) {
+      ctx.save();
+      ctx.fillStyle = "#8ecbff";
+      ctx.strokeStyle = "#e6f5ff";
+      ctx.lineWidth = 3;
+      ctx.shadowColor = "#8ecbff";
+      ctx.shadowBlur = 14;
+      ctx.beginPath();
+      ctx.arc(projectile.x,projectile.y,projectile.radius,0,Math.PI*2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
   drawCombatBoxes(ctx, arena) {
     const fighters = [arena.player, arena.opponent];
     ctx.save();

@@ -136,3 +136,16 @@ Regression coverage is in `tests/RoundController.test.js` and `tests/ArenaRoundI
 - Run locally: python3 -m http.server 8000, then open http://localhost:8000.
 - Run tests: npm test (requires Node.js).
 - No install/build step is required.
+
+
+## Phase 4 — Button-only projectile special (prototype)
+
+Implemented in the first Phase 4 increment:
+
+- Added \`src/combat/ProjectileController.js\`. It starts the L-only special when the special key is pressed without left/right held, creates a facing-relative projectile after 8 startup frames, and tracks travel, lifetime, bounds, hurtbox contact, and one-hit removal.
+- Added an explicit \`special\` fighter action so the 18-frame recovery locks grounded movement and prevents other actions, while preserving committed airborne horizontal motion. The special may be started from grounded or airborne neutral.
+- Projectile contacts reuse the existing standing/crouching/airborne hurtboxes and shared damage, chip-damage, guard-meter, blockstun, and hitstun controllers.
+- The launched projectile preserves its original travel direction for guard-side checks and knockback even if its owner later changes position.
+- Prototype values: 540 units/second speed, 18-unit radius, 2.5-second lifetime, 8% damage, 18 hitstun frames, 280 knockback, 0.8% chip damage, and 25 guard-meter damage.
+- Direction+L is deliberately not treated as the button-only projectile; it is reserved for the next directional-special milestone. Motion-input recognition, buffering, and combos remain unimplemented.
+- Added unit and Arena integration coverage for startup/recovery, facing direction, direction+button suppression, airborne use, action locks, projectile movement/contact/expiry, hit damage, and blocking.

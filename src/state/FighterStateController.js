@@ -18,6 +18,7 @@ export const FIGHTER_STATES = Object.freeze({
     NONE: "none",
     DASH: "dash",
     ATTACK: "attack",
+    SPECIAL: "special",
     GUARD: "guard"
   }),
   reaction: Object.freeze({

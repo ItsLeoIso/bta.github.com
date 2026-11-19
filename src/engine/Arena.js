@@ -1,11 +1,12 @@
 import { MovementController } from "../movement/MovementController.js";
 import { AttackController } from "../combat/AttackController.js";
-import { resolveAttackCollision } from "../combat/CombatCollision.js";
+import { resolveAttackCollision, canGuardAttack } from "../combat/CombatCollision.js";
 import { DAMAGE_PROFILES, DamageController } from "../combat/DamageController.js";
 import { BLOCK_PROFILES, GuardController } from "../combat/GuardController.js";
 import { resolvePushboxes } from "../movement/Pushbox.js";
 import { FIGHTER_STATES, FighterStateController } from "../state/FighterStateController.js";
 import { ROUND_PHASES, RoundController } from "../combat/RoundController.js";
+import { ProjectileController } from "../combat/ProjectileController.js";
 
 const clamp = (value,min,max)=>Math.min(max,Math.max(min,value));
 export const STAGE_MARGIN=68;
@@ -44,6 +45,7 @@ export class Arena {
     this.guard=new GuardController({stateController:this.stateController});
     this.damage=new DamageController();
     this.rounds=new RoundController();
+    this.projectileController=new ProjectileController({stateController:this.stateController});
     this.lastCombatEvent=null;
     this.lastHit=null;
   }
@@ -77,6 +79,7 @@ export class Arena {
     this.opponent.facing=-player.facing;
     this.guard.update(player,input);
     this.attacks.update(player,input);
+    this.projectileController.updateFighter(player,input);
     this.movement.update(player,input,deltaSeconds,{
       floorY:this.floorY,minX:this.stageMargin,maxX:this.width-this.stageMargin
     });
@@ -88,38 +91,15 @@ export class Arena {
 
     // Resolve after movement and pushboxes so both boxes use final frame positions.
     const event=resolveAttackCollision(player,this.opponent);
-    if(event){
-      if(event.type==="block"){
-        const blockProfile=BLOCK_PROFILES[event.hitLevel] ?? BLOCK_PROFILES.mid;
-        event.blockAdvantage=blockProfile.blockstunFrames-event.attackerRecoveryFrames;
-        event.chipDamage=this.damage.applyChipDamage(event)?.damage ?? 0;
-        event.resolution=this.guard.applyBlock(event);
-      } else {
-        const hitProfile=DAMAGE_PROFILES[event.moveId] ?? DAMAGE_PROFILES.medium;
-        event.hitAdvantage=hitProfile.hitstunFrames-event.attackerRecoveryFrames;
-        event.resolution=this.damage.applyHit(event);
-      }
+    if(event) this.resolveCombatEvent(event);
 
-      player.lastAttackData={
-        ...(player.lastAttackData ?? {}),
-        hitAdvantage:event.hitAdvantage ?? null,
-        blockAdvantage:event.blockAdvantage ?? null
-      };
-      if(player.state.action===FIGHTER_STATES.action.ATTACK){
-        player.actionData.hitAdvantage=event.hitAdvantage ?? null;
-        player.actionData.blockAdvantage=event.blockAdvantage ?? null;
-      }
-
-      event.outcome=event.resolution?.outcome ?? event.type;
-      this.lastCombatEvent=event;
-      this.lastHit={
-        moveName:event.moveName,
-        hitLevel:event.hitLevel,
-        outcome:event.outcome,
-        x:this.opponent.x,
-        y:this.opponent.y-112,
-        remaining:0.48
-      };
+    const projectileEvents=this.projectileController.updateProjectiles(
+      deltaSeconds,
+      [player,this.opponent],
+      {minX:-this.stageMargin,maxX:this.width+this.stageMargin}
+    );
+    for(const projectileEvent of projectileEvents){
+      this.resolveCombatEvent(projectileEvent);
     }
 
     // Check KO/timeout after combat resolution so a hit that empties health
@@ -130,10 +110,63 @@ export class Arena {
     });
   }
 
+  resolveCombatEvent(event) {
+    if(event.type==="contact"){
+      event.type=canGuardAttack(
+        event.attacker,
+        event.defender,
+        event.hitLevel,
+        event.projectileDirection ?? null
+      ) ? "block" : "hit";
+    }
+
+    const attacker=event.attacker;
+    const defender=event.defender;
+    const attackerRecoveryFrames=event.attackerRecoveryFrames ?? 0;
+
+    if(event.type==="block"){
+      const blockProfile=BLOCK_PROFILES[event.hitLevel] ?? BLOCK_PROFILES.mid;
+      event.blockAdvantage=blockProfile.blockstunFrames-attackerRecoveryFrames;
+      event.chipDamage=this.damage.applyChipDamage(event)?.damage ?? 0;
+      event.resolution=this.guard.applyBlock(event);
+    } else {
+      const hitProfile=DAMAGE_PROFILES[event.moveId] ?? DAMAGE_PROFILES.medium;
+      event.hitAdvantage=hitProfile.hitstunFrames-attackerRecoveryFrames;
+      event.resolution=this.damage.applyHit(event);
+    }
+
+    attacker.lastAttackData={
+      ...(attacker.lastAttackData ?? {}),
+      moveId:event.moveId,
+      moveName:event.moveName,
+      hitAdvantage:event.hitAdvantage ?? null,
+      blockAdvantage:event.blockAdvantage ?? null
+    };
+    if(
+      attacker.state.action===FIGHTER_STATES.action.ATTACK ||
+      attacker.state.action===FIGHTER_STATES.action.SPECIAL
+    ){
+      attacker.actionData.hitAdvantage=event.hitAdvantage ?? null;
+      attacker.actionData.blockAdvantage=event.blockAdvantage ?? null;
+    }
+
+    event.outcome=event.resolution?.outcome ?? event.type;
+    this.lastCombatEvent=event;
+    this.lastHit={
+      moveName:event.moveName,
+      hitLevel:event.hitLevel,
+      outcome:event.outcome,
+      x:defender.x,
+      y:defender.y-112,
+      remaining:0.48
+    };
+  }
+
   resetFighters() {
     this.resetFighter(this.player,300,1);
     this.resetFighter(this.opponent,660,-1);
     this.movement.lastTap={left:-Infinity,right:-Infinity};
+    this.projectileController.clear();
     this.lastCombatEvent=null;
     this.lastHit=null;
   }

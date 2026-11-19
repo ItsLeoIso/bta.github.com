@@ -36,7 +36,7 @@
 - [x] Round timer, round flow, automatic fighter reset, and win / round result UI.
 
 ## Phase 4 — Special moves and combos
-- [ ] Special button alone: projectile.
+- [x] Special button alone: projectile (initial button-only prototype).
 - [ ] Direction + Special moves.
 - [ ] Motion-input recognition (e.g. quarter-circle forward + Special).
 - [ ] Input buffer and command history.

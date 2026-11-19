@@ -21,6 +21,13 @@ export const DAMAGE_PROFILES = Object.freeze({
     hitstunFrames: 30,
     knockback: 360,
     reaction: "knockdown"
+  }),
+  special: Object.freeze({
+    damage: 0.08,
+    chipDamage: 0.008,
+    hitstunFrames: 18,
+    knockback: 280,
+    reaction: "hitstun"
   })
 });
 
@@ -33,7 +40,8 @@ export class DamageController {
     const profile = DAMAGE_PROFILES[event.moveId] ?? DAMAGE_PROFILES.medium;
     const defender = event.defender;
     defender.health = clamp((defender.health ?? 1) - profile.damage, 0, 1);
-    const direction = Math.sign(defender.x - event.attacker.x) || event.attacker.facing || 1;
+    const direction = Math.sign(event.knockbackDirection ?? 0) ||
+      Math.sign(defender.x - event.attacker.x) || event.attacker.facing || 1;
     defender.reactionData = {
       remainingFrames: profile.hitstunFrames,
       totalFrames: profile.hitstunFrames,
