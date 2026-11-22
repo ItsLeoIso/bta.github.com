@@ -138,6 +138,7 @@ export class Arena {
       playerHealth:this.player.health,
       opponentHealth:this.opponent.health
     });
+    if (this.rounds.phase !== ROUND_PHASES.ACTIVE) this.inputBuffer.clear();
   }
 
   updateCamera() {

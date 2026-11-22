@@ -137,12 +137,14 @@ Implemented prototype foundation:
 - Added `src/input/CommandHistory.js`, which samples facing-relative eight-way directions once per fixed simulation frame and keeps a short command history.
 - Quarter-Circle Forward is recognised as Down → Down-Forward → Forward + L within 24 frames. It works relative to either facing direction; brief neutral gaps are allowed.
 - Recognition is currently a feedback-only prototype. The input is consumed rather than silently firing Energy Shot / Vector Burst, because the advanced move's gameplay properties have not yet been designed.
-- The command recogniser is independent of the existing double-tap dash detector. Input buffering and execution during recovery are not implemented yet.
+- Added `src/input/InputBuffer.js`: Light / Medium / Heavy / Special button presses remain pending for eight fixed simulation frames while the current action or reaction prevents execution. A later combat-button press replaces the pending command; same-frame priority follows the existing Light → Medium → Heavy → Special dispatch order.
+- Buffered Special snapshots its directional inputs at press time, so a delayed Vector Burst keeps its original aim. The buffer is cleared when a round leaves the active phase or fighters reset. Movement, guard, jump, and dash remain immediate and are not buffered.
+- The command recogniser is independent of the existing double-tap dash detector. A buffered command is delivered on the first legal frame, including the exact frame a prior action finishes.
 
 ## Next combat milestone
 
-- Add input buffering so a valid command can be entered shortly before recovery ends and execute on the first legal frame.
 - Define the first advanced motion special (move identity, hit level, timing, projectile / hit properties) before connecting the recognised command to a gameplay action.
+- Add cancel windows and combo tracking after the move's frame data and buffer behavior have been playtested.
 - Add basic opponent behaviour so the training dummy can exercise the player's guard, then build air combos, cancel windows, and combo tracking.
 
 ## Running and testing
@@ -162,7 +164,7 @@ Implemented in the first Phase 4 increment:
 - Prototype values: 540 units/second speed, 18-unit radius, 2.5-second lifetime, 8% damage, 18 hitstun frames, 280 knockback, 0.8% chip damage, and 25 guard-meter damage.
 - Direction+L is handled as the separate eight-way Vector Burst. A/D, W/S, and diagonal combinations set a screen-relative aim vector; diagonal velocity is normalized. Opposing directions on one axis cancel the special instead of falling back to the button-only projectile.
 - Vector Burst shares the Energy Shot's initial 8-frame startup, 18-frame recovery, 540-unit/second speed, 18-unit radius, 2.5-second lifetime, and 8% damage profile, but uses a separate move ID / damage profile for later tuning. Vertical shots spawn from the fighter's forward side to clear pushbox spacing.
-- Pressing a directional special while holding back releases or suppresses guard so back+L can start the move. Motion-input recognition, buffering, and combos remain unimplemented.
+- Pressing a directional special while holding back releases or suppresses guard so back+L can start the move. Motion-input recognition is feedback-only; combat button buffering is implemented; cancel windows and combos remain unimplemented.
 - Added unit and Arena integration coverage for startup/recovery, facing direction, direction+button suppression, airborne use, action locks, projectile movement/contact/expiry, hit damage, and blocking.
 
 

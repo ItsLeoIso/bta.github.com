@@ -745,3 +745,30 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 
 **Suggested next step:**
 - Browser-test retreating, advancing, jump-overs, wall pressure, and fighters near both stage ends. Then define the first advanced motion special and add input buffering so commands can execute on the first legal frame.
+
+
+### 2026-11-22 — ChatGPT — Add eight-frame combat input buffering
+**Type:** Gameplay implementation / regression coverage
+**Files / systems:**
+- `src/input/InputBuffer.js`
+- `src/engine/Arena.js`
+- `src/engine/CanvasRenderer.js`
+- `tests/InputBuffer.test.js`
+- `tests/InputBufferIntegration.test.js`
+- `docs/GAME_DESIGN.md`, `docs/TECHNICAL_PLAN.md`, `docs/ROADMAP.md`, `README.md`, `index.html`
+
+**What changed:**
+- Added an eight-fixed-frame input buffer for Light, Medium, Heavy, and Special.
+- Inputs remain pending while an action or reaction prevents execution, then dispatch on the first legal frame, including the frame a prior action finishes.
+- A newer combat-button press replaces the previous pending command. Simultaneous button priority follows the existing Light → Medium → Heavy → Special selection order.
+- Buffered Special snapshots the direction held on its original press, preserving Vector Burst aim while the player waits through recovery.
+- Movement, guard, jump, and dash remain immediate. Buffered input clears on round result / reset. A small HUD label shows the pending action and remaining frames.
+- Quarter-Circle Forward + L remains a separate feedback-only command and clears any older pending button rather than falling through to a projectile.
+
+**Verification:**
+- Pending GitHub Actions run after commit.
+- Tests cover buffer duration, expiry, replacement, direction snapshots, QCF exclusion, recovery-frame execution, expired commands, and round-result clearing.
+- Browser/manual playtesting not performed in this session.
+
+**Suggested next step:**
+- Playtest H/J/K/L pressed during startup, active frames, recovery, hitstun, and blockstun. Confirm eight frames feels responsive without causing surprising delayed moves; then build the first actual QCF special and combo/cancel rules.

@@ -45,6 +45,7 @@ export class CanvasRenderer {
     this.drawCombatBoxes(ctx, arena);
     ctx.restore();
     this.drawHud(ctx, arena);
+    this.drawInputBuffer(ctx, arena);
     this.drawCommandFeedback(ctx, arena);
     this.drawRoundOverlay(ctx, arena);
     if (paused) {
@@ -185,6 +186,18 @@ export class CanvasRenderer {
     ctx.fillText("ROUND " + rounds.roundNumber,arena.width/2,66);
     ctx.font = "bold 11px monospace";
     ctx.fillText(rounds.score.player + "  -  " + rounds.score.opponent,arena.width/2,82);
+  }
+
+  drawInputBuffer(ctx, arena) {
+    const remaining=arena.inputBuffer?.remainingFrames(arena.inputFrame ?? 0) ?? 0;
+    const action=arena.inputBuffer?.pending?.action;
+    if (!remaining || !action) return;
+    ctx.save();
+    ctx.fillStyle="#ffe096";
+    ctx.font="bold 11px monospace";
+    ctx.textAlign="left";
+    ctx.fillText("BUFFER " + action.toUpperCase() + " · " + remaining + "F",32,arena.height-18);
+    ctx.restore();
   }
 
   drawCommandFeedback(ctx, arena) {

@@ -39,7 +39,7 @@
 - [x] Special button alone: projectile (initial button-only prototype).
 - [x] Direction + Special moves (eight-way Vector Burst).
 - [x] Facing-relative command history and Quarter-Circle Forward + Special recognition (24-frame window; feedback prototype only).
-- [ ] Input buffering (queue commands for execution when the fighter becomes available).
+- [x] Eight-frame combat input buffer for Light / Medium / Heavy / Special, including direction snapshots for buffered Vector Burst.
 - [ ] Air combos, cancels, combo tracking, and recovery rules.
 
 ## Phase 5 — First playable match

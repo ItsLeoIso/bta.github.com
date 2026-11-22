@@ -103,6 +103,7 @@ These dimensions and movement details are prototype values to validate in the br
 - The projectile is a mid and can be guarded with either standing or crouching guard. Once launched, it remains active even if the owner leaves recovery or is interrupted. Prototype values are for playtesting, not final balance.
 - **Blocking:** Hold the screen direction opposite the opponent (away from the opponent) to guard. The required direction is resolved from the fighter's current facing, so the guard direction automatically changes when the fighters cross sides. This is deliberately separate from screen-relative movement: A always moves left and D always moves right.
 - Quarter-Circle Forward + L is currently recognised relative to facing using Down → Down-Forward → Forward within a 24-frame window. The command is consumed and shown in a brief HUD confirmation; it has no assigned gameplay move yet.
+- Light, Medium, Heavy, and Special button presses use an eight-fixed-frame input buffer when an action or reaction blocks immediate execution. A newer combat-button press replaces the pending one. Special aim directions are captured when the button is pressed. Movement, guard, jump, and dash are not buffered; pending combat inputs are discarded when a round ends or resets.
 - The input system should be data-driven / extensible so different characters can receive different moves later.
 - The game should be easy to learn but offer room for technical mastery.
 - Fast, flashy combat and air combos are core goals.
