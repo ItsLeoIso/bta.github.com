@@ -857,6 +857,11 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 - Added a DOM menu state machine with six tests and a training-mode Arena integration test.
 - The first foundations are complete; training reset-position controls, input recording / playback, character select, online transport, and deeper Arcade progression remain future work.
 
-**Implementation files / commit:** to be appended after CI verification.
-**Verification:** pending on this commit. The preceding Arc Lance commit passed 180/180 tests and deployed successfully.
-**Playtesting note:** no manual browser playtest was performed in this session.
+**Implementation commit:**
+- `52c334b22699734847a8b50762fd1e1be82e9283` — https://github.com/ItsLeoIso/bta.github.com/commit/52c334b22699734847a8b50762fd1e1be82e9283
+- `61e47930b76dc9b47fe091f88ba8b6f91a47ec06` — follow-up test fix; captures the short-lived hit event on the frame it occurs.
+
+**Verification:**
+- GitHub Actions Node.js tests: **187/187 passed, 0 failures** — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45067699413
+- GitHub Pages build and deployment succeeded — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45067699450
+- Manual browser playtesting was not performed in this session. Menu keyboard / mouse focus, responsive layout, and Training / Arcade feel still need visual playtesting.
