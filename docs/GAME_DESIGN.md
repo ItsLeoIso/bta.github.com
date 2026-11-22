@@ -153,3 +153,14 @@ These are menu destinations to plan for; their complete functionality will be im
 - The special keeps its existing startup and recovery timer if the fighter lands early. It remains locked on the ground until the original recovery finishes. No extra landing-recovery frames are applied in this prototype.
 - A projectile started close to the floor still completes its startup and spawns on frame 8 even if the fighter lands first. The action remains locked until its normal recovery ends.
 - The Forward/Up + L jump-then-shoot behavior remains out of scope for this rule change.
+
+
+## Combo routes, aerial combat, and recovery (prototype)
+
+- **Hit-confirm cancels only:** a normal attack can cancel only after it actually hits. A whiff or a blocked attack stays committed to its complete recovery. Light cancels into Medium, Heavy, or Special on the ground; Medium cancels into Heavy or Special. In the air, Light cancels into Medium or Special, while Medium cancels into Special. Heavy has no normal cancel route.
+- **Jump-cancel routes:** a confirmed grounded Light or Medium can be cancelled into a jump. A grounded Medium hit launches the opponent upward with an initial 520 units/second vertical velocity. The launch is applied only when the target is grounded; later aerial hits do not repeatedly reset the juggle height.
+- **Air attacks:** Light and Medium may be started while airborne. Heavy remains ground-only. Existing hit levels and hitboxes still apply, so the Low Heavy does not hit an airborne opponent.
+- **Combo tracking:** each defender has one active combo record. A follow-up from the same attacker increments the hit count and cumulative actual damage. The link timer is 45 fixed frames and resets on each hit.
+- **Damage scaling:** the first hit deals 100% of its move damage; each subsequent hit scales damage down by 10 percentage points, with a 40% floor. Hitstun and move recovery are not scaled in this first prototype.
+- **Juggle rule:** a launched opponent may take up to three additional airborne hits from the same attacker. A fourth aerial follow-up is dropped, preventing an infinite air loop. The HUD displays the player's combo count, whether the route is aerial, and cumulative damage.
+- These are first-pass gameplay values, not final balance. The launcher height, link window, cancel routes, juggle cap, and damage scaling need browser playtesting and later tuning.

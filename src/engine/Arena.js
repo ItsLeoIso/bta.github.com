@@ -9,6 +9,7 @@ import { ROUND_PHASES, RoundController } from "../combat/RoundController.js";
 import { ProjectileController } from "../combat/ProjectileController.js";
 import { CommandHistory } from "../input/CommandHistory.js";
 import { InputBuffer } from "../input/InputBuffer.js";
+import { ComboTracker } from "../combat/ComboTracker.js";
 
 const clamp = (value,min,max)=>Math.min(max,Math.max(min,value));
 export const STAGE_MARGIN=68;
@@ -51,6 +52,7 @@ export class Arena {
     this.projectileController=new ProjectileController({stateController:this.stateController});
     this.commandHistory=new CommandHistory();
     this.inputBuffer=new InputBuffer({bufferFrames:8});
+    this.comboTracker=new ComboTracker({comboWindowFrames:45,maxJuggleHits:3});
     this.inputFrame=0;
     this.commandFeedbackText="";
     this.commandFeedbackRemaining=0;
@@ -66,6 +68,7 @@ export class Arena {
     // stay frozen during result/ready-up screens and after the match is decided.
     if (this.rounds.phase !== ROUND_PHASES.ACTIVE) {
       this.inputBuffer.clear();
+      this.comboTracker.reset();
       const transition=this.rounds.update(deltaSeconds,{
         playerHealth:this.player.health,
         opponentHealth:this.opponent.health,
@@ -78,6 +81,7 @@ export class Arena {
     }
 
     this.lastCombatEvent=null;
+    this.comboTracker.update();
     this.commandFeedbackRemaining=Math.max(0,this.commandFeedbackRemaining-deltaSeconds);
     if (this.commandFeedbackRemaining===0) this.commandFeedbackText="";
     if (this.lastHit) {
@@ -105,6 +109,26 @@ export class Arena {
     }
     const bufferedInput=this.inputBuffer.getInput(input,this.inputFrame);
     this.guard.update(player,input);
+
+    // Light / Medium can cancel into a projectile only after a confirmed hit.
+    // The motion-command prototype remains feedback-only and is never promoted
+    // into a projectile by this route.
+    const cancelData=player.actionData;
+    const cancelTargets=player.onGround
+      ? (cancelData.cancelOnHit ?? [])
+      : (cancelData.airCancelOnHit ?? []);
+    const specialCancel =
+      !quarterCircleSpecial &&
+      player.state.action===FIGHTER_STATES.action.ATTACK &&
+      cancelData.hitOutcome==="hit" &&
+      cancelTargets.includes("special") &&
+      bufferedInput.wasPressed?.("special");
+    if (specialCancel) {
+      const fromMoveId=cancelData.moveId;
+      this.stateController.endAction(player,FIGHTER_STATES.action.ATTACK);
+      player.lastCancelData={type:"hit",fromMoveId,toMoveId:"special"};
+    }
+
     const actionDataBefore=player.actionData;
     this.attacks.update(player,bufferedInput);
     const projectileInput = quarterCircleSpecial
@@ -197,16 +221,28 @@ export class Arena {
     const attacker=event.attacker;
     const defender=event.defender;
     const attackerRecoveryFrames=event.attackerRecoveryFrames ?? 0;
+    const wasAirborne=defender.onGround===false;
+
+    if(event.type==="hit" && !this.comboTracker.canRegisterHit(event)){
+      // The collision is consumed, but a fourth aerial follow-up is dropped.
+      event.type="juggleDrop";
+    }
 
     if(event.type==="block"){
       const blockProfile=BLOCK_PROFILES[event.hitLevel] ?? BLOCK_PROFILES.mid;
       event.blockAdvantage=blockProfile.blockstunFrames-attackerRecoveryFrames;
       event.chipDamage=this.damage.applyChipDamage(event)?.damage ?? 0;
       event.resolution=this.guard.applyBlock(event);
-    } else {
+    } else if(event.type==="hit"){
       const hitProfile=DAMAGE_PROFILES[event.moveId] ?? DAMAGE_PROFILES.medium;
       event.hitAdvantage=hitProfile.hitstunFrames-attackerRecoveryFrames;
-      event.resolution=this.damage.applyHit(event);
+      const damageScale=this.comboTracker.getDamageScale(event);
+      event.resolution=this.damage.applyHit(event,{damageScale});
+      event.combo=this.comboTracker.recordHit(
+        event,
+        event.resolution?.damage ?? 0,
+        {wasAirborne}
+      );
     }
 
     attacker.lastAttackData={
@@ -214,7 +250,8 @@ export class Arena {
       moveId:event.moveId,
       moveName:event.moveName,
       hitAdvantage:event.hitAdvantage ?? null,
-      blockAdvantage:event.blockAdvantage ?? null
+      blockAdvantage:event.blockAdvantage ?? null,
+      hitOutcome:event.type
     };
     if(
       attacker.state.action===FIGHTER_STATES.action.ATTACK ||
@@ -222,6 +259,7 @@ export class Arena {
     ){
       attacker.actionData.hitAdvantage=event.hitAdvantage ?? null;
       attacker.actionData.blockAdvantage=event.blockAdvantage ?? null;
+      attacker.actionData.hitOutcome=event.type;
     }
 
     event.outcome=event.resolution?.outcome ?? event.type;
@@ -243,6 +281,7 @@ export class Arena {
     this.projectileController.clear();
     this.commandHistory.reset();
     this.inputBuffer.clear();
+    this.comboTracker.reset();
     this.inputFrame=0;
     this.commandFeedbackText="";
     this.commandFeedbackRemaining=0;
@@ -279,6 +318,7 @@ export class Arena {
     fighter.airHorizontalVelocity=0;
     fighter.groundDashCooldownRemaining=0;
     fighter.lastAttackData=null;
+    fighter.lastCancelData=null;
     fighter.guardData=null;
     fighter.reactionData=null;
     this.stateController.initialize(fighter);

@@ -89,16 +89,54 @@ test("Medium and Heavy input select their own move definitions", () => {
   }
 });
 
-test("attacks cannot start in the air or during another action", () => {
-  const controller = new AttackController();
-  const airborne = makeFighter({ onGround: false });
-  controller.update(airborne, input(["light"]));
-  assert.equal(airborne.state.action, STATES.action.NONE);
+test("Light and Medium can start in the air, while Heavy remains grounded-only", () => {
+  for (const moveId of ["light", "medium"]) {
+    const airborne = makeFighter({ onGround: false });
+    new AttackController().update(airborne, input([moveId]));
+    assert.equal(airborne.state.action, STATES.action.ATTACK);
+    assert.equal(airborne.actionData.moveId, moveId);
+  }
+
+  const groundedOnly = makeFighter({ onGround: false });
+  new AttackController().update(groundedOnly, input(["heavy"]));
+  assert.equal(groundedOnly.state.action, STATES.action.NONE);
 
   const busy = makeFighter();
   busy.state.action = STATES.action.DASH;
-  controller.update(busy, input(["heavy"]));
+  new AttackController().update(busy, input(["heavy"]));
   assert.equal(busy.state.action, STATES.action.DASH);
+});
+
+test("a hit-confirmed Light cancels into Medium and starts its first frame immediately", () => {
+  const controller = new AttackController();
+  const fighter = makeFighter();
+  controller.update(fighter, input(["light"]));
+  fighter.actionData.hitOutcome = "hit";
+  controller.update(fighter, input(["medium"]));
+  assert.equal(fighter.actionData.moveId, "medium");
+  assert.equal(fighter.actionData.elapsedFrames, 1);
+  assert.deepEqual(fighter.lastCancelData, { type: "hit", fromMoveId: "light", toMoveId: "medium" });
+});
+
+test("whiffs and blocks do not open normal-cancel windows", () => {
+  for (const outcome of [null, "block"]) {
+    const fighter = makeFighter();
+    const controller = new AttackController();
+    controller.update(fighter, input(["light"]));
+    fighter.actionData.hitOutcome = outcome;
+    controller.update(fighter, input(["medium"]));
+    assert.equal(fighter.actionData.moveId, "light");
+  }
+});
+
+test("a confirmed grounded Light can be jump-cancelled", () => {
+  const fighter = makeFighter();
+  const controller = new AttackController();
+  controller.update(fighter, input(["light"]));
+  fighter.actionData.hitOutcome = "hit";
+  controller.update(fighter, input(["jump"]));
+  assert.equal(fighter.state.action, STATES.action.NONE);
+  assert.deepEqual(fighter.lastCancelData, { type: "jump", fromMoveId: "light", toMoveId: "jump" });
 });
 
 test("attacks cannot be started while a reaction is active", () => {

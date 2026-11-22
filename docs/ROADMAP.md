@@ -40,7 +40,7 @@
 - [x] Direction + Special moves (eight-way Vector Burst).
 - [x] Facing-relative command history and Quarter-Circle Forward + Special recognition (24-frame window; feedback prototype only).
 - [x] Eight-frame combat input buffer for Light / Medium / Heavy / Special, including direction snapshots for buffered Vector Burst.
-- [ ] Air combos, cancels, combo tracking, and recovery rules.
+- [x] Hit-confirm cancels, jump-cancels, air Light / Medium attacks, launcher-based air combos, combo tracking / damage scaling, juggle limits, and recovery rules.
 
 ## Phase 5 — First playable match
 - [ ] Two placeholder fighters with distinct test properties.

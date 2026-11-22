@@ -63,6 +63,7 @@ export function resolveAttackCollision(attacker, defender) {
     hitbox,
     hurtbox,
     attackFrame: data.phaseFrame,
+    launchVelocity: data.launchVelocity ?? null,
     attackerRecoveryFrames
   };
 }

@@ -45,6 +45,7 @@ export class CanvasRenderer {
     this.drawCombatBoxes(ctx, arena);
     ctx.restore();
     this.drawHud(ctx, arena);
+    this.drawComboCounter(ctx, arena);
     this.drawInputBuffer(ctx, arena);
     this.drawCommandFeedback(ctx, arena);
     this.drawRoundOverlay(ctx, arena);
@@ -151,7 +152,9 @@ export class CanvasRenderer {
         ? "GUARD BREAK"
         : arena.lastHit.outcome === "block"
           ? "BLOCKED"
-          : "HIT";
+          : arena.lastHit.outcome === "juggleDrop"
+            ? "JUGGLE DROP"
+            : "HIT";
       const label = [level, arena.lastHit.moveName.toUpperCase(), outcome].filter(Boolean).join(" ");
       ctx.fillText(label, arena.lastHit.x, arena.lastHit.y);
     }
@@ -186,6 +189,20 @@ export class CanvasRenderer {
     ctx.fillText("ROUND " + rounds.roundNumber,arena.width/2,66);
     ctx.font = "bold 11px monospace";
     ctx.fillText(rounds.score.player + "  -  " + rounds.score.opponent,arena.width/2,82);
+  }
+
+  drawComboCounter(ctx, arena) {
+    const combo=arena.comboTracker?.getComboForAttacker(arena.player);
+    if(!combo || combo.hitCount<2) return;
+    ctx.save();
+    ctx.textAlign="center";
+    ctx.fillStyle=combo.airCombo ? "#8ecbff" : "#ffe096";
+    ctx.font="bold 20px monospace";
+    ctx.fillText((combo.airCombo ? "AIR COMBO" : "COMBO") + " x" + combo.hitCount,arena.width/2,112);
+    ctx.fillStyle=COLORS.text;
+    ctx.font="bold 10px monospace";
+    ctx.fillText((combo.totalDamage*100).toFixed(1) + "% DAMAGE",arena.width/2,128);
+    ctx.restore();
   }
 
   drawInputBuffer(ctx, arena) {

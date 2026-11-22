@@ -76,3 +76,72 @@ test("Arena preserves a miss so a later active frame can still connect", () => {
   arena.update(1 / 60, neutral);
   assert.equal(arena.lastCombatEvent?.type, "hit");
 });
+
+
+test("a confirmed Light can cancel into Medium and preserves the combo sequence", () => {
+  const arena = new Arena();
+  arena.player.x = 400;
+  arena.opponent.x = 510;
+  arena.update(1 / 60, input({ pressed: ["light"] }));
+  for (let frame = 0; frame < 4; frame += 1) arena.update(1 / 60, neutral);
+  arena.update(1 / 60, neutral);
+  assert.equal(arena.lastCombatEvent?.type, "hit");
+
+  arena.update(1 / 60, input({ pressed: ["medium"] }));
+  assert.equal(arena.player.actionData.moveId, "medium");
+  assert.equal(arena.player.actionData.elapsedFrames, 1);
+  assert.equal(arena.player.lastCancelData.toMoveId, "medium");
+  assert.equal(arena.inputBuffer.pending, null);
+});
+
+test("a confirmed Light can cancel into a buffered Energy Shot", () => {
+  const arena = new Arena();
+  arena.player.x = 400;
+  arena.opponent.x = 510;
+  arena.update(1 / 60, input({ pressed: ["light"] }));
+  for (let frame = 0; frame < 4; frame += 1) arena.update(1 / 60, neutral);
+  arena.update(1 / 60, neutral);
+  assert.equal(arena.lastCombatEvent?.type, "hit");
+
+  arena.update(1 / 60, input({ pressed: ["special"] }));
+  assert.equal(arena.player.state.action, STATES.action.SPECIAL);
+  assert.equal(arena.player.actionData.moveId, "special");
+  assert.equal(arena.player.lastCancelData.toMoveId, "special");
+  assert.equal(arena.inputBuffer.pending, null);
+});
+
+test("a grounded Medium launches on hit and supports a jump-cancelled air follow-up", () => {
+  const arena = new Arena();
+  arena.player.x = 400;
+  arena.opponent.x = 510;
+  arena.update(1 / 60, input({ pressed: ["medium"] }));
+  for (let frame = 0; frame < 8 && !arena.lastCombatEvent; frame += 1) {
+    arena.update(1 / 60, neutral);
+  }
+
+  assert.equal(arena.lastCombatEvent?.type, "hit");
+  assert.equal(arena.opponent.onGround, false);
+  assert.ok(arena.opponent.vy < 0);
+  assert.equal(arena.opponent.state.locomotion, STATES.locomotion.JUMPING);
+
+  arena.update(1 / 60, input({ pressed: ["jump"] }));
+  assert.equal(arena.player.state.action, STATES.action.NONE);
+  assert.equal(arena.player.onGround, false);
+  arena.update(1 / 60, input({ pressed: ["light"] }));
+  assert.equal(arena.player.state.action, STATES.action.ATTACK);
+  assert.equal(arena.player.actionData.moveId, "light");
+
+  let airFollowUp = null;
+  for (let frame = 0; frame < 12 && !airFollowUp; frame += 1) {
+    arena.update(1 / 60, neutral);
+    if (arena.lastCombatEvent?.type === "hit" && arena.lastCombatEvent.moveId === "light") {
+      airFollowUp = arena.lastCombatEvent;
+    }
+  }
+  assert.ok(airFollowUp, "the airborne Light should connect against the launched target");
+  const combo = arena.comboTracker.getComboForAttacker(arena.player);
+  assert.equal(combo.hitCount, 2);
+  assert.equal(combo.airCombo, true);
+  assert.equal(combo.juggleHits, 1);
+  assert.ok(arena.opponent.health > 0 && arena.opponent.health < 0.85);
+});

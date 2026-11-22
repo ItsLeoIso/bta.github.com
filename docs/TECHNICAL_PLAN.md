@@ -196,3 +196,15 @@ Implemented as the second Phase 4 increment:
 - If the fighter lands before the special recovery ends, the action remains `SPECIAL` and keeps the fighter locked on the ground until the original 8-startup + 18-recovery frame sequence ends. Landing updates locomotion to `STANDING` on the touchdown frame and refreshes the shared air-projectile allowance. No additional special landing-recovery timer is implemented yet.
 - The air-projectile allowance remains independent of the air-dash allowance. Any future shared air-option resource requires a separate design decision.
 - Automated regression coverage checks backward aim from both facing orientations, one Vector Burst per airtime, landing refresh, and full momentum cancellation for projectile specials.
+
+
+## Combat milestone 013 — hit confirms, air routes, and combo state
+
+Implemented:
+- Added move-data-driven hit-confirm cancel routes. Light and Medium can route into the documented normal / Special follow-ups; blocks and whiffs retain their full recovery.
+- Added grounded jump-cancels for confirmed Light / Medium attacks. Medium applies a 520 units/second grounded launch to its target.
+- Enabled airborne Light / Medium attacks while keeping Heavy grounded-only. Air-specific cancel routes prevent an accidental infinite normal loop.
+- Added a fixed-frame ComboTracker with a 45-frame link window, same-attacker tracking, 10-percentage-point damage scaling down to a 40% floor, and a three-hit aerial juggle cap.
+- Added a screen-space combo counter with hit count, AIR COMBO label, and cumulative damage.
+- Regression coverage includes cancel eligibility, whiff / block rejection, aerial move eligibility, combo scaling, link timeout, juggle cap, launcher, jump cancel, an airborne follow-up, and projectile Special cancel.
+- Values remain prototype tuning data pending browser playtesting.
