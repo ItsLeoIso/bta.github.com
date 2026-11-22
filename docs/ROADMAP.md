@@ -48,6 +48,7 @@
 - [x] Basic scroll-aware neon city-stage placeholder presentation.
 - [x] Publish a tester-facing guide with controls, mode scope, checklist, and issue-report template.
 - [x] Add automated JavaScript syntax, relative-import, and browser-entry asset checks.
+- [x] Add a Chromium browser smoke suite for menu, Online notice, Arcade pause / exit, Training reset, and narrow-viewport canvas.
 - [ ] Human browser match playtesting and visual validation.
 - [ ] Playtest and fix core movement / combat issues.
 

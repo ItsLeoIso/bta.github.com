@@ -67,7 +67,9 @@ Use Training first, then play at least one Arcade set. Record the browser, opera
 - [ ] Options toggle overlays without breaking the match.
 - [ ] No console errors, stuck keys, severe slowdown, or unreadable HUD / menu text.
 
-This is a human test checklist, not a claim that these browser scenarios have already been verified.
+The CI Chromium smoke suite automatically checks the basic title/menu, Online notice, Arcade pause / exit, Training reset, and narrow viewport flows. It does not validate combat feel, visual quality, or every browser.
+
+This is a human test checklist, not a claim that every browser scenario or gameplay interaction has already been verified.
 
 ## Report a bug
 
@@ -92,4 +94,4 @@ Please report one issue per ticket where possible. For balance feedback, include
 - Online is not implemented.
 - Keyboard is the supported input path; no gamepad / touch controls or remapping.
 - Combat frame data, CPU reaction, guard heights, round length, and movement values are provisional.
-- Browser visual / feel validation remains a required human step. Automated Node tests do not replace it.
+- Human browser playtesting is still required for visual quality, feel, balance, and broad browser compatibility. Automated tests do not replace it.
