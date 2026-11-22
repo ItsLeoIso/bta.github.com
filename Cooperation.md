@@ -809,3 +809,31 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 
 **Suggested next step:**
 - Assign a real gameplay move to Quarter-Circle Forward + L, then playtest the new cancel / launcher / air-combo routes in the browser and tune the resulting frame data.
+
+
+### 2026-11-22 — ChatGPT — Phase 5 playable opponent, Neon Backstreet, and Arc Lance
+**Type:** Roadmap implementation / combat milestone 016 / stage presentation
+
+**Commits:**
+- CPU rival and two-sided combat: `b1e3ac3c421911c34fbf7412cb3b193a380fc56a`
+- Neon Backstreet stage: `3d13f176bdc50946d6dcf80e3eb61462241e8a9d`
+- Arc Lance QCF special: `3b856dc93bbb871811e273be3cb3697e62efa7b0`
+
+**What changed:**
+- Added deterministic `OpponentAIController`: the CPU closes distance, rotates through Light / Medium / Heavy / Energy Shot, and uses short reactive standing / crouch guard against visible active melee attacks.
+- The live browser match enables the CPU; standalone Arena tests keep it opt-in so combat simulation remains deterministic.
+- Added two-sided melee collision and CPU projectile support. Trades can resolve because both melee events are gathered before applying reactions.
+- Added distinct placeholder profiles: player Striker (300 walk speed, 1.00× outgoing damage) and CPU Rival (260 walk speed, 1.05× damage).
+- Replaced the flat test grid with Neon Backstreet: layered night sky, city buildings and windows, BTA signs, glowing horizon, and tiled floor. It scrolls in world space with the camera.
+- Connected facing-relative Down → Down-Forward → Forward + L to **Arc Lance** rather than feedback-only recognition.
+- Arc Lance uses 14 startup / 26 recovery frames, 390 units/second projectile speed, 26-unit radius, and a 2.8-second lifetime. On hit: 14% health damage, 24 hitstun frames, 400 knockback. On block: 1.4% chip damage and 38 guard-meter damage.
+- Extended the eight-frame buffer to preserve Arc Lance identity and input-time facing, and enabled the move as a Light / Medium hit-confirm Special cancel.
+- Updated the game design, technical plan, README, controls hint, and roadmap. The coded Phase 5 opponent and stage items and the Phase 4 QCF special item are checked off.
+
+**Verification:**
+- CPU milestone: **174/174 tests passed**; Pages build and deployment succeeded — [Node tests](https://github.com/ItsLeoIso/bta.github.com/actions/runs/45066492226), [Pages deployment](https://github.com/ItsLeoIso/bta.github.com/actions/runs/45066491462)
+- Stage milestone: **174/174 tests passed**; Pages build and deployment succeeded — [Node tests](https://github.com/ItsLeoIso/bta.github.com/actions/runs/45066627990), [Pages deployment](https://github.com/ItsLeoIso/bta.github.com/actions/runs/45066627861)
+- Arc Lance: **180/180 tests passed, 0 failures**; Pages build and deployment succeeded — [Node tests](https://github.com/ItsLeoIso/bta.github.com/actions/runs/45067129237), [Pages deployment](https://github.com/ItsLeoIso/bta.github.com/actions/runs/45067128742)
+- No browser/manual playtest was performed in this run. CPU difficulty, stage contrast, Arc Lance startup / damage, and the aerial route balance still need human playtesting.
+
+**Remaining Phase 5 work:** browser playtesting / visual validation and the movement / combat balance pass remain intentionally unchecked.
