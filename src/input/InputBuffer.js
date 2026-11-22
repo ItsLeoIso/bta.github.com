@@ -17,7 +17,7 @@ export class InputBuffer {
     this.pending = null;
   }
 
-  capture(input, frame, { excludeActions = [] } = {}) {
+  capture(input, frame, { excludeActions = [], specialMove = null, specialFacing = null } = {}) {
     if (!Number.isInteger(frame) || frame < 0) {
       throw new RangeError("Input buffer frame must be a non-negative integer.");
     }
@@ -34,7 +34,11 @@ export class InputBuffer {
       action,
       pressedFrame: frame,
       expiresFrame: frame + this.bufferFrames - 1,
-      directions: DIRECTION_ACTIONS.filter(direction => Boolean(input.isDown?.(direction)))
+      directions: DIRECTION_ACTIONS.filter(direction => Boolean(input.isDown?.(direction))),
+      specialMove: action === "special" ? specialMove : null,
+      specialFacing: action === "special" && Number.isFinite(specialFacing)
+        ? Math.sign(specialFacing) || 1
+        : null
     };
     return true;
   }
@@ -46,6 +50,8 @@ export class InputBuffer {
     const pending = this.pending;
     return {
       isBuffered: true,
+      specialMove: pending.specialMove ?? null,
+      specialFacing: pending.specialFacing ?? null,
       wasPressed: action =>
         action === pending.action || Boolean(input.wasPressed?.(action)),
       isDown: action => DIRECTION_ACTIONS.includes(action)

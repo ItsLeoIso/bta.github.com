@@ -160,3 +160,25 @@ test("Arena resolves attacks from the opponent toward the player", () => {
   assert.equal(arena.lastCombatEvent?.attacker, arena.opponent);
   assert.ok(arena.player.health < 1);
 });
+
+
+test("a hit-confirmed Light can cancel directly into buffered Arc Lance",()=>{
+  const arena=new Arena();
+  arena.player.x=400;
+  arena.opponent.x=510;
+  arena.update(1/60,input({pressed:["light"]}));
+  for(let frame=0;frame<4;frame+=1) arena.update(1/60,neutral);
+  arena.update(1/60,neutral);
+  assert.equal(arena.lastCombatEvent?.type,"hit");
+
+  arena.update(1/60,input({down:["crouch"]}));
+  arena.update(1/60,input({axis:1,down:["crouch","right"]}));
+  arena.update(1/60,input({axis:1,down:["right"],pressed:["special"]}));
+
+  assert.equal(arena.player.state.action,STATES.action.SPECIAL);
+  assert.equal(arena.player.actionData.moveId,"arcLance");
+  assert.deepEqual(arena.player.lastCancelData,{
+    type:"hit",fromMoveId:"light",toMoveId:"special"
+  });
+  assert.equal(arena.inputBuffer.pending,null);
+});

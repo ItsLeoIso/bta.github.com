@@ -65,3 +65,15 @@ test("fighter damage multipliers distinguish character combat profiles", () => {
   new DamageController().applyHit({ type: "hit", moveId: "light", attacker, defender });
   assert.ok(Math.abs(defender.health - 0.937) < 1e-9);
 });
+
+
+test("Arc Lance has its own stronger damage and hitstun profile",()=>{
+  const attacker=makeFighter(100);
+  const defender=makeFighter(200);
+  const result=new DamageController().applyHit({
+    type:"hit",moveId:"arcLance",attacker,defender
+  });
+  assert.equal(result.damage,0.14);
+  assert.equal(defender.health,0.86);
+  assert.equal(defender.reactionData.remainingFrames,24);
+});

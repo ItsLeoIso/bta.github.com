@@ -302,13 +302,24 @@ test("camera clamps at stage ends and keeps the controlled fighter visible",()=>
   assert.ok(arena.player.x-arena.cameraX<=arena.width);
 });
 
-test("quarter-circle forward plus Special is recognised and does not fall through to Vector Burst",()=>{
+test("quarter-circle forward plus Special starts the real Arc Lance motion special",()=>{
   const arena=new Arena();
+  arena.player.x=400;
+  arena.opponent.x=1200;
   arena.update(1/60,input({down:["crouch"]}));
   arena.update(1/60,input({axis:1,down:["crouch","right"]}));
   arena.update(1/60,input({axis:1,down:["right"],pressed:["special"]}));
-  assert.equal(arena.player.state.action,"none");
+  assert.equal(arena.player.state.action,"special");
+  assert.equal(arena.player.actionData.moveId,"arcLance");
+  assert.equal(arena.player.actionData.moveName,"Arc Lance");
+  assert.equal(arena.player.actionData.startupFrames,14);
   assert.equal(arena.projectileController.projectiles.length,0);
-  assert.match(arena.commandFeedbackText,/QUARTER-CIRCLE FORWARD/);
+  assert.equal(arena.commandFeedbackText,"ARC LANCE");
   assert.ok(arena.commandFeedbackRemaining>0);
+
+  for(let frame=0;frame<13;frame+=1) arena.update(1/60,input());
+  assert.equal(arena.projectileController.projectiles.length,1);
+  assert.equal(arena.projectileController.projectiles[0].moveId,"arcLance");
+  assert.equal(arena.projectileController.projectiles[0].velocityX,390);
+  assert.equal(arena.projectileController.projectiles[0].radius,26);
 });

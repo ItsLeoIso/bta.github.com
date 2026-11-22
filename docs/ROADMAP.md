@@ -38,7 +38,7 @@
 ## Phase 4 — Special moves and combos
 - [x] Special button alone: projectile (initial button-only prototype).
 - [x] Direction + Special moves (eight-way Vector Burst).
-- [x] Facing-relative command history and Quarter-Circle Forward + Special recognition (24-frame window; feedback prototype only).
+- [x] Facing-relative 24-frame Quarter-Circle Forward + Special recognition connected to the buffered Arc Lance projectile special.
 - [x] Eight-frame combat input buffer for Light / Medium / Heavy / Special, including direction snapshots for buffered Vector Burst.
 - [x] Hit-confirm cancels, jump-cancels, air Light / Medium attacks, launcher-based air combos, combo tracking / damage scaling, juggle limits, and recovery rules.
 

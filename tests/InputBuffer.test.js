@@ -61,3 +61,18 @@ test("buffer clear discards pending inputs",()=>{
   buffer.clear();
   assert.equal(buffer.getInput(input(),2).wasPressed("light"),false);
 });
+
+
+test("buffered Arc Lance preserves its move identity and input-time facing",()=>{
+  const buffer=new InputBuffer();
+  buffer.capture(input({pressed:["special"],down:["left"]}),7,{
+    specialMove:"arcLance",
+    specialFacing:-1
+  });
+  const buffered=buffer.getInput(input({down:["right"]}),9);
+  assert.equal(buffered.specialMove,"arcLance");
+  assert.equal(buffered.specialFacing,-1);
+  assert.equal(buffered.wasPressed("special"),true);
+  assert.equal(buffered.isDown("left"),true);
+  assert.equal(buffered.isDown("right"),false);
+});

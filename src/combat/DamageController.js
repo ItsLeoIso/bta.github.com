@@ -5,7 +5,8 @@ export const DAMAGE_PROFILES = Object.freeze({
   medium: Object.freeze({ damage: 0.10, chipDamage: 0.01, hitstunFrames: 18, knockback: 260, reaction: "hitstun" }),
   heavy: Object.freeze({ damage: 0.15, chipDamage: 0.015, hitstunFrames: 30, knockback: 360, reaction: "knockdown" }),
   special: Object.freeze({ damage: 0.08, chipDamage: 0.008, hitstunFrames: 18, knockback: 280, reaction: "hitstun" }),
-  directionalSpecial: Object.freeze({ damage: 0.08, chipDamage: 0.008, hitstunFrames: 18, knockback: 280, reaction: "hitstun" })
+  directionalSpecial: Object.freeze({ damage: 0.08, chipDamage: 0.008, hitstunFrames: 18, knockback: 280, reaction: "hitstun" }),
+  arcLance: Object.freeze({ damage: 0.14, chipDamage: 0.014, hitstunFrames: 24, knockback: 400, reaction: "hitstun" })
 });
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));

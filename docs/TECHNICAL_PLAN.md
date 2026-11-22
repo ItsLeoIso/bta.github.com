@@ -135,17 +135,16 @@ Implemented prototype foundation:
 - The horizontal camera tracks the midpoint between the player and opponent, clamps to the world ends, and constrains its offset so the controlled player stays inside the viewport. HUD and round overlays remain screen-space.
 - Camera offset is interpolated during rendering; it does not alter fighter coordinates, movement speeds, collision, hitboxes, projectile trajectories, or stage boundaries.
 - Added `src/input/CommandHistory.js`, which samples facing-relative eight-way directions once per fixed simulation frame and keeps a short command history.
-- Quarter-Circle Forward is recognised as Down → Down-Forward → Forward + L within 24 frames. It works relative to either facing direction; brief neutral gaps are allowed.
-- Recognition is currently a feedback-only prototype. The input is consumed rather than silently firing Energy Shot / Vector Burst, because the advanced move's gameplay properties have not yet been designed.
+- Quarter-Circle Forward is recognised as Down → Down-Forward → Forward + L within 24 frames and launches Arc Lance. The command works relative to either facing direction; brief neutral gaps are allowed.
+- Arc Lance uses 14 startup / 26 recovery frames, 390 units/second speed, 26-unit radius, 14% damage, 24 hitstun frames, and 400 knockback. It adds 1.4% chip damage and 38 guard-meter pressure.
+- The eight-frame input buffer preserves Arc Lance identity and input-time facing. The move is available as a hit-confirm Special cancel from Light / Medium.
 - Added `src/input/InputBuffer.js`: Light / Medium / Heavy / Special button presses remain pending for eight fixed simulation frames while the current action or reaction prevents execution. A later combat-button press replaces the pending command; same-frame priority follows the existing Light → Medium → Heavy → Special dispatch order.
 - Buffered Special snapshots its directional inputs at press time, so a delayed Vector Burst keeps its original aim. The buffer is cleared when a round leaves the active phase or fighters reset. Movement, guard, jump, and dash remain immediate and are not buffered.
 - The command recogniser is independent of the existing double-tap dash detector. A buffered command is delivered on the first legal frame, including the exact frame a prior action finishes.
 
 ## Next combat milestone
 
-- Define the first advanced motion special (move identity, hit level, timing, projectile / hit properties) before connecting the recognised command to a gameplay action.
-- Add cancel windows and combo tracking after the move's frame data and buffer behavior have been playtested.
-- Add basic opponent behaviour so the training dummy can exercise the player's guard, then build air combos, cancel windows, and combo tracking.
+- Arc Lance, hit-confirm cancels, combo tracking, and a deterministic CPU rival are now implemented. Browser playtesting and balance tuning remain outstanding.
 
 ## Running and testing
 - Run locally: python3 -m http.server 8000, then open http://localhost:8000.
@@ -164,7 +163,7 @@ Implemented in the first Phase 4 increment:
 - Prototype values: 540 units/second speed, 18-unit radius, 2.5-second lifetime, 8% damage, 18 hitstun frames, 280 knockback, 0.8% chip damage, and 25 guard-meter damage.
 - Direction+L is handled as the separate eight-way Vector Burst. A/D, W/S, and diagonal combinations set a screen-relative aim vector; diagonal velocity is normalized. Opposing directions on one axis cancel the special instead of falling back to the button-only projectile.
 - Vector Burst shares the Energy Shot's initial 8-frame startup, 18-frame recovery, 540-unit/second speed, 18-unit radius, 2.5-second lifetime, and 8% damage profile, but uses a separate move ID / damage profile for later tuning. Vertical shots spawn from the fighter's forward side to clear pushbox spacing.
-- Pressing a directional special while holding back releases or suppresses guard so back+L can start the move. Motion-input recognition is feedback-only; combat button buffering is implemented; cancel windows and combos remain unimplemented.
+- Pressing a directional special while holding back releases or suppresses guard so back+L can start the move. QCF+L now launches the Arc Lance motion special; input buffering, hit-confirm cancels, and combo tracking are implemented.
 - Added unit and Arena integration coverage for startup/recovery, facing direction, direction+button suppression, airborne use, action locks, projectile movement/contact/expiry, hit damage, and blocking.
 
 
@@ -230,3 +229,14 @@ Implemented:
 - The environment is drawn in world space and scrolls with the existing camera; combatants remain layered above the stage and HUD stays screen-space.
 - No external image assets or new runtime dependencies were introduced.
 - Browser visual inspection is still required to tune contrast, composition, and performance on target devices.
+
+
+## Combat milestone 016 — Arc Lance motion special
+
+Implemented:
+- Connected the 24-frame facing-relative Quarter-Circle Forward + L recogniser to a real special move instead of feedback-only confirmation.
+- Added per-move projectile tuning so Arc Lance uses 14 startup / 26 recovery frames, 390 units/second speed, 26-unit radius, and a 2.8-second lifetime while Energy Shot and Vector Burst retain their existing values.
+- Added the Arc Lance hit profile: 14% health damage, 24 hitstun frames, 400 knockback, 1.4% chip damage, and 38 guard-meter damage.
+- Extended the eight-frame input buffer to retain the special move identity and facing direction at command time. This supports both recovery buffering and confirmed Light / Medium Special cancels without changing Energy Shot / Vector Burst behavior.
+- Added a distinct projectile colour and HUD feedback label for Arc Lance.
+- Automated tests cover QCF activation, move-specific frame data and projectile properties, input-time facing, hit-confirm cancel, damage, chip / guard pressure, and actual projectile travel into a hurtbox.

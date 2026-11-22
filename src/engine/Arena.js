@@ -104,8 +104,11 @@ export class Arena {
       Boolean(input.wasPressed?.("special")) &&
       this.commandHistory.consumeQuarterCircleForward();
     if (quarterCircleSpecial) {
-      this.inputBuffer.clear();
-      this.commandFeedbackText="QUARTER-CIRCLE FORWARD + SPECIAL";
+      this.inputBuffer.capture(input,this.inputFrame,{
+        specialMove:"arcLance",
+        specialFacing:player.facing
+      });
+      this.commandFeedbackText="ARC LANCE";
       this.commandFeedbackRemaining=0.9;
     } else {
       this.inputBuffer.capture(input,this.inputFrame);
@@ -113,15 +116,13 @@ export class Arena {
     const bufferedInput=this.inputBuffer.getInput(input,this.inputFrame);
     this.guard.update(player,input);
 
-    // Light / Medium can cancel into a projectile only after a confirmed hit.
-    // The motion-command prototype remains feedback-only and is never promoted
-    // into a projectile by this route.
+    // Light / Medium can cancel into either projectile special after a
+    // confirmed hit. QCF input keeps its Arc Lance move identity while buffered.
     const cancelData=player.actionData;
     const cancelTargets=player.onGround
       ? (cancelData.cancelOnHit ?? [])
       : (cancelData.airCancelOnHit ?? []);
     const specialCancel =
-      !quarterCircleSpecial &&
       player.state.action===FIGHTER_STATES.action.ATTACK &&
       cancelData.hitOutcome==="hit" &&
       cancelTargets.includes("special") &&
@@ -134,14 +135,7 @@ export class Arena {
 
     const actionDataBefore=player.actionData;
     this.attacks.update(player,bufferedInput);
-    const projectileInput = quarterCircleSpecial
-      ? {
-          isDown: action => Boolean(bufferedInput.isDown?.(action)),
-          wasPressed: action => action === "special" ? false : Boolean(bufferedInput.wasPressed?.(action)),
-          isBuffered: Boolean(bufferedInput.isBuffered)
-        }
-      : bufferedInput;
-    this.projectileController.updateFighter(player,projectileInput);
+    this.projectileController.updateFighter(player,bufferedInput);
 
     // One final dispatch after advancing the current move lets a buffered
     // command start on the exact frame the previous action/recovery ends.
@@ -149,7 +143,7 @@ export class Arena {
         player.state.action===FIGHTER_STATES.action.NONE &&
         player.state.reaction===FIGHTER_STATES.reaction.NONE) {
       this.attacks.update(player,bufferedInput);
-      this.projectileController.updateFighter(player,projectileInput);
+      this.projectileController.updateFighter(player,bufferedInput);
     }
 
     const pendingAction=this.inputBuffer.pending?.action;

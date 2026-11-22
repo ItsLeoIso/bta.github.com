@@ -17,7 +17,8 @@ export const GUARD_DAMAGE = Object.freeze({
   medium: 30,
   heavy: 45,
   special: 25,
-  directionalSpecial: 25
+  directionalSpecial: 25,
+  arcLance: 38
 });
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));

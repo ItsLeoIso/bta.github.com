@@ -36,7 +36,7 @@ This document records the decisions confirmed so far. Anything labelled **Open**
 | Light | H | High attack — can be crouched under |
 | Medium | J | Mid attack — hits standing and crouching opponents |
 | Heavy | K | Low attack — hits grounded opponents, misses airborne opponents |
-| Special | L | L alone fires Energy Shot; hold a direction with L to fire Vector Burst; Quarter-Circle Forward + L is recognised for a future advanced special |
+| Special | L | L alone fires Energy Shot; hold a direction with L to fire Vector Burst; Quarter-Circle Forward + L launches Arc Lance |
 
 Movement keys are screen-relative and never reverse when fighters cross: A always means left and D always means right. Fighters automatically turn to face the opponent. Whether a dash is classified as a forward dash or backdash is determined by comparing its screen direction with the fighter's facing direction.
 
@@ -102,7 +102,10 @@ These dimensions and movement details are prototype values to validate in the br
 - Prototype projectile values: 540 arena units/second, 18-unit radius, 2.5-second lifetime, 8% hit damage, 18 frames of hitstun, and 280 units/second knockback. A block deals 0.8% chip damage and 25 guard-meter damage.
 - The projectile is a mid and can be guarded with either standing or crouching guard. Once launched, it remains active even if the owner leaves recovery or is interrupted. Prototype values are for playtesting, not final balance.
 - **Blocking:** Hold the screen direction opposite the opponent (away from the opponent) to guard. The required direction is resolved from the fighter's current facing, so the guard direction automatically changes when the fighters cross sides. This is deliberately separate from screen-relative movement: A always moves left and D always moves right.
-- Quarter-Circle Forward + L is currently recognised relative to facing using Down → Down-Forward → Forward within a 24-frame window. The command is consumed and shown in a brief HUD confirmation; it has no assigned gameplay move yet.
+- Quarter-Circle Forward + L is recognised relative to facing using Down → Down-Forward → Forward within a 24-frame window.
+- The command launches **Arc Lance**: 14 startup / 26 recovery frames, 390 units/second speed, 26-unit radius, 14% damage, 24 hitstun frames, and 400 knockback. It applies 1.4% chip damage and 38 guard-meter damage on block.
+- Arc Lance is slower and more punishable than Energy Shot, but has a larger projectile and greater reward. It shares the one-projectile-per-airtime resource with Energy Shot and Vector Burst.
+- The eight-frame buffer preserves Arc Lance identity and the facing direction from the motion input, and the move can be cancelled into from a confirmed Light / Medium attack.
 - Light, Medium, Heavy, and Special button presses use an eight-fixed-frame input buffer when an action or reaction blocks immediate execution. A newer combat-button press replaces the pending one. Special aim directions are captured when the button is pressed. Movement, guard, jump, and dash are not buffered; pending combat inputs are discarded when a round ends or resets.
 - The input system should be data-driven / extensible so different characters can receive different moves later.
 - The game should be easy to learn but offer room for technical mastery.

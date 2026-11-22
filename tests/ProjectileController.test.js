@@ -311,3 +311,25 @@ test("starting an aerial projectile clears existing horizontal and upward moment
   assert.equal(fighter.airHorizontalVelocity,0);
   assert.equal(fighter.airProjectileAvailable,false);
 });
+
+test("Arc Lance uses its slower projectile, larger hit area, and longer frame data",()=>{
+  const controller=new ProjectileController();
+  const fighter=makeFighter({x:400,facing:1});
+  const started=controller.updateFighter(fighter,{
+    ...input({pressed:["special"]}),
+    specialMove:"arcLance",
+    specialFacing:-1
+  });
+
+  assert.equal(started,true);
+  assert.equal(fighter.actionData.moveId,"arcLance");
+  assert.equal(fighter.actionData.moveName,"Arc Lance");
+  assert.equal(fighter.actionData.startupFrames,14);
+  assert.equal(fighter.actionData.recoveryFrames,26);
+
+  for(let frame=0;frame<13;frame+=1) controller.updateFighter(fighter,input());
+  assert.equal(controller.projectiles.length,1);
+  assert.equal(controller.projectiles[0].velocityX,-390);
+  assert.equal(controller.projectiles[0].radius,26);
+  assert.equal(controller.projectiles[0].remainingSeconds,2.8);
+});

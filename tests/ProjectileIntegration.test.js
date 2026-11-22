@@ -203,3 +203,24 @@ test("a projectile started near the floor still spawns on startup frame eight",(
   assert.equal(arena.player.state.action,STATES.action.SPECIAL);
   assert.equal(arena.player.actionData.elapsedFrames,8);
 });
+
+test("Arc Lance deals its stronger hit after the motion input and travel time",()=>{
+  const arena=new Arena();
+  arena.player.x=400;
+  arena.opponent.x=760;
+  arena.update(1/60,input({down:["crouch"]}));
+  arena.update(1/60,input({axis:1,down:["crouch","right"]}));
+  arena.update(1/60,input({axis:1,down:["right"],pressed:["special"]}));
+
+  let arcHit=null;
+  for(let frame=0;frame<100 && !arcHit;frame+=1){
+    arena.update(1/60,input());
+    if(arena.lastCombatEvent?.moveId==="arcLance" && arena.lastCombatEvent.type==="hit"){
+      arcHit=arena.lastCombatEvent;
+    }
+  }
+
+  assert.ok(arcHit,"Arc Lance should travel into the opposing hurtbox");
+  assert.equal(arcHit.moveName,"Arc Lance");
+  assert.ok(Math.abs(arena.opponent.health-0.86)<1e-9);
+});

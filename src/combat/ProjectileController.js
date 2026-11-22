@@ -21,6 +21,17 @@ export const DIRECTIONAL_SPECIAL_DEFAULTS = Object.freeze({
   hitLevel: "mid"
 });
 
+export const MOTION_SPECIAL_DEFAULTS = Object.freeze({
+  moveId: "arcLance",
+  moveName: "Arc Lance",
+  hitLevel: "mid",
+  startupFrames: 14,
+  recoveryFrames: 26,
+  speed: 390,
+  radius: 26,
+  lifetimeSeconds: 2.8
+});
+
 function resolveSpecialDirection(input, facing) {
   const isDown = action => Boolean(input.isDown?.(action));
   const left = isDown("left");
@@ -102,15 +113,23 @@ export class ProjectileController {
 
     if (!input.wasPressed?.("special")) return false;
 
-    const direction = resolveSpecialDirection(input, fighter.facing);
+    const isMotionSpecial = input.specialMove === MOTION_SPECIAL_DEFAULTS.moveId;
+    const specialFacing = Math.sign(input.specialFacing ?? fighter.facing) || 1;
+    const direction = isMotionSpecial
+      ? { x: specialFacing, y: 0, directional: false }
+      : resolveSpecialDirection(input, fighter.facing);
     if (direction.invalid) return false;
 
     const isAirProjectile = !fighter.onGround;
     if (isAirProjectile && !fighter.airProjectileAvailable) return false;
 
-    const move = direction.directional
-      ? DIRECTIONAL_SPECIAL_DEFAULTS
-      : PROJECTILE_DEFAULTS;
+    const move = isMotionSpecial
+      ? MOTION_SPECIAL_DEFAULTS
+      : direction.directional
+        ? DIRECTIONAL_SPECIAL_DEFAULTS
+        : PROJECTILE_DEFAULTS;
+    const startupFrames = move.startupFrames ?? this.startupFrames;
+    const recoveryFrames = move.recoveryFrames ?? this.recoveryFrames;
     const started = states.startAction(
       fighter,
       FIGHTER_STATES.action.SPECIAL,
@@ -118,8 +137,11 @@ export class ProjectileController {
         moveId: move.moveId,
         moveName: move.moveName,
         hitLevel: move.hitLevel,
-        startupFrames: this.startupFrames,
-        recoveryFrames: this.recoveryFrames,
+        startupFrames,
+        recoveryFrames,
+        projectileSpeed: move.speed ?? this.speed,
+        projectileRadius: move.radius ?? this.radius,
+        projectileLifetimeSeconds: move.lifetimeSeconds ?? this.lifetimeSeconds,
         elapsedFrames: 0,
         phase: "startup",
         phaseFrame: 0,
@@ -142,9 +164,9 @@ export class ProjectileController {
       moveId: move.moveId,
       moveName: move.moveName,
       hitLevel: move.hitLevel,
-      startupFrames: this.startupFrames,
+      startupFrames,
       activeFrames: null,
-      recoveryFrames: this.recoveryFrames,
+      recoveryFrames,
       hitAdvantage: null,
       blockAdvantage: null
     };
@@ -156,16 +178,21 @@ export class ProjectileController {
     const data = fighter.actionData;
     data.elapsedFrames = (data.elapsedFrames ?? 0) + 1;
 
-    if (data.elapsedFrames <= this.startupFrames) {
+    const startupFrames = data.startupFrames ?? this.startupFrames;
+    const recoveryFrames = data.recoveryFrames ?? this.recoveryFrames;
+    if (data.elapsedFrames <= startupFrames) {
       data.phase = "startup";
       data.phaseFrame = data.elapsedFrames;
-      if (data.elapsedFrames === this.startupFrames) {
+      if (data.elapsedFrames === startupFrames) {
         this.spawnProjectile(fighter, {
           directionX: data.directionX,
           directionY: data.directionY,
           moveId: data.moveId,
           moveName: data.moveName,
-          hitLevel: data.hitLevel
+          hitLevel: data.hitLevel,
+          speed: data.projectileSpeed,
+          radius: data.projectileRadius,
+          lifetimeSeconds: data.projectileLifetimeSeconds
         });
         data.projectileSpawned = true;
         data.phase = "recovery";
@@ -175,8 +202,8 @@ export class ProjectileController {
     }
 
     data.phase = "recovery";
-    data.phaseFrame = data.elapsedFrames - this.startupFrames;
-    if (data.phaseFrame >= this.recoveryFrames) {
+    data.phaseFrame = data.elapsedFrames - startupFrames;
+    if (data.phaseFrame >= recoveryFrames) {
       this.stateController.endAction(fighter, FIGHTER_STATES.action.SPECIAL);
     }
   }
@@ -200,10 +227,10 @@ export class ProjectileController {
       direction,
       directionX,
       directionY,
-      velocityX: directionX * this.speed,
-      velocityY: directionY * this.speed,
-      radius: this.radius,
-      remainingSeconds: this.lifetimeSeconds,
+      velocityX: directionX * (moveData.speed ?? this.speed),
+      velocityY: directionY * (moveData.speed ?? this.speed),
+      radius: moveData.radius ?? this.radius,
+      remainingSeconds: moveData.lifetimeSeconds ?? this.lifetimeSeconds,
       moveId: moveData.moveId ?? PROJECTILE_DEFAULTS.moveId,
       moveName: moveData.moveName ?? PROJECTILE_DEFAULTS.moveName,
       hitLevel: moveData.hitLevel ?? PROJECTILE_DEFAULTS.hitLevel

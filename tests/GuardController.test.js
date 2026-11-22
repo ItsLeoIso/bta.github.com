@@ -153,3 +153,16 @@ test("ordinary crouch movement uses 12.5% of normal walking speed", () => {
   assert.equal(arena.player.state.locomotion, STATES.locomotion.CROUCHING);
   assert.equal(arena.player.x, startX + 3.75);
 });
+
+
+test("Arc Lance applies heavier guard pressure than the basic Energy Shot",()=>{
+  const controller=new GuardController({stateController:new FighterStateController()});
+  const defender=fighter();
+  const attacker=fighter();
+  const before=defender.guardMeter;
+  controller.applyBlock({
+    type:"block",moveId:"arcLance",hitLevel:"mid",
+    attacker,defender,knockbackDirection:1
+  });
+  assert.equal(defender.guardMeter,before-38);
+});
