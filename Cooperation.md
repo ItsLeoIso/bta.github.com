@@ -837,3 +837,26 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 - No browser/manual playtest was performed in this run. CPU difficulty, stage contrast, Arc Lance startup / damage, and the aerial route balance still need human playtesting.
 
 **Remaining Phase 5 work:** browser playtesting / visual validation and the movement / combat balance pass remain intentionally unchecked.
+
+
+### 2026-11-22 — ChatGPT — START menu, Arcade / Training modes, and debug options
+**Type:** Phase 6 menu and mode foundations
+
+**Files / systems:**
+- New `src/ui/MenuController.js`; updates to `src/main.js`, `src/engine/Arena.js`, `src/engine/CanvasRenderer.js`, `src/ui/styles.css`, and `index.html`
+- New `tests/MenuController.test.js` and training integration coverage in `tests/Arena.test.js`
+- Updated `README.md`, `docs/GAME_DESIGN.md`, `docs/TECHNICAL_PLAN.md`, and `docs/ROADMAP.md`
+
+**What changed:**
+- Added an intro screen with BELT TO ASS branding and Enter / click to continue.
+- Added the requested main menu order exactly: Arcade, Online, Training, Option. Both keyboard and mouse navigation work. Keyboard controls: W / S or Up / Down, Enter, Escape.
+- Arcade starts the best-of-three local match against the deterministic CPU Rival.
+- Training starts a passive dummy with frozen round timer / score flow. After the last registered hit or block, dummy health and guard meter refill after 120 fixed frames (two seconds).
+- Online explicitly says network matchmaking is not connected yet; no fake networking or matchmaking.
+- Options toggle combat box overlays and the state / frame-data inspector. Both overlays are off by default; combat-box overlays now include both fighters' active melee hitboxes.
+- Added a DOM menu state machine with six tests and a training-mode Arena integration test.
+- The first foundations are complete; training reset-position controls, input recording / playback, character select, online transport, and deeper Arcade progression remain future work.
+
+**Implementation files / commit:** to be appended after CI verification.
+**Verification:** pending on this commit. The preceding Arc Lance commit passed 180/180 tests and deployed successfully.
+**Playtesting note:** no manual browser playtest was performed in this session.

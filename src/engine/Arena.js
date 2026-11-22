@@ -34,9 +34,11 @@ function createFighter({x,facing,displayName,moveSpeed,damageMultiplier}) {
 }
 
 export class Arena {
-  constructor({opponentAIEnabled=false}={}) {
+  constructor({opponentAIEnabled=false,trainingMode=false}={}) {
     this.width=960; this.height=540; this.floorY=440;
     this.stageMargin=STAGE_MARGIN;
+    this.trainingMode=Boolean(trainingMode);
+    this.trainingDummyResetFrames=0;
     this.stateController=new FighterStateController();
     this.worldWidth=1920;
     this.player=createFighter({x:780,facing:1,displayName:"PLAYER 01",moveSpeed:300,damageMultiplier:1});
@@ -57,6 +59,7 @@ export class Arena {
     this.inputBuffer=new InputBuffer({bufferFrames:8});
     this.comboTracker=new ComboTracker({comboWindowFrames:45,maxJuggleHits:3});
     this.inputFrame=0;
+    this.trainingDummyResetFrames=0;
     this.commandFeedbackText="";
     this.commandFeedbackRemaining=0;
     this.cameraX=(this.player.x+this.opponent.x)/2-this.width/2;
@@ -200,10 +203,22 @@ export class Arena {
     // Check KO/timeout after combat resolution so a hit that empties health
     // ends the round on this fixed simulation step.
     this.updateCamera();
-    this.rounds.update(deltaSeconds,{
-      playerHealth:this.player.health,
-      opponentHealth:this.opponent.health
-    });
+    if(this.trainingMode){
+      if(this.trainingDummyResetFrames>0){
+        this.trainingDummyResetFrames-=1;
+        if(this.trainingDummyResetFrames===0){
+          this.opponent.health=1;
+          this.opponent.guardMeter=100;
+          this.opponent.guardMeterRecoveryDelayFrames=0;
+        }
+      }
+      this.rounds.timerRemaining=this.rounds.durationSeconds;
+    } else {
+      this.rounds.update(deltaSeconds,{
+        playerHealth:this.player.health,
+        opponentHealth:this.opponent.health
+      });
+    }
     if (this.rounds.phase !== ROUND_PHASES.ACTIVE) this.inputBuffer.clear();
   }
 
@@ -274,6 +289,10 @@ export class Arena {
 
     event.outcome=event.resolution?.outcome ?? event.type;
     this.lastCombatEvent=event;
+    if(this.trainingMode && defender===this.opponent &&
+      (event.type==="hit" || event.type==="block")){
+      this.trainingDummyResetFrames=120;
+    }
     this.lastHit={
       moveName:event.moveName,
       hitLevel:event.hitLevel,

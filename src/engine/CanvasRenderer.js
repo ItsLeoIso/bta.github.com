@@ -13,6 +13,7 @@ export class CanvasRenderer {
     this.canvas = canvas; this.context = canvas.getContext("2d", { alpha:false });
     if (!this.context) throw new Error("Canvas 2D context is unavailable.");
     this.width = 960; this.height = 540; this.pixelRatio = 1; this.resizeObserver = null;
+    this.showHitboxes = false;
     this.resize = this.resize.bind(this);
   }
   attach() {
@@ -238,46 +239,56 @@ export class CanvasRenderer {
   }
 
   drawCombatBoxes(ctx, arena) {
-    const fighters = [arena.player, arena.opponent];
     ctx.save();
-    ctx.lineWidth = 2;
-    ctx.setLineDash([5, 4]);
-    for (const fighter of fighters) {
-      const hurtbox = getHurtbox(fighter);
-      ctx.strokeStyle = fighter === arena.player ? "#8ea6ff" : "#c39aff";
-      ctx.strokeRect(
-        hurtbox.left,
-        hurtbox.top,
-        hurtbox.right - hurtbox.left,
-        hurtbox.bottom - hurtbox.top
-      );
+    if(this.showHitboxes){
+      const fighters=[arena.player,arena.opponent];
+      ctx.lineWidth=2;
+      ctx.setLineDash([5,4]);
+      for(const fighter of fighters){
+        const hurtbox=getHurtbox(fighter);
+        ctx.strokeStyle=fighter===arena.player ? "#8ea6ff" : "#c39aff";
+        ctx.strokeRect(
+          hurtbox.left,hurtbox.top,
+          hurtbox.right-hurtbox.left,hurtbox.bottom-hurtbox.top
+        );
+      }
+
+      const hitbox=getActiveAttackHitbox(arena.player);
+      if(hitbox){
+        const colors=HITBOX_COLORS[arena.player.actionData.hitLevel] ?? HITBOX_COLORS.mid;
+        ctx.setLineDash([]);
+        ctx.fillStyle=colors.fill;
+        ctx.strokeStyle=colors.stroke;
+        ctx.fillRect(hitbox.left,hitbox.top,hitbox.right-hitbox.left,hitbox.bottom-hitbox.top);
+        ctx.strokeRect(hitbox.left,hitbox.top,hitbox.right-hitbox.left,hitbox.bottom-hitbox.top);
+      }
+
+      const opponentHitbox=getActiveAttackHitbox(arena.opponent);
+      if(opponentHitbox){
+        const colors=HITBOX_COLORS[arena.opponent.actionData.hitLevel] ?? HITBOX_COLORS.mid;
+        ctx.setLineDash([]);
+        ctx.fillStyle=colors.fill;
+        ctx.strokeStyle=colors.stroke;
+        ctx.fillRect(opponentHitbox.left,opponentHitbox.top,opponentHitbox.right-opponentHitbox.left,opponentHitbox.bottom-opponentHitbox.top);
+        ctx.strokeRect(opponentHitbox.left,opponentHitbox.top,opponentHitbox.right-opponentHitbox.left,opponentHitbox.bottom-opponentHitbox.top);
+      }
     }
 
-    const hitbox = getActiveAttackHitbox(arena.player);
-    if (hitbox) {
-      const colors = HITBOX_COLORS[arena.player.actionData.hitLevel] ?? HITBOX_COLORS.mid;
-      ctx.setLineDash([]);
-      ctx.fillStyle = colors.fill;
-      ctx.strokeStyle = colors.stroke;
-      ctx.fillRect(hitbox.left, hitbox.top, hitbox.right-hitbox.left, hitbox.bottom-hitbox.top);
-      ctx.strokeRect(hitbox.left, hitbox.top, hitbox.right-hitbox.left, hitbox.bottom-hitbox.top);
-    }
-
-    if (arena.lastHit) {
-      ctx.globalAlpha = Math.min(1, arena.lastHit.remaining / 0.12);
-      ctx.fillStyle = HITBOX_COLORS[arena.lastHit.hitLevel]?.stroke ?? "#ffe096";
-      ctx.font = "bold 22px monospace";
-      ctx.textAlign = "center";
-      const level = arena.lastHit.hitLevel?.toUpperCase();
-      const outcome = arena.lastHit.outcome === "guardBreak"
+    if(arena.lastHit){
+      ctx.globalAlpha=Math.min(1,arena.lastHit.remaining/0.12);
+      ctx.fillStyle=HITBOX_COLORS[arena.lastHit.hitLevel]?.stroke ?? "#ffe096";
+      ctx.font="bold 22px monospace";
+      ctx.textAlign="center";
+      const level=arena.lastHit.hitLevel?.toUpperCase();
+      const outcome=arena.lastHit.outcome==="guardBreak"
         ? "GUARD BREAK"
-        : arena.lastHit.outcome === "block"
+        : arena.lastHit.outcome==="block"
           ? "BLOCKED"
-          : arena.lastHit.outcome === "juggleDrop"
+          : arena.lastHit.outcome==="juggleDrop"
             ? "JUGGLE DROP"
             : "HIT";
-      const label = [level, arena.lastHit.moveName.toUpperCase(), outcome].filter(Boolean).join(" ");
-      ctx.fillText(label, arena.lastHit.x, arena.lastHit.y);
+      const label=[level,arena.lastHit.moveName.toUpperCase(),outcome].filter(Boolean).join(" ");
+      ctx.fillText(label,arena.lastHit.x,arena.lastHit.y);
     }
     ctx.restore();
   }
@@ -303,13 +314,13 @@ export class CanvasRenderer {
     const rounds = arena.rounds;
     ctx.textAlign = "center";
     ctx.fillStyle = COLORS.accent;
-    ctx.font = "bold 24px monospace";
-    ctx.fillText(String(Math.ceil(rounds.timerRemaining)),arena.width/2,42);
+    ctx.font = "bold 20px monospace";
+    ctx.fillText(arena.trainingMode ? "TRAINING" : String(Math.ceil(rounds.timerRemaining)),arena.width/2,42);
     ctx.fillStyle = COLORS.text;
     ctx.font = "bold 9px monospace";
-    ctx.fillText("ROUND " + rounds.roundNumber,arena.width/2,66);
+    ctx.fillText(arena.trainingMode ? "DUMMY · AUTO-RECOVERY" : "ROUND " + rounds.roundNumber,arena.width/2,66);
     ctx.font = "bold 11px monospace";
-    ctx.fillText(rounds.score.player + "  -  " + rounds.score.opponent,arena.width/2,82);
+    ctx.fillText(arena.trainingMode ? "PRACTICE MODE" : rounds.score.player + "  -  " + rounds.score.opponent,arena.width/2,82);
   }
 
   drawComboCounter(ctx, arena) {

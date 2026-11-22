@@ -185,3 +185,14 @@ These are menu destinations to plan for; their complete functionality will be im
 - A distant skyline, lit windows, small BTA signs, stars, and a neon horizon sit behind the fighters. The foreground uses a tiled arena floor and subtle center / edge landmarks.
 - Stage art is drawn in world coordinates, so the camera scrolls through the environment together with fighters and projectiles. HUD and match feedback remain fixed to the viewport.
 - This is a presentation placeholder. Original pixel-art backgrounds, environmental animation, and music / sound are still future content work.
+
+
+## Front-end flow, arcade, and training foundations (prototype)
+
+- The game boots to an intro / START screen. Confirm with Enter or click to reach the main menu.
+- The main-menu order is Arcade, Online, Training, Option. Keyboard navigation uses W / S or Up / Down, Enter to confirm, and Escape to go back.
+- **Arcade** starts the local best-of-three match against the deterministic CPU Rival.
+- **Training** starts with a passive dummy: round timer / score flow is frozen, the dummy does not attack, and its health / guard meter automatically recover two seconds after the last registered hit or block.
+- **Online** currently opens a clear not-connected-yet information screen. No matchmaking or networking is claimed or implemented.
+- **Option** toggles combat hurtbox / hitbox overlays and the DOM state / frame-data inspector. Both overlays are off by default; Training mode can still be used without the inspector.
+- These are the first mode-selection and training foundations. Character select, training reset controls, input recording, online transport, and expanded arcade progression remain future work.

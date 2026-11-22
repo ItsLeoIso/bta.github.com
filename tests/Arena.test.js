@@ -323,3 +323,27 @@ test("quarter-circle forward plus Special starts the real Arc Lance motion speci
   assert.equal(arena.projectileController.projectiles[0].velocityX,390);
   assert.equal(arena.projectileController.projectiles[0].radius,26);
 });
+
+
+test("training mode freezes the timer and auto-recovers its passive dummy",()=>{
+  const arena=new Arena({trainingMode:true});
+  arena.player.x=400;
+  arena.opponent.x=510;
+  const originalX=arena.opponent.x;
+
+  arena.update(1/60,input({pressed:["light"]}));
+  for(let frame=0;frame<6;frame+=1) arena.update(1/60,input());
+
+  assert.equal(arena.lastCombatEvent?.type,"hit");
+  assert.ok(arena.opponent.health<1);
+  assert.equal(arena.rounds.timerRemaining,99);
+  assert.equal(arena.rounds.phase,"active");
+  assert.equal(arena.opponentAI,null);
+
+  for(let frame=0;frame<121;frame+=1) arena.update(1/60,input());
+  assert.equal(arena.opponent.health,1);
+  assert.equal(arena.opponent.guardMeter,100);
+  assert.equal(arena.opponent.x,originalX);
+  assert.equal(arena.rounds.phase,"active");
+  assert.equal(arena.rounds.timerRemaining,99);
+});

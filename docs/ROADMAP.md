@@ -50,11 +50,11 @@
 - [ ] Playtest and fix core movement / combat issues.
 
 ## Phase 6 — Menus and modes
-- [ ] Intro / START screen sequence.
-- [ ] Main menu in the confirmed order: Arcade, Online, Training, Option.
-- [ ] Training mode foundations.
-- [ ] Arcade mode foundations.
-- [ ] Options menu.
+- [x] Intro / START screen sequence.
+- [x] Main menu in the confirmed order: Arcade, Online, Training, Option.
+- [x] Training mode foundations (passive dummy, frozen timer, two-second health / guard recovery).
+- [x] Arcade mode foundations (local best-of-three CPU match).
+- [x] Options menu (combat box and state-inspector toggles).
 - [ ] Online mode investigation and implementation plan.
 
 ## Phase 7 — Content and polish

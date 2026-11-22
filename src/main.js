@@ -4,10 +4,15 @@ import { Arena } from "./engine/Arena.js";
 import { KeyboardInput } from "./input/KeyboardInput.js";
 import { StateDebugPanel } from "./ui/StateDebugPanel.js";
 import { ROUND_PHASES } from "./combat/RoundController.js";
+import { MenuController, MENU_SCREENS } from "./ui/MenuController.js";
 
 const canvas = document.querySelector("#game-canvas");
 const status = document.querySelector("#engine-status");
 const stateDebugRoot = document.querySelector("#state-debug");
+const gamePanel = document.querySelector(".game-panel");
+const controlsRoot = document.querySelector(".controls");
+const menuRoot = document.querySelector("#front-menu");
+const menuContent = document.querySelector("#front-menu-content");
 
 function reportEngineError(error) {
   const message = error instanceof Error ? error.message : String(error);
@@ -25,33 +30,165 @@ window.addEventListener("unhandledrejection", (event) => {
   reportEngineError(event.reason ?? "Unhandled startup error");
 });
 
-if (!canvas || !status || !stateDebugRoot) {
+if (!canvas || !status || !stateDebugRoot || !gamePanel || !controlsRoot || !menuRoot || !menuContent) {
   reportEngineError(new Error("BLT could not find a required game UI element."));
   throw new Error("BLT could not find a required game UI element.");
 }
 
 try {
   const input = new KeyboardInput(window);
-  const arena = new Arena({ opponentAIEnabled: true });
   const renderer = new CanvasRenderer(canvas);
   const stateDebugPanel = new StateDebugPanel(stateDebugRoot);
+  let arena = new Arena();
   let paused = false;
+  let gameStarted = false;
+
+  gamePanel.hidden = true;
+  stateDebugRoot.hidden = true;
+  controlsRoot.hidden = true;
+
+  const makeButton = (label, className, onClick, pressed = false) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = className;
+    button.textContent = label;
+    if (pressed) button.setAttribute("aria-pressed", "true");
+    button.addEventListener("click", onClick);
+    return button;
+  };
+
+  const menu = new MenuController({
+    onStart: (mode, options) => {
+      arena = new Arena({
+        opponentAIEnabled: mode === "arcade",
+        trainingMode: mode === "training"
+      });
+      renderer.showHitboxes = options.showHitboxes;
+      stateDebugRoot.hidden = !options.showInspector;
+      gamePanel.hidden = false;
+      controlsRoot.hidden = false;
+      menuRoot.hidden = true;
+      gameStarted = true;
+      paused = false;
+      status.textContent = mode === "training"
+        ? "TRAINING MODE · DUMMY AUTO-RECOVERS"
+        : "ARCADE MODE · CPU RIVAL ACTIVE";
+    },
+    onChange: renderMenu
+  });
+
+  function renderMenu(view = menu.getViewModel()) {
+    menuContent.replaceChildren();
+    menuRoot.dataset.screen = view.screen;
+
+    if (view.screen === MENU_SCREENS.TITLE) {
+      const eyebrow = document.createElement("p");
+      eyebrow.className = "menu-eyebrow";
+      eyebrow.textContent = "A TWO-DIMENSIONAL FIGHTING GAME";
+      const title = document.createElement("h1");
+      title.textContent = "BELT TO ASS";
+      const subtitle = document.createElement("p");
+      subtitle.className = "menu-subtitle";
+      subtitle.textContent = "NEON BACKSTREET · LOCAL COMBAT PROTOTYPE";
+      const startButton = makeButton("PRESS ENTER TO START", "menu-primary", () => menu.handleKey("Enter"));
+      menuContent.append(eyebrow, title, subtitle, startButton);
+      return;
+    }
+
+    if (view.screen === MENU_SCREENS.MAIN) {
+      const title = document.createElement("h2");
+      title.textContent = "MAIN MENU";
+      const subtitle = document.createElement("p");
+      subtitle.className = "menu-subtitle";
+      subtitle.textContent = "SELECT YOUR MODE";
+      const list = document.createElement("div");
+      list.className = "menu-list";
+      view.items.forEach((item, index) => {
+        const button = makeButton(
+          (index === view.selectedIndex ? "▶  " : "   ") + item.toUpperCase(),
+          "menu-choice" + (index === view.selectedIndex ? " is-selected" : ""),
+          () => menu.selectItem(index),
+          index === view.selectedIndex
+        );
+        list.append(button);
+      });
+      const hint = document.createElement("p");
+      hint.className = "menu-hint";
+      hint.textContent = "W / S OR ↑ / ↓ TO SELECT · ENTER TO CONFIRM";
+      menuContent.append(title, subtitle, list, hint);
+      return;
+    }
+
+    if (view.screen === MENU_SCREENS.ONLINE) {
+      const title = document.createElement("h2");
+      title.textContent = "ONLINE";
+      const message = document.createElement("p");
+      message.className = "menu-message";
+      message.textContent = "NETWORK MATCHMAKING IS NOT CONNECTED YET. LOCAL ARCADE AND TRAINING ARE READY.";
+      const hint = document.createElement("p");
+      hint.className = "menu-hint";
+      hint.textContent = "PRESS ENTER OR ESC TO RETURN";
+      const back = makeButton("BACK", "menu-primary", () => menu.back());
+      menuContent.append(title, message, hint, back);
+      return;
+    }
+
+    if (view.screen === MENU_SCREENS.OPTIONS) {
+      const title = document.createElement("h2");
+      title.textContent = "OPTIONS";
+      const subtitle = document.createElement("p");
+      subtitle.className = "menu-subtitle";
+      subtitle.textContent = "PRESENTATION AND DEBUG";
+      const list = document.createElement("div");
+      list.className = "menu-list";
+      view.optionItems.forEach((option, index) => {
+        const selected = index === view.optionIndex;
+        const value = option.enabled ? "ON" : "OFF";
+        list.append(makeButton(
+          (selected ? "▶  " : "   ") + option.label.toUpperCase() + " · " + value,
+          "menu-choice" + (selected ? " is-selected" : ""),
+          () => menu.selectOption(index),
+          option.enabled
+        ));
+      });
+      const hint = document.createElement("p");
+      hint.className = "menu-hint";
+      hint.textContent = "ENTER TO TOGGLE · ESC TO RETURN";
+      const back = makeButton("BACK", "menu-primary menu-back", () => menu.back());
+      menuContent.append(title, subtitle, list, hint, back);
+    }
+  }
+
+  const onMenuKeyDown = event => {
+    if (menu.screen === MENU_SCREENS.PLAYING) return;
+    if (menu.handleKey(event.key)) event.preventDefault();
+  };
+
+  window.addEventListener("keydown", onMenuKeyDown);
+  renderMenu();
 
   const loop = new GameLoop({
     update: (deltaSeconds) => {
+      if (!gameStarted) {
+        input.endFrame();
+        return;
+      }
       if (input.wasPressed("Escape")) paused = !paused;
       if (!paused) arena.update(deltaSeconds, input);
       input.endFrame();
     },
     render: (alpha) => {
+      if (!gameStarted) return;
       renderer.render(arena, alpha, paused);
       stateDebugPanel.update(arena);
       status.dataset.error = "false";
       status.textContent = paused
         ? "PAUSED · PRESS ESC TO RESUME"
-        : arena.rounds.phase === ROUND_PHASES.MATCH_OVER
-          ? "MATCH COMPLETE · PRESS ENTER TO REMATCH"
-          : "ENGINE RUNNING · FIXED 60 HZ SIMULATION";
+        : arena.trainingMode
+          ? "TRAINING MODE · DUMMY AUTO-RECOVERS"
+          : arena.rounds.phase === ROUND_PHASES.MATCH_OVER
+            ? "MATCH COMPLETE · PRESS ENTER TO REMATCH"
+            : "ARCADE MODE · CPU RIVAL ACTIVE · FIXED 60 HZ";
     },
     onError: reportEngineError
   });
@@ -63,6 +200,7 @@ try {
     loop.stop();
     input.detach();
     renderer.detach();
+    window.removeEventListener("keydown", onMenuKeyDown);
   }, { once: true });
 } catch (error) {
   reportEngineError(error);

@@ -240,3 +240,14 @@ Implemented:
 - Extended the eight-frame input buffer to retain the special move identity and facing direction at command time. This supports both recovery buffering and confirmed Light / Medium Special cancels without changing Energy Shot / Vector Burst behavior.
 - Added a distinct projectile colour and HUD feedback label for Arc Lance.
 - Automated tests cover QCF activation, move-specific frame data and projectile properties, input-time facing, hit-confirm cancel, damage, chip / guard pressure, and actual projectile travel into a hurtbox.
+
+
+## Menu and modes milestone 017 — START flow and practice foundations
+
+Implemented:
+- Added a pure `MenuController` state machine with title, main, online, options, and playing screens. Keyboard navigation is W / S or Up / Down, Enter to confirm, and Escape to return.
+- Added the main menu in the required order: Arcade, Online, Training, Option. Mouse buttons and keyboard selection both work.
+- Arcade starts the CPU-controlled best-of-three match; Online clearly explains that networking is not connected rather than pretending to offer matchmaking.
+- Training starts without CPU AI, freezes the round timer, and restores the dummy's health / guard meter two seconds after its last hit or block so repeated practice is possible.
+- Added options for combat hurtbox / active-hitbox overlays and the DOM state / frame-data inspector. Debug overlays now start hidden, and both player and CPU active melee hitboxes can be inspected.
+- Added menu state-machine and training-mode integration tests. Further training features such as dummy reset position, recording / playback, and character select remain future work.
