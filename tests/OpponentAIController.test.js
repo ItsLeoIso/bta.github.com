@@ -42,7 +42,7 @@ test("CPU briefly crouch-blocks a visible active low attack", () => {
   const cpu = fighter(300, -1);
   const player = fighter(200, 1);
   player.state.action = STATES.action.ATTACK;
-  player.actionData = { phase: "active", hitLevel: "low" };
+  player.actionData = { phase: "active", startupFrames: 12, hitLevel: "low" };
   const ai = new OpponentAIController();
   const input = ai.update(cpu, player);
 

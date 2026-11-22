@@ -85,7 +85,7 @@ test("combo scaling and juggle cap end as soon as the defender recovers",()=>{
   }
   assert.equal(tracker.getComboForAttacker(attacker).hitCount,3);
   assert.equal(tracker.getDamageScale(event(attacker,defender)),0.7);
-  assert.equal(tracker.canRegisterHit(event(attacker,defender)),true);
+  assert.equal(tracker.canRegisterHit(event(attacker,defender)),false,"the fourth aerial follow-up is capped while hitstun remains");
 
   defender.state.reaction="none";
   assert.equal(tracker.getComboForAttacker(attacker),null);
