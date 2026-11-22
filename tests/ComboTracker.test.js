@@ -69,3 +69,30 @@ test("invalid combo configuration is rejected", () => {
   assert.throws(() => new ComboTracker({ maxJuggleHits: 0 }), RangeError);
   assert.throws(() => new ComboTracker({ minimumDamageScale: 0 }), RangeError);
 });
+
+
+test("combo scaling and juggle cap end as soon as the defender recovers",()=>{
+  const tracker=new ComboTracker({maxJuggleHits:3});
+  const attacker={};
+  const defender={
+    onGround:false,
+    state:{reaction:"hitstun"}
+  };
+
+  tracker.recordHit(event(attacker,defender),0.1,{wasAirborne:true});
+  for(let hit=0;hit<2;hit+=1){
+    tracker.recordHit(event(attacker,defender),0.05,{wasAirborne:true});
+  }
+  assert.equal(tracker.getComboForAttacker(attacker).hitCount,3);
+  assert.equal(tracker.getDamageScale(event(attacker,defender)),0.7);
+  assert.equal(tracker.canRegisterHit(event(attacker,defender)),true);
+
+  defender.state.reaction="none";
+  assert.equal(tracker.getComboForAttacker(attacker),null);
+  assert.equal(tracker.getDamageScale(event(attacker,defender)),1);
+  assert.equal(
+    tracker.canRegisterHit(event(attacker,defender)),
+    true,
+    "a recovered airborne defender must not be held by a stale juggle cap"
+  );
+});

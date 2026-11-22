@@ -182,3 +182,43 @@ test("a hit-confirmed Light can cancel directly into buffered Arc Lance",()=>{
   });
   assert.equal(arena.inputBuffer.pending,null);
 });
+
+
+test("illegal Special cancels do not delete the current attack recovery",()=>{
+  const scenarios=[
+    {
+      name:"spent air projectile",
+      configure:arena=>{
+        arena.player.onGround=false;
+        arena.player.y=240;
+        arena.player.state.locomotion=STATES.locomotion.FALLING;
+        arena.player.airProjectileAvailable=false;
+      },
+      specialInput:input({pressed:["special"]})
+    },
+    {
+      name:"opposing directional inputs",
+      configure:()=>{},
+      specialInput:input({pressed:["special"],down:["left","right"]})
+    }
+  ];
+
+  for(const scenario of scenarios){
+    const arena=new Arena();
+    arena.player.x=400;
+    arena.opponent.x=510;
+    scenario.configure(arena);
+    assert.equal(arena.attacks.start(arena.player,"light"),true);
+    arena.player.actionData.hitOutcome="hit";
+
+    arena.update(1/60,scenario.specialInput);
+
+    assert.equal(
+      arena.player.state.action,
+      STATES.action.ATTACK,
+      scenario.name+" must leave the current attack in recovery"
+    );
+    assert.equal(arena.player.actionData.moveId,"light");
+    assert.equal(arena.projectileController.projectiles.length,0);
+  }
+});

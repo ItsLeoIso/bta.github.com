@@ -865,3 +865,89 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 - GitHub Actions Node.js tests: **187/187 passed, 0 failures** — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45067699413
 - GitHub Pages build and deployment succeeded — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45067699450
 - Manual browser playtesting was not performed in this session. Menu keyboard / mouse focus, responsive layout, and Training / Arcade feel still need visual playtesting.
+
+
+### 2026-11-22 — Claude — Independent code review of `main` (6ebfd39) and log audit
+**Type:** Review
+**Commit:** `not committed` (entry handed to Leandro to paste)
+**Files / systems:**
+- Reviewed (read only, via GitHub connector at `main` head `6ebfd391`): `Cooperation.md`, `docs/GAME_DESIGN.md`, `docs/ROADMAP.md`, `src/engine/Arena.js`, `src/combat/{AttackController,CombatCollision,ComboTracker,DamageController,GuardController,Hitbox,Hurtbox,ProjectileController}.js`, `src/state/FighterStateController.js`, `src/movement/MovementController.js`, `src/ai/OpponentAIController.js`, `src/input/KeyboardInput.js`, `src/ui/MenuController.js`, `src/main.js`, `tests/Arena.test.js`.
+- Not reviewed: `CanvasRenderer.js`, `GameLoop.js`, `RoundController.js`, `CommandHistory.js`, `InputBuffer.js`, `Pushbox.js`, `StateDebugPanel.js`, `README.md`, `docs/TECHNICAL_PLAN.md`, `index.html`, the CI workflow, and every test file except `Arena.test.js`.
+
+**Context:** This Claude session has no memory of earlier Claude sessions. This review relies only on the repository and this log. No files were edited, per the file-ownership note in the 2026-11-12 entry.
+
+**What I noticed (overall):**
+- Moves are data-driven, state is layered, hitboxes, hurtboxes and pushboxes are kept separate, and the CPU is deterministic. These are good foundations for adding characters.
+- The findings below are mostly at the seams between systems rather than inside any one module.
+
+**Findings (all from code reading; none executed):**
+
+1. **Major — Training dummy never runs physics** (`Arena.js`, `Arena.update`)
+   - The opponent's `MovementController` only runs when `opponentAI` returns input. In Training the AI is off, so `opponentInput` is `null` and the dummy gets no gravity, no knockback and no landing check.
+   - `DamageController.applyHit` launches a grounded Medium target with `onGround = false`, `vy = -520` and locomotion `JUMPING`. Nothing ever lands the dummy again.
+   - Effects: Heavy is a Low and `resolveAttackCollision` makes Lows whiff against `JUMPING`/`FALLING`, so Heavy can never hit the dummy again. Every later hit is counted as an air juggle, so the 3-hit juggle cap applies to a dummy that is not really airborne. The airborne hurtbox is also used.
+   - The existing Training test only uses Light and asserts `opponent.x` is unchanged, so it does not catch this.
+   - Fix: when no AI is present, still run `opponentMovement.update` with an idle input object. Decide explicitly whether the dummy takes knockback, and update the x assertion to match.
+   - Add a regression test: Medium launches the training dummy, the dummy lands within N frames, and Heavy then hits it.
+
+2. **Major — A hit can shorten guard break and knockdown** (`DamageController.applyHit` and `FighterStateController.setReaction`)
+   - `applyHit` overwrites `reactionData` and `vx` before it calls `setReaction`. `setReaction` refuses a lower-priority reaction (hitstun = 1 against guardBreak = 2 or knockdown = 3), but the data was already replaced.
+   - Result: the defender stays in guardBreak/knockdown but runs the new hit's shorter timer (12–24 frames instead of 45 for guard break) and loses the `guardBreak` flag.
+   - Fix: call `setReaction` first and only overwrite `reactionData` if it was accepted. Alternatively keep the longer of the two timers.
+   - Add a test: hit a guard-broken fighter and assert the remaining stun is not reduced.
+
+3. **Minor — Special cancel can delete a move's recovery without starting a special** (`Arena.js`, `specialCancel` block)
+   - Arena ends the current ATTACK before `ProjectileController` checks legality. `ProjectileController` then refuses if the air-projectile allowance is spent or opposite directions are held.
+   - Result: after a confirmed air Light/Medium hit with the allowance spent, pressing L removes the remaining recovery and nothing fires.
+   - This cancel logic lives in `Arena` while all other cancels live in `AttackController`.
+   - Fix: add a `canStartSpecial(fighter, input)` check and call it before ending the attack. Better, move special cancels into one place.
+
+4. **Minor — Combo window is time-based, not state-based** (`ComboTracker.js`)
+   - The 45-frame window refreshes on every hit regardless of whether the defender is still in hitstun. Hitstun is only 12–24 frames, so scaling and the HUD counter can count hits the defender could have avoided.
+   - After three airborne hits, `canRegisterHit` drops further hits to an airborne defender as `juggleDrop` for up to 45 frames, even if that defender has recovered and is acting. The collision is consumed and no damage is dealt, so this is a short invulnerability window.
+   - Fix: end the combo when the defender's reaction is `NONE` (optionally with a 1–3 frame grace), and apply the juggle cap only while the defender is in a reaction.
+
+5. **Suggestion / balance — CPU guard has zero reaction time** (`OpponentAIController.js` and `Arena.update`)
+   - The AI reacts when the target's phase is `active`. Arena runs the AI after the player's attack has advanced and before collision resolves, so the CPU starts guarding on the exact first active frame.
+   - Result: the CPU blocks any melee within 245 units, correctly high or low, whenever its 45-frame block cooldown is ready. A 5-frame Light cannot be reacted to by a human.
+   - Fix: add reaction frames, for example guard only once the attacker has been in startup for N frames (N around 8). Light then beats the CPU, Medium is borderline, and Heavy is blockable. Keep it deterministic.
+
+6. **Minor — No way back from a match to the menu** (`main.js`, `MenuController.js`)
+   - `back()` does nothing in `PLAYING`, and Escape in `main.js` only toggles pause. Switching mode requires a page reload.
+   - Fix: add a pause menu (Resume / Restart / Exit to menu) with `MenuController.exitToMenu()`. Also add Training reset-position, which the roadmap already lists as future work.
+
+7. **Suggestion — Fighters can separate more than the viewport width** (`Arena.updateCamera`)
+   - The world is 1,920 wide, the viewport is 960, and the camera only guarantees the player is visible. The opponent, and projectiles launched from outside the view, can be off-screen.
+   - Options: cap fighter separation at about viewport width minus a margin, or add zoom (already deferred in the design doc). Decide before playtesting spacing.
+
+8. **Suggestion — Projectiles have no floor collision** (`ProjectileController.js`)
+   - A downward Vector Burst fired from the ground travels through the floor (`y = 440`) until it leaves the arena bounds.
+   - Fix: remove or spark on floor contact.
+
+9. **Suggestion — Inconsistent ground checks**
+   - `ProjectileController` and `GuardController` use `!fighter.onGround` or `fighter.onGround`, while `AttackController`, `Hitbox` and `DamageController` use `onGround !== false`. A fighter fixture with `onGround` undefined is handled differently by each. Normalise to one helper.
+
+10. **Design question for Leandro:** A fighter crouch-guarding (hold back + down) is hit by Light because Light is High and needs standing guard. A fighter only crouching dodges it entirely. This matches `GAME_DESIGN.md` as written, but crouch-guarding is now strictly worse against the fastest move than crouching without guarding. Intended?
+
+**Log and docs audit:**
+- **Naming:** the project is "BLT" in the header and docs, "BTA" in the repo name and some entries (the research note, "BTA signs"), and "Belt to Ass" on the title screen. The header says "Project owner: Leo", while entries say Leandro. Please pick one.
+- **Unrecorded review:** the 2026-11-19 ChatGPT entries say Claude reviewed the projectile proposal and recommended specific changes. That review is not in this repository, which conflicts with rule 8. Either paste the original response here or soften those lines.
+- **Stale or mismatched details:** the 2026-11-12 Claude entry still says `Commit: not committed`, and ChatGPT later reconstructed the bundle. `GAME_DESIGN.md` still lists "Final programming language / framework / rendering technology" under Open decisions. The CPU is called "Bruiser" in the design doc and "CPU Rival" elsewhere.
+- **Formatting:** the "Phase 4 started" entry has literal backslashes before backticks (`\`) so its file lists render incorrectly.
+- **Size:** this file is about 66 KB. Consider a short "Current state" summary at the top and moving closed entries to an archive file.
+
+**Verification:**
+- Tests run: none. Everything above is from reading the code and the documented test expectations.
+- Browser/manual checks: none.
+- Not verified: the CI results cited in earlier entries, and any behaviour of the files listed as not reviewed.
+- Findings 1–4 are strong enough to turn into failing tests first. Findings 5–9 are judgement calls.
+
+**Review requested / concerns:**
+- ChatGPT: please confirm or refute findings 1–4 with failing tests before changing code. Say which of 5–9 you intend to take.
+- Leandro: decide the knockback policy for the Training dummy (finding 1), whether the combo window should depend on defender state (finding 4), how hard the CPU should block (finding 5), and the crouch-guard question (finding 10).
+
+**Suggested next step:**
+1. Fix the Training dummy physics (finding 1) and the reaction overwrite (finding 2), each with a regression test.
+2. Make special-cancel legality consistent (finding 3) and tighten the combo window (finding 4).
+3. Add a pause menu with Exit to menu (finding 6), then playtest. The Phase 5 playtest items are still unchecked in the roadmap.
+4. Ownership: ChatGPT keeps gameplay code. Claude will not edit gameplay files unless it is reassigned here.

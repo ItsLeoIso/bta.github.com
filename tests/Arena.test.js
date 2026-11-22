@@ -352,3 +352,39 @@ test("training mode freezes the timer and auto-recovers its passive dummy",()=>{
   assert.equal(arena.rounds.phase,"active");
   assert.equal(arena.rounds.timerRemaining,99);
 });
+
+
+test("training dummy runs physics, lands after a Medium launcher, and can be hit by Heavy",()=>{
+  const arena=new Arena({trainingMode:true});
+  arena.player.x=400;
+  arena.opponent.x=510;
+
+  let launcherHit=null;
+  for(let frame=0;frame<12 && !launcherHit;frame+=1){
+    arena.update(1/60,input(frame===0?{pressed:["medium"]}:{}));
+    if(arena.lastCombatEvent?.type==="hit" && arena.lastCombatEvent.moveId==="medium"){
+      launcherHit=arena.lastCombatEvent;
+    }
+  }
+  assert.ok(launcherHit,"Medium should launch the training dummy");
+  assert.equal(arena.opponent.onGround,false);
+
+  let landed=false;
+  for(let frame=0;frame<80 && !landed;frame+=1){
+    arena.update(1/60,input());
+    landed=arena.opponent.onGround;
+  }
+  assert.equal(landed,true,"the training dummy should fall and land");
+  assert.equal(arena.opponent.y,arena.floorY);
+
+  let heavyHit=null;
+  arena.update(1/60,input({pressed:["heavy"]}));
+  if(arena.lastCombatEvent?.moveId==="heavy") heavyHit=arena.lastCombatEvent;
+  for(let frame=0;frame<22 && !heavyHit;frame+=1){
+    arena.update(1/60,input());
+    if(arena.lastCombatEvent?.type==="hit" && arena.lastCombatEvent.moveId==="heavy"){
+      heavyHit=arena.lastCombatEvent;
+    }
+  }
+  assert.ok(heavyHit,"grounded training dummy should be hittable by Heavy after landing");
+});

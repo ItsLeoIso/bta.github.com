@@ -77,3 +77,36 @@ test("Arc Lance has its own stronger damage and hitstun profile",()=>{
   assert.equal(defender.health,0.86);
   assert.equal(defender.reactionData.remainingFrames,24);
 });
+
+
+test("lower-priority hits do not shorten guard-break or knockdown reactions",()=>{
+  const controller=new DamageController();
+  const attacker=makeFighter(100);
+
+  for(const [reaction,frames,knockback] of [
+    [STATES.reaction.GUARD_BREAK,45,-825],
+    [STATES.reaction.KNOCKDOWN,30,-540]
+  ]){
+    const defender=makeFighter(200);
+    defender.stateController.setReaction(defender,reaction);
+    defender.reactionData={
+      remainingFrames:frames,
+      totalFrames:frames,
+      knockbackVelocity:knockback,
+      guardBreak:reaction===STATES.reaction.GUARD_BREAK
+    };
+    defender.vx=knockback;
+    defender.airHorizontalVelocity=knockback;
+
+    const result=controller.applyHit({
+      type:"hit",moveId:"light",attacker,defender
+    });
+
+    assert.ok(result.damage>0,"the follow-up hit should still deal health damage");
+    assert.equal(defender.state.reaction,reaction);
+    assert.equal(defender.reactionData.remainingFrames,frames);
+    assert.equal(defender.reactionData.knockbackVelocity,knockback);
+    assert.equal(defender.vx,knockback);
+    assert.equal(Boolean(defender.reactionData.guardBreak),reaction===STATES.reaction.GUARD_BREAK);
+  }
+});
