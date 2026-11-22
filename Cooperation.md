@@ -778,3 +778,34 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 
 **Suggested next step:**
 - Playtest H/J/K/L pressed during startup, active frames, recovery, hitstun, and blockstun. Confirm eight frames feels responsive without causing surprising delayed moves; then build the first actual QCF special and combo/cancel rules.
+
+
+### 2026-11-22 — ChatGPT — Add hit-confirm cancels, aerial combos, and juggle control
+**Type:** Phase 4 combat milestone / implementation and regression coverage
+
+**Files / systems:**
+- `src/combat/AttackController.js`, `src/combat/DamageController.js`, new `src/combat/ComboTracker.js`
+- `src/combat/CombatCollision.js`, `src/engine/Arena.js`, `src/engine/CanvasRenderer.js`
+- `tests/AttackController.test.js`, `tests/CombatIntegration.test.js`, new `tests/ComboTracker.test.js`
+- `README.md`, `index.html`, `docs/GAME_DESIGN.md`, `docs/TECHNICAL_PLAN.md`, `docs/ROADMAP.md`
+
+**What changed:**
+- Added explicit move-data-driven hit-confirm cancels. Ground Light can cancel into Medium, Heavy, or Special; ground Medium can cancel into Heavy or Special. In the air, Light can cancel into Medium / Special and Medium into Special.
+- Whiffs and blocks do not open cancel routes; the original move recovery remains committed. The existing eight-frame buffer can feed the cancel route.
+- Confirmed grounded Light / Medium moves can be jump-cancelled. Medium launches a grounded target upward at 520 units/second.
+- Enabled Light and Medium attacks while airborne; Heavy remains ground-only.
+- Added per-defender combo tracking with a 45-frame link window, actual cumulative damage, and ten-percentage-point damage scaling per follow-up down to a 40% floor.
+- Added a three-hit aerial juggle cap. A fourth airborne follow-up in the same combo is dropped rather than extending an infinite loop.
+- Added a screen-space combo counter showing hit count, AIR COMBO status, and cumulative damage. Combo state is cleared at round transitions / resets.
+- Marked the Phase 4 air-combo / cancel / recovery roadmap item complete.
+
+**Implementation commit:**
+- `2cfb67b5c8e6006bd1578ba7eebe563fbd808c41` — https://github.com/ItsLeoIso/bta.github.com/commit/2cfb67b5c8e6006bd1578ba7eebe563fbd808c41
+
+**Verification:**
+- GitHub Actions Node.js tests passed: **166/166**, 0 failures — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45065962307
+- GitHub Pages build and deployment succeeded — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45065961933
+- Browser/manual playtesting was not performed in this session. Launch height, cancel timing, damage scaling, and the juggle limit still need hands-on tuning.
+
+**Suggested next step:**
+- Assign a real gameplay move to Quarter-Circle Forward + L, then playtest the new cancel / launcher / air-combo routes in the browser and tune the resulting frame data.
