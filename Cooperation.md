@@ -988,3 +988,20 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 - GitHub Pages build and deployment both succeeded on the same tested commit — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45072208981
 - The first implementation run also exposed two test expectation / fixture issues (the fourth juggle follow-up should be capped while hitstun remains; the CPU low-guard fixture needed a reactable startup value). Both tests were corrected and the full suite rerun green.
 - Browser/manual playtesting was not performed. Confirm dummy launch / landing / Heavy follow-up, CPU reaction feel, fighter spacing, floor projectile cleanup, pause navigation and guard-height trade-offs in the browser.
+
+
+### 2026-11-22 — ChatGPT — Prepare local playtest handoff
+**Type:** Playtest documentation / Source-integrity checks / Release readiness
+
+**Changes:**
+- Added `docs/PLAYTEST_GUIDE.md` with hosted and local setup, the keyboard control reference, mode scope, a suggested first test pass, bug-report fields, and known limitations.
+- Reworked the README status into an explicit **local playtest candidate** statement. It distinguishes automated verification from the still-required human browser / visual / feel pass and explicitly lists Online, gamepad / touch, art, animation, audio, and balance as unfinished.
+- Updated `docs/ROADMAP.md`: tester-facing handoff and source-integrity checks are complete; human browser testing remains unchecked.
+- Added `tests/SourceIntegrity.test.js`: Node checks every source module's syntax, verifies all relative source imports point to real files, and checks the HTML's stylesheet / native-module entry references.
+- Standardized the npm package name from the stale `blt-belt-to-ass` to `bta-belt-to-ass`.
+
+**Verification:**
+- Commit: `dde817ef7c6a5b4570276c458ad9c2f9c4a396c7` — https://github.com/ItsLeoIso/bta.github.com/commit/dde817ef7c6a5b4570276c458ad9c2f9c4a396c7
+- GitHub Actions Node test run: **203/203 passed, 0 failures**, including the three new source-integrity checks — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45073102520
+- Pages build/deployment was still running when this entry was drafted; its final status is to be recorded after completion.
+- No browser automation / manual play session was available in this pass. The published build is a local keyboard playtest candidate, not a fully browser-validated release.
