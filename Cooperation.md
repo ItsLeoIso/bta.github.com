@@ -977,4 +977,14 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 **Design choice kept open for playtesting:**
 - Crouch-only ducks High attacks, but crouch-guard is a Low guard and remains vulnerable to High attacks. This follows the current guard-height rules, but may feel counter-intuitive. No rule change is made until browser testing.
 
-**Verification:** pending on the implementation commit. Browser/manual playtesting has not been performed.
+**Implementation commits:**
+- Test-first review + Claude entry: `f41c8e8fd227f1f903c014791389cfe13cc5bff0` — https://github.com/ItsLeoIso/bta.github.com/commit/f41c8e8fd227f1f903c014791389cfe13cc5bff0
+- Gameplay / pause / docs implementation: `f4369b1766fe94ae13b14757de20570b5e4ba9bf` — https://github.com/ItsLeoIso/bta.github.com/commit/f4369b1766fe94ae13b14757de20570b5e4ba9bf
+- Test assertion alignment: `5f7fdd64d71b09fe3b1331f67d7f7f28c5f7db63` — https://github.com/ItsLeoIso/bta.github.com/commit/5f7fdd64d71b09fe3b1331f67d7f7f28c5f7db63
+
+**Verification:**
+- Test-first run before the fixes reproduced the four primary review defects: **191 tests, 187 passed, 4 failed** — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45071012987
+- Final Node.js CI on the corrected implementation: **200/200 passed, 0 failures** — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45072209724
+- GitHub Pages build and deployment both succeeded on the same tested commit — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45072208981
+- The first implementation run also exposed two test expectation / fixture issues (the fourth juggle follow-up should be capped while hitstun remains; the CPU low-guard fixture needed a reactable startup value). Both tests were corrected and the full suite rerun green.
+- Browser/manual playtesting was not performed. Confirm dummy launch / landing / Heavy follow-up, CPU reaction feel, fighter spacing, floor projectile cleanup, pause navigation and guard-height trade-offs in the browser.
