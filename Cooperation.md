@@ -767,7 +767,7 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 
 **Verification:**
 - Pending GitHub Actions run after commit.
-- Tests cover buffer duration, expiry, replacement, direction snapshots, QCF exclusion, recovery-frame execution, expired commands, and round-result clearing.
+- Tests cover buffer duration, expiry, replacement, direction snapshots, QCF exclusion, recovery-frame and hitstun execution, expired commands, and round-result clearing.
 - Browser/manual playtesting not performed in this session.
 
 **Suggested next step:**

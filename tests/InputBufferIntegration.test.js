@@ -52,6 +52,22 @@ test("buffers Special through attack recovery and preserves its directional aim"
   assert.equal(arena.inputBuffer.pending,null);
 });
 
+test("buffers a Light press during hitstun and starts when the reaction clears",()=>{
+  const arena=new Arena();
+  arena.player.state.reaction=STATES.reaction.HITSTUN;
+  arena.player.reactionData={remainingFrames:2,totalFrames:2,knockbackVelocity:0};
+
+  arena.update(1/60,input({pressed:["light"]}));
+  assert.equal(arena.player.state.reaction,STATES.reaction.HITSTUN);
+  assert.equal(arena.inputBuffer.pending.action,"light");
+
+  arena.update(1/60,input());
+  assert.equal(arena.player.state.reaction,STATES.reaction.NONE);
+  assert.equal(arena.player.state.action,STATES.action.ATTACK);
+  assert.equal(arena.player.actionData.moveId,"light");
+  assert.equal(arena.inputBuffer.pending,null);
+});
+
 test("a buffered input is discarded when a round enters its result state",()=>{
   const arena=new Arena();
   arena.update(1/60,input({pressed:["heavy"]}));
