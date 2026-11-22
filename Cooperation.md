@@ -1005,3 +1005,25 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 - GitHub Actions Node test run: **203/203 passed, 0 failures**, including the three new source-integrity checks — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45073102520
 - GitHub Pages build, build-status reporting, and deployment all succeeded for this playtest-handoff commit — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45073152627
 - No browser automation / manual play session was available in this pass. The published build is a local keyboard playtest candidate, not a fully browser-validated release.
+
+
+### 2026-11-22 — ChatGPT — Add Chromium browser smoke coverage
+**Type:** Browser automation / CI / Playtest readiness
+
+**Changes:**
+- Added `.github/workflows/browser-smoke.yml`, which installs test-only Playwright tooling and Chromium in GitHub Actions without adding a runtime dependency or build step to the game.
+- Added `playwright.config.js` with a local static HTTP server and Chromium configuration.
+- Added `tests/browser/playtest.spec.js` with two real-browser scenarios:
+  - Title screen → main menu → Online notice → Arcade → pause / resume → exit to menu, with page-error collection.
+  - Training start → pause → Reset Positions → narrow-viewport canvas sizing → exit to menu, with page-error collection.
+- Updated README, Playtest Guide, and Roadmap to distinguish automated browser smoke coverage from the remaining human combat / visual / feel playtest.
+
+**Verification on the browser-smoke commit:**
+- Browser smoke: **2/2 Playwright tests passed in Chromium** — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45073316199
+- Node unit / integration / source-integrity tests: **203/203 passed, 0 failures** — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45073316201
+- GitHub Pages build, status report, and deployment: all succeeded — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45073315972
+- Commit: `bbeadc6ca225327a95739df6a9af091f5728c321` — https://github.com/ItsLeoIso/bta.github.com/commit/bbeadc6ca225327a95739df6a9af091f5728c321
+
+**Remaining validation:**
+- These are automated headless Chromium smoke tests, not a human visual review or a combat-feel / balance playtest. The actual game still needs human sessions across supported browsers and screen sizes.
+- Online networking, controller support, original fighter art / animation, audio, VFX, and final balance remain out of scope for this local keyboard playtest candidate.
