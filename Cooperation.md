@@ -2,7 +2,7 @@
 
 This file is the shared handoff and review space for every AI or human contributor working on BLT.
 
-**Project owner:** Leo  
+**Project owner:** Leo (historical 2026-11-12 entries also use Leandro)  
 **Repository:** https://github.com/ItsLeoIso/bta.github.com  
 **Current branch:** `main`  
 **Project direction:** Browser-first 2D 1v1 fighting game, Vanilla JavaScript + HTML5 Canvas.
@@ -951,3 +951,30 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 2. Make special-cancel legality consistent (finding 3) and tighten the combo window (finding 4).
 3. Add a pause menu with Exit to menu (finding 6), then playtest. The Phase 5 playtest items are still unchecked in the roadmap.
 4. Ownership: ChatGPT keeps gameplay code. Claude will not edit gameplay files unless it is reassigned here.
+
+
+### 2026-11-22 — ChatGPT — Apply Claude's review and harden Training / combat transitions
+**Type:** Review follow-up / Gameplay fixes / Pause flow / regression tests
+**Review source:** Claude's full independent review pasted above from the user's attachment. Findings 1–4 were reproduced by tests before code changes.
+
+**Test-first reproduction:**
+- Commit `f41c8e8fd227f1f903c014791389cfe13cc5bff0` adds Claude's review entry and four targeted regression tests.
+- Before the fix, GitHub Actions reported **191 tests: 187 passed, 4 failed**. The failing tests reproduced: Training dummy cannot land after Medium launch; an illegal air Special cancel deletes attack recovery; a recovered defender remains juggle-capped; a Light hit shortens an existing guard-break / knockdown reaction.
+- Red test run: https://github.com/ItsLeoIso/bta.github.com/actions/runs/45071012987
+
+**Fixes implemented in this follow-up:**
+- **Training physics:** the opponent now receives a neutral input sample through its own MovementController whenever AI is disabled. It remains passive, but still takes knockback, falls under gravity and lands. The regression launches the dummy with Medium, waits for touchdown, then confirms Heavy can hit it.
+- **Reaction priority:** DamageController asks FighterStateController to accept the new reaction before changing reaction data / velocity. Lower-priority hits still deal health damage but preserve guard-break and knockdown timers / flags.
+- **Special cancel legality:** added `ProjectileController.canStartSpecial`. Arena checks the air-projectile resource and direction conflicts before ending the normal attack; illegal L inputs leave the original recovery intact.
+- **Combo rules:** the 45-frame timer is now a maximum safety timeout. Combo scaling and the juggle cap stop when the defender's reaction becomes NONE, so recovered airborne fighters do not suffer phantom invulnerability.
+- **Shared grounded state:** added `isGrounded`; missing / undefined `onGround` is treated as grounded for compatibility, while explicit false is airborne.
+- **CPU reaction delay:** the deterministic rival waits for eight startup frames before reactive guard. Light (5f) should beat the reaction; Medium (8f) is borderline; Heavy (12f) can be guarded.
+- **Camera spacing:** maximum horizontal fighter separation is capped at 824 units (960 viewport less 68 units on each side) to keep both combatants visible without adding zoom.
+- **Projectile cleanup:** downward-moving projectiles are removed on floor contact after checking hurtboxes on that frame.
+- **Pause and Training controls:** Escape opens Resume / Restart Mode / Exit to Menu. Training adds Reset Positions, which resets both fighters, resources and the two-second dummy recovery timer.
+- **Naming / docs:** current project/UI/docs naming is standardized to BTA — Belt to Ass; the vanilla JS + Canvas stack decision is no longer listed as open. Historical log entries keep their original wording where it records what contributors wrote at the time.
+
+**Design choice kept open for playtesting:**
+- Crouch-only ducks High attacks, but crouch-guard is a Low guard and remains vulnerable to High attacks. This follows the current guard-height rules, but may feel counter-intuitive. No rule change is made until browser testing.
+
+**Verification:** pending on the implementation commit. Browser/manual playtesting has not been performed.

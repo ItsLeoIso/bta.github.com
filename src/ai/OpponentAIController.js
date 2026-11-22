@@ -2,8 +2,7 @@ import { FIGHTER_STATES } from "../state/FighterStateController.js";
 
 /**
  * Deterministic, frame-stepped CPU opponent. It closes distance, rotates through
- * the prototype move set, and occasionally guards a visible active melee swing.
- * It emits the same logical input shape as the player's keyboard adapter.
+ * the prototype move set, and guards only after a configurable startup reaction.
  */
 export class OpponentAIController {
   constructor({
@@ -12,6 +11,7 @@ export class OpponentAIController {
     attackCooldownFrames = 8,
     blockDurationFrames = 10,
     blockCooldownFrames = 45,
+    blockReactionFrames = 8,
     moveCycle = ["light", "medium", "heavy", "special"]
   } = {}) {
     if (!Number.isFinite(attackRange) || attackRange <= 0) {
@@ -20,9 +20,12 @@ export class OpponentAIController {
     if (!Number.isFinite(guardRange) || guardRange < attackRange) {
       throw new RangeError("AI guard range must be at least the attack range.");
     }
-    if (!Number.isInteger(attackCooldownFrames) || attackCooldownFrames < 0 ||
-        !Number.isInteger(blockDurationFrames) || blockDurationFrames < 1 ||
-        !Number.isInteger(blockCooldownFrames) || blockCooldownFrames < 0) {
+    if (
+      !Number.isInteger(attackCooldownFrames) || attackCooldownFrames < 0 ||
+      !Number.isInteger(blockDurationFrames) || blockDurationFrames < 1 ||
+      !Number.isInteger(blockCooldownFrames) || blockCooldownFrames < 0 ||
+      !Number.isInteger(blockReactionFrames) || blockReactionFrames < 0
+    ) {
       throw new RangeError("AI timing values must be valid frame counts.");
     }
     if (!Array.isArray(moveCycle) || moveCycle.length === 0 ||
@@ -31,10 +34,21 @@ export class OpponentAIController {
     }
     Object.assign(this, {
       attackRange, guardRange, attackCooldownFrames,
-      blockDurationFrames, blockCooldownFrames,
+      blockDurationFrames, blockCooldownFrames, blockReactionFrames,
       moveCycle: [...moveCycle]
     });
     this.reset();
+  }
+
+  hasReactableStartup(target) {
+    if (target.state?.action !== FIGHTER_STATES.action.ATTACK) return false;
+    const data = target.actionData ?? {};
+    const startupElapsed = data.phase === "startup"
+      ? (data.phaseFrame ?? 0)
+      : data.phase === "active"
+        ? (data.startupFrames ?? 0)
+        : 0;
+    return startupElapsed >= this.blockReactionFrames;
   }
 
   update(fighter, target) {
@@ -59,8 +73,7 @@ export class OpponentAIController {
       fighter.onGround &&
       this.blockCooldown === 0 &&
       distance <= this.guardRange &&
-      target.state?.action === FIGHTER_STATES.action.ATTACK &&
-      target.actionData?.phase === "active"
+      this.hasReactableStartup(target)
     ) {
       this.blockFramesRemaining = this.blockDurationFrames - 1;
       this.blockCooldown = this.blockCooldownFrames;

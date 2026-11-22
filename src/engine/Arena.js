@@ -4,7 +4,7 @@ import { resolveAttackCollision, canGuardAttack } from "../combat/CombatCollisio
 import { DAMAGE_PROFILES, DamageController } from "../combat/DamageController.js";
 import { BLOCK_PROFILES, GuardController } from "../combat/GuardController.js";
 import { resolvePushboxes } from "../movement/Pushbox.js";
-import { FIGHTER_STATES, FighterStateController } from "../state/FighterStateController.js";
+import { FIGHTER_STATES, FighterStateController, isGrounded } from "../state/FighterStateController.js";
 import { ROUND_PHASES, RoundController } from "../combat/RoundController.js";
 import { ProjectileController } from "../combat/ProjectileController.js";
 import { CommandHistory } from "../input/CommandHistory.js";
@@ -14,6 +14,13 @@ import { OpponentAIController } from "../ai/OpponentAIController.js";
 
 const clamp = (value,min,max)=>Math.min(max,Math.max(min,value));
 export const STAGE_MARGIN=68;
+export const MAX_FIGHTER_SEPARATION=960-2*STAGE_MARGIN;
+
+const NEUTRAL_INPUT=Object.freeze({
+  getWorldAxis:()=>0,
+  wasPressed:()=>false,
+  isDown:()=>false
+});
 
 function createFighter({x,facing,displayName,moveSpeed,damageMultiplier}) {
   return {
@@ -87,7 +94,6 @@ export class Arena {
     }
 
     this.lastCombatEvent=null;
-    this.comboTracker.update();
     this.commandFeedbackRemaining=Math.max(0,this.commandFeedbackRemaining-deltaSeconds);
     if (this.commandFeedbackRemaining===0) this.commandFeedbackText="";
     if (this.lastHit) {
@@ -97,6 +103,7 @@ export class Arena {
     const player=this.player;
     this.damage.update(player);
     this.damage.update(this.opponent);
+    this.comboTracker.update();
     player.previousX=player.x; player.previousY=player.y;
     this.opponent.previousX=this.opponent.x; this.opponent.previousY=this.opponent.y;
     player.facing=player.x<=this.opponent.x ? 1 : -1;
@@ -122,14 +129,18 @@ export class Arena {
     // Light / Medium can cancel into either projectile special after a
     // confirmed hit. QCF input keeps its Arc Lance move identity while buffered.
     const cancelData=player.actionData;
-    const cancelTargets=player.onGround
+    const cancelTargets=isGrounded(player)
       ? (cancelData.cancelOnHit ?? [])
       : (cancelData.airCancelOnHit ?? []);
     const specialCancel =
       player.state.action===FIGHTER_STATES.action.ATTACK &&
       cancelData.hitOutcome==="hit" &&
       cancelTargets.includes("special") &&
-      bufferedInput.wasPressed?.("special");
+      this.projectileController.canStartSpecial(
+        player,
+        bufferedInput,
+        {allowAttackCancel:true}
+      );
     if (specialCancel) {
       const fromMoveId=cancelData.moveId;
       this.stateController.endAction(player,FIGHTER_STATES.action.ATTACK);
@@ -169,12 +180,23 @@ export class Arena {
       this.guard.update(this.opponent,opponentInput);
       this.attacks.update(this.opponent,opponentInput);
       this.projectileController.updateFighter(this.opponent,opponentInput);
-      this.opponentMovement.update(this.opponent,opponentInput,deltaSeconds,{
-        floorY:this.floorY,minX:this.stageMargin,maxX:this.worldWidth-this.stageMargin
-      });
     }
+    // Training keeps the dummy passive, but it still receives knockback, gravity,
+    // and landing physics through a neutral input sample.
+    // When AI is disabled, the passive opponent still receives physics through
+    // a neutral sample; it never walks or acts, but knockback / gravity / landing work.
+    this.opponentMovement.update(
+      this.opponent,
+      opponentInput ?? NEUTRAL_INPUT,
+      deltaSeconds,
+      {floorY:this.floorY,minX:this.stageMargin,maxX:this.worldWidth-this.stageMargin}
+    );
     player.x=clamp(player.x,this.stageMargin,this.worldWidth-this.stageMargin);
     this.opponent.x=clamp(this.opponent.x,this.stageMargin,this.worldWidth-this.stageMargin);
+    const fighterSeparation=this.opponent.x-player.x;
+    if(Math.abs(fighterSeparation)>MAX_FIGHTER_SEPARATION){
+      this.opponent.x=player.x+Math.sign(fighterSeparation)*MAX_FIGHTER_SEPARATION;
+    }
     resolvePushboxes(player,this.opponent,{minX:this.stageMargin,maxX:this.worldWidth-this.stageMargin});
     player.facing=player.x<=this.opponent.x ? 1 : -1;
     this.opponent.facing=-player.facing;
@@ -193,7 +215,8 @@ export class Arena {
         minX:-this.stageMargin,
         maxX:this.worldWidth+this.stageMargin,
         minY:-this.stageMargin,
-        maxY:this.height+this.stageMargin
+        maxY:this.height+this.stageMargin,
+        floorY:this.floorY
       }
     );
     for(const projectileEvent of projectileEvents){
@@ -303,6 +326,13 @@ export class Arena {
     };
   }
 
+  resetTraining() {
+    if(!this.trainingMode) return false;
+    this.resetFighters();
+    this.rounds.timerRemaining=this.rounds.durationSeconds;
+    return true;
+  }
+
   resetFighters() {
     this.resetFighter(this.player,780,1);
     this.resetFighter(this.opponent,1140,-1);
@@ -314,6 +344,7 @@ export class Arena {
     this.inputBuffer.clear();
     this.comboTracker.reset();
     this.inputFrame=0;
+    this.trainingDummyResetFrames=0;
     this.commandFeedbackText="";
     this.commandFeedbackRemaining=0;
     this.cameraX=(this.player.x+this.opponent.x)/2-this.width/2;

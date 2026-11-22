@@ -1,4 +1,4 @@
-import { FIGHTER_STATES, FighterStateController } from "../state/FighterStateController.js";
+import { FIGHTER_STATES, FighterStateController, isGrounded } from "../state/FighterStateController.js";
 
 // Prototype timings are expressed in 60 Hz simulation frames, not seconds.
 export const ATTACK_DEFINITIONS = Object.freeze({
@@ -55,7 +55,7 @@ export class AttackController {
 
   canStart(fighter, moveId) {
     const move = ATTACK_DEFINITIONS[moveId];
-    return Boolean(move) && (fighter.onGround !== false || move.airAllowed);
+    return Boolean(move) && (isGrounded(fighter) || move.airAllowed);
   }
 
   start(fighter, moveId) {
@@ -75,7 +75,7 @@ export class AttackController {
 
   tryJumpCancel(fighter, input) {
     const data = fighter.actionData;
-    if (fighter.onGround === false || data.hitOutcome !== "hit" ||
+    if (!isGrounded(fighter) || data.hitOutcome !== "hit" ||
         !data.jumpCancelOnHit || !input.wasPressed?.("jump")) return false;
     const fromMoveId = data.moveId;
     this.stateController.endAction(fighter, FIGHTER_STATES.action.ATTACK);

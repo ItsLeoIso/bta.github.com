@@ -31,6 +31,11 @@ export const FIGHTER_STATES = Object.freeze({
   })
 });
 
+/** Missing onGround is treated as grounded to keep legacy fighter fixtures consistent. */
+export function isGrounded(fighter) {
+  return fighter?.onGround !== false;
+}
+
 const LOCOMOTION_TRANSITIONS = {
   standing: ["walking", "crouching", "jumping", "falling"],
   walking: ["standing", "crouching", "jumping", "falling"],

@@ -333,3 +333,34 @@ test("Arc Lance uses its slower projectile, larger hit area, and longer frame da
   assert.equal(controller.projectiles[0].radius,26);
   assert.equal(controller.projectiles[0].remainingSeconds,2.8);
 });
+
+
+test("a missing onGround flag defaults to grounded projectile rules",()=>{
+  const controller=new ProjectileController();
+  const fighter=makeFighter();
+  delete fighter.onGround;
+
+  assert.equal(controller.updateFighter(fighter,input({pressed:["special"]})),true);
+  assert.equal(fighter.airProjectileAvailable,true);
+});
+
+test("downward projectiles are removed on floor contact after hurtbox checks",()=>{
+  const controller=new ProjectileController();
+  const attacker=makeFighter({x:100,y:440});
+  const projectile=controller.spawnProjectile(attacker,{
+    directionX:0,
+    directionY:1,
+    moveId:"directionalSpecial",
+    moveName:"Vector Burst"
+  });
+  projectile.y=416;
+
+  const events=controller.updateProjectiles(
+    1/60,
+    [attacker],
+    {minX:0,maxX:960,minY:0,maxY:540,floorY:440}
+  );
+
+  assert.equal(events.length,0);
+  assert.equal(controller.projectiles.length,0);
+});

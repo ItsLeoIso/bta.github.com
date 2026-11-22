@@ -78,4 +78,5 @@ test("invalid AI ranges and timing values are rejected", () => {
   assert.throws(() => new OpponentAIController({ attackRange: 0 }), RangeError);
   assert.throws(() => new OpponentAIController({ guardRange: 10 }), RangeError);
   assert.throws(() => new OpponentAIController({ attackCooldownFrames: -1 }), RangeError);
+  assert.throws(() => new OpponentAIController({ blockReactionFrames: -1 }), RangeError);
 });

@@ -3,7 +3,8 @@ export const MENU_SCREENS = Object.freeze({
   MAIN: "main",
   ONLINE: "online",
   OPTIONS: "options",
-  PLAYING: "playing"
+  PLAYING: "playing",
+  PAUSE: "pause"
 });
 
 export const MAIN_MENU_ITEMS = Object.freeze(["Arcade", "Online", "Training", "Option"]);
@@ -15,16 +16,33 @@ export const MENU_OPTIONS = Object.freeze([
 
 /** Pure menu state machine; DOM rendering stays in the browser entry layer. */
 export class MenuController {
-  constructor({ onChange = () => {}, onStart = () => {} } = {}) {
-    if (typeof onChange !== "function" || typeof onStart !== "function") {
+  constructor({
+    onChange = () => {},
+    onStart = () => {},
+    onResetTraining = () => {}
+  } = {}) {
+    if (
+      typeof onChange !== "function" ||
+      typeof onStart !== "function" ||
+      typeof onResetTraining !== "function"
+    ) {
       throw new TypeError("Menu callbacks must be functions.");
     }
     this.onChange = onChange;
     this.onStart = onStart;
+    this.onResetTraining = onResetTraining;
     this.screen = MENU_SCREENS.TITLE;
     this.selectedIndex = 0;
     this.optionIndex = 0;
+    this.pauseSelectedIndex = 0;
+    this.mode = null;
     this.options = { showHitboxes: false, showInspector: false };
+  }
+
+  getPauseItems() {
+    return this.mode === "training"
+      ? ["Resume", "Reset Positions", "Restart Mode", "Exit to Menu"]
+      : ["Resume", "Restart Mode", "Exit to Menu"];
   }
 
   getViewModel() {
@@ -32,6 +50,9 @@ export class MenuController {
       screen: this.screen,
       selectedIndex: this.selectedIndex,
       optionIndex: this.optionIndex,
+      pauseSelectedIndex: this.pauseSelectedIndex,
+      pauseItems: this.getPauseItems(),
+      mode: this.mode,
       options: { ...this.options },
       items: [...MAIN_MENU_ITEMS],
       optionItems: MENU_OPTIONS.map(option => ({
@@ -47,6 +68,29 @@ export class MenuController {
 
   handleKey(key) {
     if (this.screen === MENU_SCREENS.PLAYING) return false;
+
+    if (this.screen === MENU_SCREENS.PAUSE) {
+      if (key === "Escape") {
+        this.resume();
+        return true;
+      }
+      const items = this.getPauseItems();
+      if (key === "ArrowUp" || key.toLowerCase?.() === "w") {
+        this.pauseSelectedIndex = (this.pauseSelectedIndex + items.length - 1) % items.length;
+        this.notify();
+        return true;
+      }
+      if (key === "ArrowDown" || key.toLowerCase?.() === "s") {
+        this.pauseSelectedIndex = (this.pauseSelectedIndex + 1) % items.length;
+        this.notify();
+        return true;
+      }
+      if (key === "Enter" || key === " ") {
+        this.selectPauseItem(this.pauseSelectedIndex);
+        return true;
+      }
+      return false;
+    }
 
     if (this.screen === MENU_SCREENS.TITLE) {
       if (key === "Enter" || key === " ") {
@@ -127,6 +171,31 @@ export class MenuController {
     return true;
   }
 
+  selectPauseItem(index) {
+    const items = this.getPauseItems();
+    if (this.screen !== MENU_SCREENS.PAUSE || !Number.isInteger(index) ||
+        index < 0 || index >= items.length) return false;
+    this.pauseSelectedIndex = index;
+    switch (items[index]) {
+      case "Resume":
+        this.resume();
+        break;
+      case "Reset Positions":
+        this.onResetTraining();
+        this.resume();
+        break;
+      case "Restart Mode":
+        this.start(this.mode);
+        break;
+      case "Exit to Menu":
+        this.exitToMenu();
+        break;
+      default:
+        return false;
+    }
+    return true;
+  }
+
   activateSelected() {
     switch (MAIN_MENU_ITEMS[this.selectedIndex]) {
       case "Arcade":
@@ -151,9 +220,35 @@ export class MenuController {
   }
 
   start(mode) {
+    this.mode = mode;
     this.screen = MENU_SCREENS.PLAYING;
     this.onStart(mode, { ...this.options });
     this.notify();
+  }
+
+  pause() {
+    if (this.screen !== MENU_SCREENS.PLAYING) return false;
+    this.pauseSelectedIndex = 0;
+    this.screen = MENU_SCREENS.PAUSE;
+    this.notify();
+    return true;
+  }
+
+  resume() {
+    if (this.screen !== MENU_SCREENS.PAUSE) return false;
+    this.screen = MENU_SCREENS.PLAYING;
+    this.notify();
+    return true;
+  }
+
+  exitToMenu() {
+    if (this.screen !== MENU_SCREENS.PAUSE && this.screen !== MENU_SCREENS.PLAYING) {
+      return false;
+    }
+    this.screen = MENU_SCREENS.MAIN;
+    this.selectedIndex = 0;
+    this.notify();
+    return true;
   }
 
   toggleOption(id) {

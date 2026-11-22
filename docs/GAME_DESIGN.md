@@ -1,10 +1,10 @@
-# BLT — Game Design Specification
+# BTA — Game Design Specification
 
 This document records the decisions confirmed so far. Anything labelled **Open** is not yet a locked design decision.
 
 ## Identity and presentation
 
-- **Name:** BLT — Belt to Ass.
+- **Name:** BTA — Belt to Ass.
 - **Genre:** 2D traditional fighting game with anime-fighter influence; inspirations mentioned include Dragon Ball FighterZ and Melty Blood.
 - **Initial platform:** Browser.
 - **Visual direction:** Retro pixel art.
@@ -141,7 +141,6 @@ These are menu destinations to plan for; their complete functionality will be im
 
 ## Open decisions
 
-- Final programming language / framework / rendering technology.
 - Detailed move lists and per-character identities.
 - Exact movement and combat frame data / physics values.
 - Throws, meter, resource systems, and final competitive round/timer rules beyond the prototype defaults.
@@ -172,10 +171,10 @@ These are menu destinations to plan for; their complete functionality will be im
 ## Placeholder fighter profiles and CPU opponent (prototype)
 
 - **Player — Striker:** 300 arena units/second grounded walk speed; 1.00× outgoing damage.
-- **CPU Rival — Bruiser:** 260 arena units/second grounded walk speed; 1.05× outgoing damage. The slower approach is offset by a small damage advantage.
+- **CPU Rival:** 260 arena units/second grounded walk speed; 1.05× outgoing damage. The slower approach is offset by a small damage advantage.
 - The browser match enables the CPU by default. Isolated Arena tests leave it disabled unless explicitly requested, keeping combat and movement regression tests deterministic.
 - The CPU approaches using screen-relative movement, then rotates through Light, Medium, Heavy, and Energy Shot when within its attack range. It uses the same state, attack, projectile, collision, damage, hitstun, round, and pushbox systems as the player.
-- The CPU can briefly guard an active melee attack if it is close enough, choosing crouch guard for Low attacks and standing guard otherwise. A cooldown prevents permanent reactive blocking.
+- The CPU can guard a nearby active melee attack only after at least eight startup frames have elapsed. This deterministic reaction delay lets a 5-frame Light beat the CPU's reaction, while Medium (8 frames) is borderline and Heavy (12 frames) is reactable. It chooses crouch guard for Low attacks and standing guard otherwise; a cooldown prevents permanent blocking.
 - The first CPU is deliberately deterministic rather than random, making playtesting and bug reproduction repeatable. AI timing and properties are prototype values, not character balance.
 
 
@@ -192,7 +191,18 @@ These are menu destinations to plan for; their complete functionality will be im
 - The game boots to an intro / START screen. Confirm with Enter or click to reach the main menu.
 - The main-menu order is Arcade, Online, Training, Option. Keyboard navigation uses W / S or Up / Down, Enter to confirm, and Escape to go back.
 - **Arcade** starts the local best-of-three match against the deterministic CPU Rival.
-- **Training** starts with a passive dummy: round timer / score flow is frozen, the dummy does not attack, and its health / guard meter automatically recover two seconds after the last registered hit or block.
+- **Training** starts with a passive dummy: round timer / score flow is frozen, the dummy does not attack, but it still runs normal knockback, gravity, and landing physics. Its health / guard meter automatically recover two seconds after the last registered hit or block. The pause menu offers a reset-position action.
 - **Online** currently opens a clear not-connected-yet information screen. No matchmaking or networking is claimed or implemented.
 - **Option** toggles combat hurtbox / hitbox overlays and the DOM state / frame-data inspector. Both overlays are off by default; Training mode can still be used without the inspector.
 - These are the first mode-selection and training foundations. Character select, training reset controls, input recording, online transport, and expanded arcade progression remain future work.
+
+
+## Review follow-up decisions — prototype
+
+- **Training dummy physics:** the dummy is passive but not frozen in space. It receives knockback, gravity, and normal landing / ground-state updates. This makes launcher → juggle → grounded follow-up routes testable.
+- **Combo end condition:** the 45-frame timer is a maximum safety timeout. A combo ends as soon as the defender's reaction returns to NONE; a recovered airborne fighter is not held under a stale juggle cap.
+- **CPU reaction:** the CPU needs eight startup frames before it can reactively guard a visible melee move. This is intentionally deterministic and is still a difficulty-tuning value.
+- **Stage separation:** fighters are capped to 824 arena units of horizontal separation (960-unit viewport less 68 units of margin on each side) so both remain visible without camera zoom.
+- **Projectile floor contact:** downward-moving projectiles are removed on floor contact after checking whether they hit a fighter during that step.
+- **Ground-state compatibility:** state-aware combat treats a missing `onGround` measurement as grounded for legacy fixtures; only explicit `false` is airborne.
+- **Crouch vs crouch-guard trade-off:** as currently documented, crouching without guard ducks High attacks, while crouch-guard is Low guard and is vulnerable to High attacks. This is consistent with the current guard-height rules but may feel unintuitive; leave it unchanged until a browser playtest informs whether crouch-guard needs a change.

@@ -1,4 +1,4 @@
-import { FIGHTER_STATES } from "../state/FighterStateController.js";
+import { FIGHTER_STATES, isGrounded } from "../state/FighterStateController.js";
 
 export const BLOCK_PROFILES = Object.freeze({
   high: Object.freeze({ blockstunFrames: 8, knockback: 55 }),
@@ -50,7 +50,7 @@ export class GuardController {
 
     if (fighter.state.action === FIGHTER_STATES.action.GUARD) {
       // Jump and directional specials take priority over holding back.
-      if (!fighter.onGround || jumpPressed || directionalSpecialPressed || !holdingBack) {
+      if (!isGrounded(fighter) || jumpPressed || directionalSpecialPressed || !holdingBack) {
         states.endAction(fighter, FIGHTER_STATES.action.GUARD);
         fighter.guardData = null;
       } else {
@@ -66,7 +66,7 @@ export class GuardController {
       !jumpPressed &&
       !directionalSpecialPressed &&
       holdingBack &&
-      fighter.onGround &&
+      isGrounded(fighter) &&
       fighter.state.action === FIGHTER_STATES.action.NONE &&
       fighter.state.reaction === FIGHTER_STATES.reaction.NONE &&
       fighter.guardMeter > 0

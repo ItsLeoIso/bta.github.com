@@ -250,4 +250,4 @@ Implemented:
 - Arcade starts the CPU-controlled best-of-three match; Online clearly explains that networking is not connected rather than pretending to offer matchmaking.
 - Training starts without CPU AI, freezes the round timer, and restores the dummy's health / guard meter two seconds after its last hit or block so repeated practice is possible.
 - Added options for combat hurtbox / active-hitbox overlays and the DOM state / frame-data inspector. Debug overlays now start hidden, and both player and CPU active melee hitboxes can be inspected.
-- Added menu state-machine and training-mode integration tests. Further training features such as dummy reset position, recording / playback, and character select remain future work.
+- Added menu state-machine and training-mode integration tests. Training reset-position is now available from the pause menu; input recording / playback and character select remain future work.

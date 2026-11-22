@@ -348,7 +348,7 @@ test("training mode freezes the timer and auto-recovers its passive dummy",()=>{
   for(let frame=0;frame<121;frame+=1) arena.update(1/60,input());
   assert.equal(arena.opponent.health,1);
   assert.equal(arena.opponent.guardMeter,100);
-  assert.equal(arena.opponent.x,originalX);
+  assert.notEqual(arena.opponent.x,originalX,"the passive dummy should take normal hit knockback");
   assert.equal(arena.rounds.phase,"active");
   assert.equal(arena.rounds.timerRemaining,99);
 });
@@ -387,4 +387,34 @@ test("training dummy runs physics, lands after a Medium launcher, and can be hit
     }
   }
   assert.ok(heavyHit,"grounded training dummy should be hittable by Heavy after landing");
+});
+
+
+test("fighter separation is capped so both combatants remain in the viewport",()=>{
+  const arena=new Arena();
+  arena.player.x=100;
+  arena.opponent.x=1800;
+
+  arena.update(0,input());
+
+  assert.equal(arena.opponent.x-arena.player.x,arena.width-2*arena.stageMargin);
+  assert.equal(arena.player.x-arena.cameraX,arena.stageMargin);
+  assert.equal(arena.opponent.x-arena.cameraX,arena.width-arena.stageMargin);
+});
+
+test("Training reset restores both fighter positions and clears the dummy recovery timer",()=>{
+  const arena=new Arena({trainingMode:true});
+  arena.player.x=350;
+  arena.opponent.x=620;
+  arena.opponent.health=0.4;
+  arena.opponent.guardMeter=12;
+  arena.trainingDummyResetFrames=30;
+
+  assert.equal(arena.resetTraining(),true);
+  assert.equal(arena.player.x,780);
+  assert.equal(arena.opponent.x,1140);
+  assert.equal(arena.opponent.health,1);
+  assert.equal(arena.opponent.guardMeter,100);
+  assert.equal(arena.trainingDummyResetFrames,0);
+  assert.equal(arena.rounds.phase,"active");
 });

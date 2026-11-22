@@ -1,4 +1,4 @@
-# BLT Development Roadmap
+# BTA Development Roadmap
 
 ## Phase 0 — Project foundation
 - [x] Establish repository structure.
@@ -52,9 +52,10 @@
 ## Phase 6 — Menus and modes
 - [x] Intro / START screen sequence.
 - [x] Main menu in the confirmed order: Arcade, Online, Training, Option.
-- [x] Training mode foundations (passive dummy, frozen timer, two-second health / guard recovery).
+- [x] Training mode foundations (passive physics-enabled dummy, frozen timer, two-second health / guard recovery, reset positions).
 - [x] Arcade mode foundations (local best-of-three CPU match).
 - [x] Options menu (combat box and state-inspector toggles).
+- [x] Pause menu (Resume, Restart Mode, Exit to Menu; Training adds Reset Positions).
 - [ ] Online mode investigation and implementation plan.
 
 ## Phase 7 — Content and polish

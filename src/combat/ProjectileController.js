@@ -1,6 +1,6 @@
 import { getHurtbox } from "./Hurtbox.js";
 import { boxesOverlap } from "./CombatCollision.js";
-import { FIGHTER_STATES, FighterStateController } from "../state/FighterStateController.js";
+import { FIGHTER_STATES, FighterStateController, isGrounded } from "../state/FighterStateController.js";
 
 export const PROJECTILE_DEFAULTS = Object.freeze({
   startupFrames: 8,
@@ -101,6 +101,26 @@ export class ProjectileController {
     this.nextProjectileId = 1;
   }
 
+  canStartSpecial(fighter, input, { allowAttackCancel = false } = {}) {
+    this.stateController.initialize(fighter);
+    fighter.airProjectileAvailable ??= true;
+    if (!input.wasPressed?.("special")) return false;
+    if (fighter.state.reaction !== FIGHTER_STATES.reaction.NONE) return false;
+
+    const inNeutral = fighter.state.action === FIGHTER_STATES.action.NONE;
+    const cancelingAttack =
+      allowAttackCancel &&
+      fighter.state.action === FIGHTER_STATES.action.ATTACK;
+    if (!inNeutral && !cancelingAttack) return false;
+
+    const isMotionSpecial = input.specialMove === MOTION_SPECIAL_DEFAULTS.moveId;
+    if (!isMotionSpecial && resolveSpecialDirection(input, fighter.facing).invalid) {
+      return false;
+    }
+    if (!isGrounded(fighter) && !fighter.airProjectileAvailable) return false;
+    return true;
+  }
+
   updateFighter(fighter, input) {
     const states = this.stateController;
     states.initialize(fighter);
@@ -111,17 +131,14 @@ export class ProjectileController {
       return true;
     }
 
-    if (!input.wasPressed?.("special")) return false;
+    if (!this.canStartSpecial(fighter, input)) return false;
 
     const isMotionSpecial = input.specialMove === MOTION_SPECIAL_DEFAULTS.moveId;
     const specialFacing = Math.sign(input.specialFacing ?? fighter.facing) || 1;
     const direction = isMotionSpecial
       ? { x: specialFacing, y: 0, directional: false }
       : resolveSpecialDirection(input, fighter.facing);
-    if (direction.invalid) return false;
-
-    const isAirProjectile = !fighter.onGround;
-    if (isAirProjectile && !fighter.airProjectileAvailable) return false;
+    const isAirProjectile = !isGrounded(fighter);
 
     const move = isMotionSpecial
       ? MOTION_SPECIAL_DEFAULTS
@@ -243,7 +260,8 @@ export class ProjectileController {
     minX = -68,
     maxX = 1028,
     minY = -Infinity,
-    maxY = Infinity
+    maxY = Infinity,
+    floorY = Infinity
   } = {}) {
     const delta = Number.isFinite(deltaSeconds) ? Math.max(0, deltaSeconds) : 0;
     const events = [];
@@ -304,6 +322,8 @@ export class ProjectileController {
 
       if (contact) {
         events.push(contact);
+        this.projectiles.splice(index, 1);
+      } else if (projectile.velocityY > 0 && projectile.y + projectile.radius >= floorY) {
         this.projectiles.splice(index, 1);
       }
     }

@@ -166,3 +166,14 @@ test("Arc Lance applies heavier guard pressure than the basic Energy Shot",()=>{
   });
   assert.equal(defender.guardMeter,before-38);
 });
+
+
+test("a fighter fixture without onGround defaults to grounded guard rules",()=>{
+  const controller=new GuardController({stateController:new FighterStateController()});
+  const target=fighter();
+  delete target.onGround;
+
+  controller.update(target,input(-1));
+
+  assert.equal(target.state.action,STATES.action.GUARD);
+});

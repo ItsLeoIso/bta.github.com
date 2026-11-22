@@ -16,7 +16,7 @@ const menuContent = document.querySelector("#front-menu-content");
 
 function reportEngineError(error) {
   const message = error instanceof Error ? error.message : String(error);
-  console.error("BLT engine error:", error);
+  console.error("BTA engine error:", error);
   if (status) {
     status.dataset.error = "true";
     status.textContent = "ENGINE ERROR · " + message.slice(0, 180);
@@ -31,8 +31,8 @@ window.addEventListener("unhandledrejection", (event) => {
 });
 
 if (!canvas || !status || !stateDebugRoot || !gamePanel || !controlsRoot || !menuRoot || !menuContent) {
-  reportEngineError(new Error("BLT could not find a required game UI element."));
-  throw new Error("BLT could not find a required game UI element.");
+  reportEngineError(new Error("BTA could not find a required game UI element."));
+  throw new Error("BTA could not find a required game UI element.");
 }
 
 try {
@@ -40,7 +40,6 @@ try {
   const renderer = new CanvasRenderer(canvas);
   const stateDebugPanel = new StateDebugPanel(stateDebugRoot);
   let arena = new Arena();
-  let paused = false;
   let gameStarted = false;
 
   gamePanel.hidden = true;
@@ -58,6 +57,7 @@ try {
   };
 
   const menu = new MenuController({
+    onResetTraining: () => arena.resetTraining(),
     onStart: (mode, options) => {
       arena = new Arena({
         opponentAIEnabled: mode === "arcade",
@@ -69,13 +69,24 @@ try {
       controlsRoot.hidden = false;
       menuRoot.hidden = true;
       gameStarted = true;
-      paused = false;
       status.textContent = mode === "training"
         ? "TRAINING MODE · DUMMY AUTO-RECOVERS"
         : "ARCADE MODE · CPU RIVAL ACTIVE";
     },
-    onChange: renderMenu
+    onChange: handleMenuChange
   });
+
+  function handleMenuChange(view) {
+    if(view.screen===MENU_SCREENS.MAIN && gameStarted){
+      gameStarted=false;
+      gamePanel.hidden=true;
+      controlsRoot.hidden=true;
+      stateDebugRoot.hidden=true;
+      status.textContent="SELECT MODE · ENTER TO CONFIRM";
+    }
+    menuRoot.hidden=view.screen===MENU_SCREENS.PLAYING;
+    renderMenu(view);
+  }
 
   function renderMenu(view = menu.getViewModel()) {
     menuContent.replaceChildren();
@@ -116,6 +127,30 @@ try {
       hint.className = "menu-hint";
       hint.textContent = "W / S OR ↑ / ↓ TO SELECT · ENTER TO CONFIRM";
       menuContent.append(title, subtitle, list, hint);
+      return;
+    }
+
+    if (view.screen === MENU_SCREENS.PAUSE) {
+      const title = document.createElement("h2");
+      title.textContent = "PAUSED";
+      const subtitle = document.createElement("p");
+      subtitle.className = "menu-subtitle";
+      subtitle.textContent = "MATCH SUSPENDED";
+      const list = document.createElement("div");
+      list.className = "menu-list";
+      view.pauseItems.forEach((item,index) => {
+        const selected=index===view.pauseSelectedIndex;
+        list.append(makeButton(
+          (selected ? "▶  " : "   ") + item.toUpperCase(),
+          "menu-choice" + (selected ? " is-selected" : ""),
+          () => menu.selectPauseItem(index),
+          selected
+        ));
+      });
+      const hint = document.createElement("p");
+      hint.className = "menu-hint";
+      hint.textContent = "W / S OR ↑ / ↓ TO SELECT · ENTER · ESC TO RESUME";
+      menuContent.append(title,subtitle,list,hint);
       return;
     }
 
@@ -160,7 +195,13 @@ try {
   }
 
   const onMenuKeyDown = event => {
-    if (menu.screen === MENU_SCREENS.PLAYING) return;
+    if (menu.screen === MENU_SCREENS.PLAYING) {
+      if(event.key==="Escape"){
+        menu.pause();
+        event.preventDefault();
+      }
+      return;
+    }
     if (menu.handleKey(event.key)) event.preventDefault();
   };
 
@@ -169,21 +210,21 @@ try {
 
   const loop = new GameLoop({
     update: (deltaSeconds) => {
-      if (!gameStarted) {
+      if (!gameStarted || menu.screen!==MENU_SCREENS.PLAYING) {
         input.endFrame();
         return;
       }
-      if (input.wasPressed("Escape")) paused = !paused;
-      if (!paused) arena.update(deltaSeconds, input);
+      arena.update(deltaSeconds, input);
       input.endFrame();
     },
     render: (alpha) => {
       if (!gameStarted) return;
+      const paused=menu.screen===MENU_SCREENS.PAUSE;
       renderer.render(arena, alpha, paused);
       stateDebugPanel.update(arena);
       status.dataset.error = "false";
       status.textContent = paused
-        ? "PAUSED · PRESS ESC TO RESUME"
+        ? "PAUSED · ESC TO RESUME"
         : arena.trainingMode
           ? "TRAINING MODE · DUMMY AUTO-RECOVERS"
           : arena.rounds.phase === ROUND_PHASES.MATCH_OVER

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { FIGHTER_STATES as STATES, FighterStateController } from "../src/state/FighterStateController.js";
+import { FIGHTER_STATES as STATES, FighterStateController, isGrounded } from "../src/state/FighterStateController.js";
 
 function makeFighter() {
   return {
@@ -139,4 +139,12 @@ test("compatibility fields mirror crouching and dash state", () => {
   assert.equal(fighter.dashType, null);
   assert.equal(fighter.dashRemaining, 0);
   assert.equal(fighter.dashVelocity, 0);
+});
+
+
+test("isGrounded treats a missing measurement as grounded and only false as airborne",()=>{
+  assert.equal(isGrounded({}),true);
+  assert.equal(isGrounded({onGround:undefined}),true);
+  assert.equal(isGrounded({onGround:true}),true);
+  assert.equal(isGrounded({onGround:false}),false);
 });

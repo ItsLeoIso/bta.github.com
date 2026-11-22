@@ -1,4 +1,4 @@
-import { FIGHTER_STATES } from "../state/FighterStateController.js";
+import { FIGHTER_STATES, isGrounded } from "../state/FighterStateController.js";
 
 export const DAMAGE_PROFILES = Object.freeze({
   light: Object.freeze({ damage: 0.06, chipDamage: 0.006, hitstunFrames: 12, knockback: 180, reaction: "hitstun" }),
@@ -19,6 +19,24 @@ export class DamageController {
     const defender = event.defender;
     const actualDamage = profile.damage * (event.attacker.damageMultiplier ?? 1) * clamp(damageScale, 0.4, 1);
     defender.health = clamp((defender.health ?? 1) - actualDamage, 0, 1);
+
+    const nextReaction = FIGHTER_STATES.reaction[profile.reaction.toUpperCase()];
+    // Ask the priority model first. A weaker follow-up can still deal health
+    // damage, but must not replace stronger knockdown / guard-break physics.
+    const reactionAccepted = defender.stateController?.setReaction?.(
+      defender,
+      nextReaction
+    ) ?? true;
+    if (!reactionAccepted) {
+      return {
+        ...profile,
+        damage: actualDamage,
+        health: defender.health,
+        defender,
+        reactionApplied: false
+      };
+    }
+
     const direction = Math.sign(event.knockbackDirection ?? 0) ||
       Math.sign(defender.x - event.attacker.x) || event.attacker.facing || 1;
     defender.reactionData = {
@@ -31,9 +49,9 @@ export class DamageController {
     defender.vx = defender.reactionData.knockbackVelocity;
     defender.airHorizontalVelocity = defender.vx;
 
-    // Medium is the prototype launcher. It only pops a grounded target; later
-    // aerial hits preserve their current juggle trajectory instead of re-launching.
-    if (event.launchVelocity > 0 && defender.onGround !== false) {
+    // Medium only launches a grounded target. Aerial follow-ups preserve the
+    // defender's existing trajectory.
+    if (event.launchVelocity > 0 && isGrounded(defender)) {
       defender.vy = -Math.abs(event.launchVelocity);
       defender.onGround = false;
       defender.stateController?.setLocomotion?.(
@@ -42,11 +60,13 @@ export class DamageController {
       );
     }
 
-    defender.stateController?.setReaction?.(
+    return {
+      ...profile,
+      damage: actualDamage,
+      health: defender.health,
       defender,
-      FIGHTER_STATES.reaction[profile.reaction.toUpperCase()]
-    );
-    return { ...profile, damage: actualDamage, health: defender.health, defender };
+      reactionApplied: true
+    };
   }
 
   /** Blocks deal 10% of the move's normal damage as chip in this prototype. */
