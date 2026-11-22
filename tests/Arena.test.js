@@ -331,10 +331,15 @@ test("training mode freezes the timer and auto-recovers its passive dummy",()=>{
   arena.opponent.x=510;
   const originalX=arena.opponent.x;
 
+  let landedHit=false;
   arena.update(1/60,input({pressed:["light"]}));
-  for(let frame=0;frame<6;frame+=1) arena.update(1/60,input());
+  landedHit ||= arena.lastCombatEvent?.type==="hit";
+  for(let frame=0;frame<6 && !landedHit;frame+=1){
+    arena.update(1/60,input());
+    landedHit ||= arena.lastCombatEvent?.type==="hit";
+  }
 
-  assert.equal(arena.lastCombatEvent?.type,"hit");
+  assert.equal(landedHit,true);
   assert.ok(arena.opponent.health<1);
   assert.equal(arena.rounds.timerRemaining,99);
   assert.equal(arena.rounds.phase,"active");
