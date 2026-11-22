@@ -765,9 +765,15 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 - Movement, guard, jump, and dash remain immediate. Buffered input clears on round result / reset. A small HUD label shows the pending action and remaining frames.
 - Quarter-Circle Forward + L remains a separate feedback-only command and clears any older pending button rather than falling through to a projectile.
 
+**Commits:**
+- Input-buffer foundation: https://github.com/ItsLeoIso/bta.github.com/commit/ca87e0957b066daf76600481799cad0b02884eb2
+- Arena wiring fix: https://github.com/ItsLeoIso/bta.github.com/commit/e2045470d9c015d701eb6e64423eb01642329f8b
+- Hitstun integration coverage: https://github.com/ItsLeoIso/bta.github.com/commit/57099d38b28e873932551bed8a381d38bba65ea5
+
 **Verification:**
-- Pending GitHub Actions run after commit.
-- Tests cover buffer duration, expiry, replacement, direction snapshots, QCF exclusion, recovery-frame and hitstun execution, expired commands, and round-result clearing.
+- GitHub Actions Node.js tests passed: 154/154, 0 failures — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45063908628
+- GitHub Pages build and deployment succeeded — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45063908335
+- CI exposed an incomplete Arena wiring in the first buffer commit; the constructor, capture/dispatch flow, and reset handling were corrected before the successful run.
 - Browser/manual playtesting not performed in this session.
 
 **Suggested next step:**
