@@ -164,7 +164,7 @@ export class CanvasRenderer {
   drawHud(ctx, arena) {
     const guardWidth = fighter => 300 * Math.max(0, Math.min(1, (fighter.guardMeter ?? 100) / 100));
     ctx.fillStyle = COLORS.text; ctx.font = "bold 16px monospace"; ctx.textAlign = "left"; ctx.fillText("PLAYER 01",32,22);
-    ctx.textAlign = "right"; ctx.fillText("CPU DUMMY",arena.width-32,22);
+    ctx.textAlign = "right"; ctx.fillText(arena.opponent.displayName ?? "CPU RIVAL",arena.width-32,22);
     ctx.fillStyle = "#302d35"; ctx.fillRect(32,30,300,12); ctx.fillRect(arena.width-332,30,300,12);
     ctx.fillStyle = COLORS.player; ctx.fillRect(32,30,300*arena.player.health,12);
     ctx.fillStyle = COLORS.opponent; ctx.fillRect(arena.width-332+300*(1-arena.opponent.health),30,300*arena.opponent.health,12);
@@ -238,7 +238,7 @@ export class CanvasRenderer {
       detail = "GET READY";
     } else if (rounds.phase === ROUND_PHASES.ROUND_OVER) {
       headline = rounds.roundWinner
-        ? (rounds.roundWinner === "player" ? "PLAYER 01 WINS ROUND" : "CPU DUMMY WINS ROUND")
+        ? (rounds.roundWinner === "player" ? "PLAYER 01 WINS ROUND" : "CPU RIVAL WINS ROUND")
         : "ROUND DRAW";
       detail = rounds.resultReason === "timeout"
         ? "TIME UP"
@@ -246,7 +246,7 @@ export class CanvasRenderer {
           ? "DOUBLE K.O."
           : "K.O.";
     } else if (rounds.phase === ROUND_PHASES.MATCH_OVER) {
-      headline = rounds.matchWinner === "player" ? "PLAYER 01 WINS" : "CPU DUMMY WINS";
+      headline = rounds.matchWinner === "player" ? "PLAYER 01 WINS" : "CPU RIVAL WINS";
       detail = "MATCH COMPLETE";
       prompt = "PRESS ENTER TO REMATCH";
     } else if (rounds.phase === ROUND_PHASES.ACTIVE && rounds.bannerRemaining > 0) {

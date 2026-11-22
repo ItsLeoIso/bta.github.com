@@ -145,3 +145,18 @@ test("a grounded Medium launches on hit and supports a jump-cancelled air follow
   assert.equal(combo.juggleHits, 1);
   assert.ok(arena.opponent.health > 0 && arena.opponent.health < 0.85);
 });
+
+
+test("Arena resolves attacks from the opponent toward the player", () => {
+  const arena = new Arena();
+  arena.player.x = 400;
+  arena.opponent.x = 510;
+  assert.equal(arena.attacks.start(arena.opponent, "light"), true);
+  for (let frame = 0; frame < 6; frame += 1) arena.attacks.advance(arena.opponent);
+
+  arena.update(1 / 60, neutral);
+
+  assert.equal(arena.lastCombatEvent?.type, "hit");
+  assert.equal(arena.lastCombatEvent?.attacker, arena.opponent);
+  assert.ok(arena.player.health < 1);
+});

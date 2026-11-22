@@ -10,15 +10,16 @@ import { ProjectileController } from "../combat/ProjectileController.js";
 import { CommandHistory } from "../input/CommandHistory.js";
 import { InputBuffer } from "../input/InputBuffer.js";
 import { ComboTracker } from "../combat/ComboTracker.js";
+import { OpponentAIController } from "../ai/OpponentAIController.js";
 
 const clamp = (value,min,max)=>Math.min(max,Math.max(min,value));
 export const STAGE_MARGIN=68;
 
-function createFighter({x,facing}) {
+function createFighter({x,facing,displayName,moveSpeed,damageMultiplier}) {
   return {
-    x,y:440,previousX:x,previousY:440,facing,health:1,crouching:false,
+    x,y:440,previousX:x,previousY:440,facing,displayName,health:1,crouching:false,
     guardMeter:100,guardMeterRecoveryDelayFrames:0,
-    moveSpeed:300,vx:0,vy:0,onGround:true,
+    moveSpeed,damageMultiplier,vx:0,vy:0,onGround:true,
     state:{
       locomotion:FIGHTER_STATES.locomotion.STANDING,
       action:FIGHTER_STATES.action.NONE,
@@ -33,18 +34,20 @@ function createFighter({x,facing}) {
 }
 
 export class Arena {
-  constructor() {
+  constructor({opponentAIEnabled=false}={}) {
     this.width=960; this.height=540; this.floorY=440;
     this.stageMargin=STAGE_MARGIN;
     this.stateController=new FighterStateController();
     this.worldWidth=1920;
-    this.player=createFighter({x:780,facing:1});
-    this.opponent=createFighter({x:1140,facing:-1});
+    this.player=createFighter({x:780,facing:1,displayName:"PLAYER 01",moveSpeed:300,damageMultiplier:1});
+    this.opponent=createFighter({x:1140,facing:-1,displayName:"CPU RIVAL",moveSpeed:260,damageMultiplier:1.05});
     this.stateController.initialize(this.player);
     this.stateController.initialize(this.opponent);
     this.player.stateController=this.stateController;
     this.opponent.stateController=this.stateController;
     this.movement=new MovementController({stateController:this.stateController});
+    this.opponentMovement=new MovementController({stateController:this.stateController});
+    this.opponentAI=opponentAIEnabled ? new OpponentAIController() : null;
     this.attacks=new AttackController({stateController:this.stateController});
     this.guard=new GuardController({stateController:this.stateController});
     this.damage=new DamageController();
@@ -163,6 +166,16 @@ export class Arena {
     this.movement.update(player,input,deltaSeconds,{
       floorY:this.floorY,minX:this.stageMargin,maxX:this.worldWidth-this.stageMargin
     });
+
+    const opponentInput=this.opponentAI?.update(this.opponent,player) ?? null;
+    if(opponentInput){
+      this.guard.update(this.opponent,opponentInput);
+      this.attacks.update(this.opponent,opponentInput);
+      this.projectileController.updateFighter(this.opponent,opponentInput);
+      this.opponentMovement.update(this.opponent,opponentInput,deltaSeconds,{
+        floorY:this.floorY,minX:this.stageMargin,maxX:this.worldWidth-this.stageMargin
+      });
+    }
     player.x=clamp(player.x,this.stageMargin,this.worldWidth-this.stageMargin);
     this.opponent.x=clamp(this.opponent.x,this.stageMargin,this.worldWidth-this.stageMargin);
     resolvePushboxes(player,this.opponent,{minX:this.stageMargin,maxX:this.worldWidth-this.stageMargin});
@@ -170,8 +183,11 @@ export class Arena {
     this.opponent.facing=-player.facing;
 
     // Resolve after movement and pushboxes so both boxes use final frame positions.
-    const event=resolveAttackCollision(player,this.opponent);
-    if(event) this.resolveCombatEvent(event);
+    const combatEvents=[
+      resolveAttackCollision(player,this.opponent),
+      resolveAttackCollision(this.opponent,player)
+    ].filter(Boolean);
+    for(const event of combatEvents) this.resolveCombatEvent(event);
 
     const projectileEvents=this.projectileController.updateProjectiles(
       deltaSeconds,
@@ -278,6 +294,8 @@ export class Arena {
     this.resetFighter(this.player,780,1);
     this.resetFighter(this.opponent,1140,-1);
     this.movement.lastTap={left:-Infinity,right:-Infinity};
+    this.opponentMovement.lastTap={left:-Infinity,right:-Infinity};
+    this.opponentAI?.reset();
     this.projectileController.clear();
     this.commandHistory.reset();
     this.inputBuffer.clear();

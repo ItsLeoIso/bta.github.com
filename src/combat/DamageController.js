@@ -16,7 +16,7 @@ export class DamageController {
     if (!event || event.type !== "hit") return null;
     const profile = DAMAGE_PROFILES[event.moveId] ?? DAMAGE_PROFILES.medium;
     const defender = event.defender;
-    const actualDamage = profile.damage * clamp(damageScale, 0.4, 1);
+    const actualDamage = profile.damage * (event.attacker.damageMultiplier ?? 1) * clamp(damageScale, 0.4, 1);
     defender.health = clamp((defender.health ?? 1) - actualDamage, 0, 1);
     const direction = Math.sign(event.knockbackDirection ?? 0) ||
       Math.sign(defender.x - event.attacker.x) || event.attacker.facing || 1;

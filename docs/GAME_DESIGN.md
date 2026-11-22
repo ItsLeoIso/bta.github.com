@@ -164,3 +164,13 @@ These are menu destinations to plan for; their complete functionality will be im
 - **Damage scaling:** the first hit deals 100% of its move damage; each subsequent hit scales damage down by 10 percentage points, with a 40% floor. Hitstun and move recovery are not scaled in this first prototype.
 - **Juggle rule:** a launched opponent may take up to three additional airborne hits from the same attacker. A fourth aerial follow-up is dropped, preventing an infinite air loop. The HUD displays the player's combo count, whether the route is aerial, and cumulative damage.
 - These are first-pass gameplay values, not final balance. The launcher height, link window, cancel routes, juggle cap, and damage scaling need browser playtesting and later tuning.
+
+
+## Placeholder fighter profiles and CPU opponent (prototype)
+
+- **Player — Striker:** 300 arena units/second grounded walk speed; 1.00× outgoing damage.
+- **CPU Rival — Bruiser:** 260 arena units/second grounded walk speed; 1.05× outgoing damage. The slower approach is offset by a small damage advantage.
+- The browser match enables the CPU by default. Isolated Arena tests leave it disabled unless explicitly requested, keeping combat and movement regression tests deterministic.
+- The CPU approaches using screen-relative movement, then rotates through Light, Medium, Heavy, and Energy Shot when within its attack range. It uses the same state, attack, projectile, collision, damage, hitstun, round, and pushbox systems as the player.
+- The CPU can briefly guard an active melee attack if it is close enough, choosing crouch guard for Low attacks and standing guard otherwise. A cooldown prevents permanent reactive blocking.
+- The first CPU is deliberately deterministic rather than random, making playtesting and bug reproduction repeatable. AI timing and properties are prototype values, not character balance.

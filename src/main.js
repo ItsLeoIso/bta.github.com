@@ -32,7 +32,7 @@ if (!canvas || !status || !stateDebugRoot) {
 
 try {
   const input = new KeyboardInput(window);
-  const arena = new Arena();
+  const arena = new Arena({ opponentAIEnabled: true });
   const renderer = new CanvasRenderer(canvas);
   const stateDebugPanel = new StateDebugPanel(stateDebugRoot);
   let paused = false;

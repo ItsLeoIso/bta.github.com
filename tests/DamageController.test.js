@@ -56,3 +56,12 @@ test("health cannot fall below zero and non-hit events do nothing", () => {
   controller.applyHit({ type: "hit", moveId: "heavy", attacker, defender });
   assert.equal(defender.health, 0);
 });
+
+
+test("fighter damage multipliers distinguish character combat profiles", () => {
+  const attacker = makeFighter(100);
+  attacker.damageMultiplier = 1.05;
+  const defender = makeFighter(200);
+  new DamageController().applyHit({ type: "hit", moveId: "light", attacker, defender });
+  assert.ok(Math.abs(defender.health - 0.937) < 1e-9);
+});

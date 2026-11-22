@@ -55,6 +55,7 @@ export class MovementController {
       Number(input.wasPressed?.("right") ?? false) -
       Number(input.wasPressed?.("left") ?? false);
     const jumpPressed = Boolean(input.wasPressed?.("jump"));
+    const groundSpeed = fighter.moveSpeed ?? this.groundSpeed;
 
     fighter.onGround = fighter.y >= floorY && fighter.vy >= 0;
     if (fighter.onGround) {
@@ -156,7 +157,7 @@ export class MovementController {
         }
         states.endAction(fighter, FIGHTER_STATES.action.DASH);
         fighter.vx = fighter.onGround
-          ? worldAxis * this.groundSpeed *
+          ? worldAxis * groundSpeed *
             (fighter.state.locomotion === FIGHTER_STATES.locomotion.CROUCHING
               ? this.crouchSpeedMultiplier
               : 1)
@@ -173,7 +174,7 @@ export class MovementController {
           ? this.crouchSpeedMultiplier
           : 0.25;
       fighter.vx = movingBackward
-        ? worldAxis * this.groundSpeed * guardMultiplier
+        ? worldAxis * groundSpeed * guardMultiplier
         : 0;
     } else if (fighter.state.action === FIGHTER_STATES.action.ATTACK) {
       // Grounded attacks lock movement; airborne attacks retain committed drift.
@@ -187,7 +188,7 @@ export class MovementController {
         fighter.state.locomotion === FIGHTER_STATES.locomotion.CROUCHING
           ? this.crouchSpeedMultiplier
           : 1;
-      fighter.vx = worldAxis * this.groundSpeed * speedMultiplier;
+      fighter.vx = worldAxis * groundSpeed * speedMultiplier;
     } else {
       fighter.vx = fighter.airHorizontalVelocity ?? 0;
     }

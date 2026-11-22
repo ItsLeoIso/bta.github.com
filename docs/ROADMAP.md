@@ -43,8 +43,8 @@
 - [x] Hit-confirm cancels, jump-cancels, air Light / Medium attacks, launcher-based air combos, combo tracking / damage scaling, juggle limits, and recovery rules.
 
 ## Phase 5 — First playable match
-- [ ] Two placeholder fighters with distinct test properties.
-- [ ] Complete local 1v1 match loop with active opponent behaviour.
+- [x] Two placeholder fighters with distinct test properties (Striker: 300 walk speed / 1.00 damage; CPU Rival: 260 walk speed / 1.05 damage).
+- [x] Complete local 1v1 match loop with active deterministic CPU behaviour, two-sided melee collision, and CPU projectile support.
 - [ ] Basic stage presentation and match playtesting.
 - [ ] Playtest and fix core movement / combat issues.
 

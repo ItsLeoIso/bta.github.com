@@ -208,3 +208,16 @@ Implemented:
 - Added a screen-space combo counter with hit count, AIR COMBO label, and cumulative damage.
 - Regression coverage includes cancel eligibility, whiff / block rejection, aerial move eligibility, combo scaling, link timeout, juggle cap, launcher, jump cancel, an airborne follow-up, and projectile Special cancel.
 - Values remain prototype tuning data pending browser playtesting.
+
+
+## First playable match milestone 014 — CPU rival
+
+Implemented:
+- Added a deterministic fixed-step `OpponentAIController` that emits the same logical input shape as keyboard input.
+- The live browser entry enables the CPU; isolated Arena tests remain opt-in / deterministic.
+- Added a second MovementController instance so the CPU has independent dash tap history and physics timing.
+- Enabled two-sided melee collision and shared projectile simulation for both fighters. Simultaneous active melee events are collected before applying reactions so trades can resolve.
+- Added distinct placeholder fighter properties: player Striker walks at 300 units/second with 1.00× damage; CPU Rival walks at 260 units/second with 1.05× damage.
+- CPU approaches, cycles through Light / Medium / Heavy / Energy Shot, and briefly reacts with standing or crouching guard to active melee swings.
+- Added tests for deterministic approach / attacks, crouch-block selection, both-sided melee damage, profile modifiers, and live Arena integration.
+- Browser balance and visual playtesting are still required before marking the full first-playable milestone complete.
