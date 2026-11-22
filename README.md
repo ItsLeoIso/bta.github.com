@@ -4,7 +4,15 @@ A browser-first 2D 1v1 anime-style fighting game. This repository is the source 
 
 ## Current status
 
-**Combat prototype 018.** The Vanilla JavaScript + HTML5 Canvas foundation includes fixed-step simulation, movement, explicit fighter states, timed Light / Medium / Heavy attacks with High / Mid / Low hit levels, separate pushboxes and combat hurtboxes, active-frame hitboxes, damage and hit reactions, directional high/low guard with blockstun, chip damage, guard meter and guard breaks, hit/block frame-advantage reporting, and a complete prototype round loop, plus the L-only Energy Shot and an eight-way directional Vector Burst, with all projectile shots limited to one per airtime; firing either shot cancels stored fighter momentum; aerial shots fall under gravity during startup and recovery; the stage now scrolls with the fighters across a wider world, Quarter-Circle Forward + L launches Arc Lance, a slower 14%-damage projectile with a 14-frame startup and 26-frame recovery, and Light / Medium / Heavy / Special inputs receive an eight-frame buffer during actions and reactions. Buffered Special aim is captured at input time. Both use projectile travel collision and shared block/hit resolution. Light / Medium now have hit-confirm cancel routes, a grounded Medium launches, jump-cancels enable air follow-ups, airborne Light / Medium attacks work, and the HUD tracks combo count and scaled damage with a three-hit juggle cap. The live browser match now includes a deterministic CPU rival with distinct movement / damage stats, closing pressure, a rotating move set, and a deterministic eight-frame reaction delay before reactive guard. The arena now has a scroll-aware neon city skyline and tiled floor rendered directly in Canvas. A START screen leads to Arcade, Online, Training, and Option; Training uses a passive dummy with real knockback / gravity / landing physics and automatic recovery and the Option menu controls the combat-box and state-inspector overlays, and Escape opens a pause menu with Resume, Restart and Exit to Menu (Training also offers Reset Positions). Rounds use a 99-second timer, first-to-two scoring, KO / timeout results, automatic round resets, and a match result with Enter-to-rematch. Round and timer values are prototype defaults pending playtesting.
+**Combat prototype 018 — local playtest candidate.** The Vanilla JavaScript + HTML5 Canvas foundation includes fixed-step simulation, movement, explicit fighter states, timed Light / Medium / Heavy attacks with High / Mid / Low hit levels, separate pushboxes and combat hurtboxes, active-frame hitboxes, damage and hit reactions, directional high/low guard with blockstun, chip damage, guard meter and guard breaks, hit/block frame-advantage reporting, and a complete prototype round loop. Special moves include Energy Shot, eight-way Vector Burst, and the QCF+L Arc Lance. Light / Medium hit-confirm cancels, grounded Medium launch, jump-cancels, air follow-ups, combo scaling, and a three-hit juggle cap are implemented. Arcade has a deterministic CPU rival; Training has a passive physics-enabled dummy. The menu includes Arcade, Online (not connected), Training, and Option; Escape opens pause / restart / exit controls. Matches use prototype 99-second rounds and first-to-two scoring.
+
+**Readiness note:** the latest verified automated run passed 200/200 tests and the GitHub Pages deployment succeeded. This is a local keyboard playtest candidate, not a finished release. A human browser playtest and visual / feel validation are still outstanding; automated tests do not prove the live browser experience. Online multiplayer, gamepad / touch input, final art, animation, audio, and balance are not included.
+
+## Playtest
+
+Start with the [Playtest Guide](docs/PLAYTEST_GUIDE.md) for controls, mode details, a first-pass checklist, known limitations, and the bug-report template.
+
+Hosted build: https://itsleoiso.github.io/bta.github.com/
 
 ## Design at a glance
 - 2D, side-view, 1v1 fighting; assists may be considered later.
@@ -27,18 +35,15 @@ See [the game design](docs/GAME_DESIGN.md), [the roadmap](docs/ROADMAP.md), [the
 - src/combat/ — attacks, collision, damage, guard, frame data, and round flow.
 - src/characters/ — future fighter definitions and move data.
 - src/ui/ — browser presentation, HUD, and future menus.
-- tests/ — Node.js automated tests.
+- tests/ — Node.js automated tests, including source / asset integrity checks.
 - index.html — browser entry point.
 
 ## Run locally
-Requires Python 3 or another static HTTP server:
-
-    python3 -m http.server 8000
-
-Open http://localhost:8000.
-
-Run automated tests with Node.js:
+Requires Python 3 or another static HTTP server and Node.js 22 or newer:
 
     npm test
+    python3 -m http.server 8000
+
+Open http://localhost:8000. Do not open index.html directly as a file; native ES modules need an HTTP server.
 
 No dependencies or build step are required.

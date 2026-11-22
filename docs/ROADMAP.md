@@ -25,7 +25,7 @@
 - [x] Explicit fighter state model (locomotion, action, and reaction) with validated transitions.
 - [x] Frame-based attack phases: startup, active, and recovery (prototype Light / Medium / Heavy timings).
 - [x] Hit and block advantage calculation after collision and guard resolution.
-- [x] Separate standing, crouching, and airborne hurtboxes plus active-frame attack hitboxes and AABB collision detection.
+- [x] Separate standing, crouching, and airborne hurtboxes plus active-frame hitboxes and AABB collision detection.
 - [x] Light, Medium, and Heavy prototype attacks with one-hit confirmation per action.
 - [x] High, Mid, and Low attack levels with crouch and airborne interactions.
 - [x] First-pass damage, hitstun, knockback, and heavy-hit knockdown reaction.
@@ -46,7 +46,9 @@
 - [x] Two placeholder fighters with distinct test properties (Striker: 300 walk speed / 1.00 damage; CPU Rival: 260 walk speed / 1.05 damage).
 - [x] Complete local 1v1 match loop with active deterministic CPU behaviour, two-sided melee collision, and CPU projectile support.
 - [x] Basic scroll-aware neon city-stage placeholder presentation.
-- [ ] Browser match playtesting and visual validation.
+- [x] Publish a tester-facing guide with controls, mode scope, checklist, and issue-report template.
+- [x] Add automated JavaScript syntax, relative-import, and browser-entry asset checks.
+- [ ] Human browser match playtesting and visual validation.
 - [ ] Playtest and fix core movement / combat issues.
 
 ## Phase 6 — Menus and modes
