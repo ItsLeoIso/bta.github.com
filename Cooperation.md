@@ -1003,5 +1003,5 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 **Verification:**
 - Commit: `dde817ef7c6a5b4570276c458ad9c2f9c4a396c7` — https://github.com/ItsLeoIso/bta.github.com/commit/dde817ef7c6a5b4570276c458ad9c2f9c4a396c7
 - GitHub Actions Node test run: **203/203 passed, 0 failures**, including the three new source-integrity checks — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45073102520
-- Pages build/deployment was still running when this entry was drafted; its final status is to be recorded after completion.
+- GitHub Pages build, build-status reporting, and deployment all succeeded for this playtest-handoff commit — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45073152627
 - No browser automation / manual play session was available in this pass. The published build is a local keyboard playtest candidate, not a fully browser-validated release.
