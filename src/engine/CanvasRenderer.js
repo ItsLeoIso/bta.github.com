@@ -58,15 +58,135 @@ export class CanvasRenderer {
   }
   drawBackdrop(ctx, arena) {
     const worldWidth=arena.worldWidth ?? arena.width;
-    ctx.fillStyle = COLORS.background; ctx.fillRect(0,0,worldWidth,arena.height);
-    ctx.strokeStyle = COLORS.grid; ctx.lineWidth = 1;
-    for (let x=0; x<=worldWidth; x+=48) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,arena.floorY); ctx.stroke(); }
-    for (let y=0; y<=arena.floorY; y+=48) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(worldWidth,y); ctx.stroke(); }
-    ctx.fillStyle = "#151419"; ctx.fillRect(0,arena.floorY,worldWidth,arena.height-arena.floorY);
-    ctx.strokeStyle = COLORS.floor; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0,arena.floorY); ctx.lineTo(worldWidth,arena.floorY); ctx.stroke();
-    ctx.fillStyle = "#302b36"; ctx.fillRect(worldWidth/2-1,0,2,arena.floorY);
-    ctx.strokeStyle = "#77707e"; ctx.lineWidth = 5;
-    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,arena.floorY); ctx.moveTo(worldWidth,0); ctx.lineTo(worldWidth,arena.floorY); ctx.stroke();
+    const horizon=arena.floorY;
+
+    // A compact neon-city skyline, drawn in world space so it scrolls with the
+    // stage while the fighters and screen-space HUD keep their existing layers.
+    const sky=ctx.createLinearGradient(0,0,0,horizon);
+    sky.addColorStop(0,"#090a16");
+    sky.addColorStop(0.62,"#171226");
+    sky.addColorStop(1,"#302039");
+    ctx.fillStyle=sky;
+    ctx.fillRect(0,0,worldWidth,horizon);
+
+    const moon=ctx.createRadialGradient(worldWidth/2,150,8,worldWidth/2,150,150);
+    moon.addColorStop(0,"rgba(142,117,190,.22)");
+    moon.addColorStop(1,"rgba(142,117,190,0)");
+    ctx.fillStyle=moon;
+    ctx.fillRect(worldWidth/2-150,0,300,horizon);
+
+    for(let i=0;i<34;i++){
+      const x=(i*137+41)%worldWidth;
+      const y=24+(i*53)%205;
+      ctx.fillStyle=i%4===0 ? "rgba(255,210,235,.72)" : "rgba(181,177,220,.45)";
+      ctx.fillRect(x,y,i%5===0?3:2,2);
+    }
+
+    for(let i=0;i<16;i++){
+      const x=i*128-12;
+      const width=108+(i%3)*12;
+      const buildingHeight=104+((i*47)%128);
+      const top=horizon-buildingHeight-14;
+      ctx.fillStyle=i%2===0 ? "#11121f" : "#171526";
+      ctx.fillRect(x,top,width,buildingHeight+14);
+      ctx.fillStyle="#29233a";
+      ctx.fillRect(x,top,width,5);
+      ctx.fillStyle="rgba(11,10,20,.8)";
+      ctx.fillRect(x+8,top+10,width-16,buildingHeight-8);
+
+      const columns=Math.floor((width-24)/15);
+      const rows=Math.floor((buildingHeight-24)/18);
+      for(let row=0;row<rows;row++){
+        for(let column=0;column<columns;column++){
+          const lit=(i*11+row*7+column*3)%6===0;
+          ctx.fillStyle=lit
+            ? (i%3===0 ? "rgba(255,166,205,.72)" : "rgba(131,177,255,.62)")
+            : "rgba(67,65,91,.42)";
+          ctx.fillRect(x+13+column*15,top+16+row*18,6,8);
+        }
+      }
+
+      if(i%4===1){
+        const signX=x+width-28;
+        const signY=top+28;
+        ctx.save();
+        ctx.shadowColor="#bd72d6";
+        ctx.shadowBlur=12;
+        ctx.fillStyle="rgba(43,24,58,.9)";
+        ctx.fillRect(signX,signY,18,58);
+        ctx.strokeStyle="#bb81d4";
+        ctx.lineWidth=2;
+        ctx.strokeRect(signX,signY,18,58);
+        ctx.fillStyle="#e7c9f0";
+        ctx.font="bold 8px monospace";
+        ctx.textAlign="center";
+        ctx.fillText("B",signX+9,signY+22);
+        ctx.fillText("T",signX+9,signY+34);
+        ctx.fillText("A",signX+9,signY+46);
+        ctx.restore();
+      }
+    }
+
+    // The lower skyline creates a second depth plane behind the playfield.
+    for(let i=0;i<24;i++){
+      const x=i*84-10;
+      const h=48+((i*29)%64);
+      ctx.fillStyle=i%2===0 ? "#201b31" : "#241d34";
+      ctx.fillRect(x,horizon-h-4,76,h+4);
+      ctx.fillStyle="rgba(138,117,168,.22)";
+      ctx.fillRect(x,horizon-h-4,76,3);
+      for(let w=0;w<3;w++){
+        if((i+w)%3===0){
+          ctx.fillStyle="rgba(242,166,206,.38)";
+          ctx.fillRect(x+12+w*19,horizon-h+12,6,10);
+        }
+      }
+    }
+
+    const floor=ctx.createLinearGradient(0,horizon,0,arena.height);
+    floor.addColorStop(0,"#292331");
+    floor.addColorStop(0.18,"#17151f");
+    floor.addColorStop(1,"#09090d");
+    ctx.fillStyle=floor;
+    ctx.fillRect(0,horizon,worldWidth,arena.height-horizon);
+
+    ctx.strokeStyle="rgba(112,101,139,.22)";
+    ctx.lineWidth=1;
+    for(let x=0;x<=worldWidth;x+=64){
+      ctx.beginPath();
+      ctx.moveTo(x,horizon+2);
+      ctx.lineTo(x,arena.height);
+      ctx.stroke();
+    }
+    for(let y=horizon+28;y<arena.height;y+=28){
+      ctx.beginPath();
+      ctx.moveTo(0,y);
+      ctx.lineTo(worldWidth,y);
+      ctx.stroke();
+    }
+
+    ctx.save();
+    ctx.shadowColor="#d07de2";
+    ctx.shadowBlur=13;
+    ctx.strokeStyle="#8b6a9d";
+    ctx.lineWidth=3;
+    ctx.beginPath();
+    ctx.moveTo(0,horizon);
+    ctx.lineTo(worldWidth,horizon);
+    ctx.stroke();
+    ctx.restore();
+
+    // Center-line and stage edges are deliberately subtle gameplay landmarks.
+    ctx.fillStyle="rgba(195,146,218,.18)";
+    ctx.fillRect(worldWidth/2-1,horizon-78,2,78);
+    ctx.fillStyle="#5d4869";
+    ctx.fillRect(0,horizon+6,worldWidth,3);
+    ctx.fillStyle="#6a536f";
+    ctx.fillRect(0,0,4,horizon);
+    ctx.fillRect(worldWidth-4,0,4,horizon);
+    ctx.fillStyle="rgba(199,144,219,.55)";
+    ctx.fillRect(0,horizon,8,arena.height-horizon);
+    ctx.fillRect(worldWidth-8,horizon,8,arena.height-horizon);
   }
   drawFighter(ctx, fighter, color, alpha) {
     const x = fighter.previousX + (fighter.x-fighter.previousX)*alpha;

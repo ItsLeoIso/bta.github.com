@@ -45,7 +45,8 @@
 ## Phase 5 — First playable match
 - [x] Two placeholder fighters with distinct test properties (Striker: 300 walk speed / 1.00 damage; CPU Rival: 260 walk speed / 1.05 damage).
 - [x] Complete local 1v1 match loop with active deterministic CPU behaviour, two-sided melee collision, and CPU projectile support.
-- [ ] Basic stage presentation and match playtesting.
+- [x] Basic scroll-aware neon city-stage placeholder presentation.
+- [ ] Browser match playtesting and visual validation.
 - [ ] Playtest and fix core movement / combat issues.
 
 ## Phase 6 — Menus and modes

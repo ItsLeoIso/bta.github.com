@@ -174,3 +174,11 @@ These are menu destinations to plan for; their complete functionality will be im
 - The CPU approaches using screen-relative movement, then rotates through Light, Medium, Heavy, and Energy Shot when within its attack range. It uses the same state, attack, projectile, collision, damage, hitstun, round, and pushbox systems as the player.
 - The CPU can briefly guard an active melee attack if it is close enough, choosing crouch guard for Low attacks and standing guard otherwise. A cooldown prevents permanent reactive blocking.
 - The first CPU is deliberately deterministic rather than random, making playtesting and bug reproduction repeatable. AI timing and properties are prototype values, not character balance.
+
+
+## Prototype stage — Neon Backstreet
+
+- The first stage is a dark, stylised city backstreet built from Canvas geometry rather than external image assets.
+- A distant skyline, lit windows, small BTA signs, stars, and a neon horizon sit behind the fighters. The foreground uses a tiled arena floor and subtle center / edge landmarks.
+- Stage art is drawn in world coordinates, so the camera scrolls through the environment together with fighters and projectiles. HUD and match feedback remain fixed to the viewport.
+- This is a presentation placeholder. Original pixel-art backgrounds, environmental animation, and music / sound are still future content work.

@@ -221,3 +221,12 @@ Implemented:
 - CPU approaches, cycles through Light / Medium / Heavy / Energy Shot, and briefly reacts with standing or crouching guard to active melee swings.
 - Added tests for deterministic approach / attacks, crouch-block selection, both-sided melee damage, profile modifiers, and live Arena integration.
 - Browser balance and visual playtesting are still required before marking the full first-playable milestone complete.
+
+
+## Stage presentation milestone 015 — Neon Backstreet placeholder
+
+Implemented:
+- Replaced the flat grid backdrop with a layered night-sky and city skyline using Canvas gradients, deterministic building silhouettes, lit windows, small BTA signage, and a tiled foreground floor.
+- The environment is drawn in world space and scrolls with the existing camera; combatants remain layered above the stage and HUD stays screen-space.
+- No external image assets or new runtime dependencies were introduced.
+- Browser visual inspection is still required to tune contrast, composition, and performance on target devices.
