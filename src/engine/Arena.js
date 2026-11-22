@@ -8,6 +8,7 @@ import { FIGHTER_STATES, FighterStateController } from "../state/FighterStateCon
 import { ROUND_PHASES, RoundController } from "../combat/RoundController.js";
 import { ProjectileController } from "../combat/ProjectileController.js";
 import { CommandHistory } from "../input/CommandHistory.js";
+import { InputBuffer } from "../input/InputBuffer.js";
 
 const clamp = (value,min,max)=>Math.min(max,Math.max(min,value));
 export const STAGE_MARGIN=68;
@@ -49,6 +50,8 @@ export class Arena {
     this.rounds=new RoundController();
     this.projectileController=new ProjectileController({stateController:this.stateController});
     this.commandHistory=new CommandHistory();
+    this.inputBuffer=new InputBuffer({bufferFrames:8});
+    this.inputFrame=0;
     this.commandFeedbackText="";
     this.commandFeedbackRemaining=0;
     this.cameraX=(this.player.x+this.opponent.x)/2-this.width/2;
@@ -62,6 +65,7 @@ export class Arena {
     // The round controller owns all non-active transitions. Combat and physics
     // stay frozen during result/ready-up screens and after the match is decided.
     if (this.rounds.phase !== ROUND_PHASES.ACTIVE) {
+      this.inputBuffer.clear();
       const transition=this.rounds.update(deltaSeconds,{
         playerHealth:this.player.health,
         opponentHealth:this.opponent.health,
@@ -87,23 +91,51 @@ export class Arena {
     this.opponent.previousX=this.opponent.x; this.opponent.previousY=this.opponent.y;
     player.facing=player.x<=this.opponent.x ? 1 : -1;
     this.opponent.facing=-player.facing;
+    this.inputFrame+=1;
     this.commandHistory.update(input,player.facing);
     const quarterCircleSpecial =
       Boolean(input.wasPressed?.("special")) &&
       this.commandHistory.consumeQuarterCircleForward();
     if (quarterCircleSpecial) {
+      this.inputBuffer.clear();
       this.commandFeedbackText="QUARTER-CIRCLE FORWARD + SPECIAL";
       this.commandFeedbackRemaining=0.9;
+    } else {
+      this.inputBuffer.capture(input,this.inputFrame);
     }
+    const bufferedInput=this.inputBuffer.getInput(input,this.inputFrame);
     this.guard.update(player,input);
-    this.attacks.update(player,input);
+    const actionDataBefore=player.actionData;
+    this.attacks.update(player,bufferedInput);
     const projectileInput = quarterCircleSpecial
       ? {
-          isDown: action => Boolean(input.isDown?.(action)),
-          wasPressed: action => action === "special" ? false : Boolean(input.wasPressed?.(action))
+          isDown: action => Boolean(bufferedInput.isDown?.(action)),
+          wasPressed: action => action === "special" ? false : Boolean(bufferedInput.wasPressed?.(action)),
+          isBuffered: Boolean(bufferedInput.isBuffered)
         }
-      : input;
+      : bufferedInput;
     this.projectileController.updateFighter(player,projectileInput);
+
+    // One final dispatch after advancing the current move lets a buffered
+    // command start on the exact frame the previous action/recovery ends.
+    if (this.inputBuffer.pending &&
+        player.state.action===FIGHTER_STATES.action.NONE &&
+        player.state.reaction===FIGHTER_STATES.reaction.NONE) {
+      this.attacks.update(player,bufferedInput);
+      this.projectileController.updateFighter(player,projectileInput);
+    }
+
+    const pendingAction=this.inputBuffer.pending?.action;
+    const startedBufferedMove =
+      pendingAction &&
+      player.actionData!==actionDataBefore &&
+      player.actionData.elapsedFrames===1 &&
+      ((pendingAction==="special" &&
+        player.state.action===FIGHTER_STATES.action.SPECIAL) ||
+       (pendingAction!=="special" &&
+        player.state.action===FIGHTER_STATES.action.ATTACK &&
+        player.actionData.moveId===pendingAction));
+    if (startedBufferedMove) this.inputBuffer.consume(pendingAction);
     this.movement.update(player,input,deltaSeconds,{
       floorY:this.floorY,minX:this.stageMargin,maxX:this.worldWidth-this.stageMargin
     });
@@ -210,6 +242,8 @@ export class Arena {
     this.movement.lastTap={left:-Infinity,right:-Infinity};
     this.projectileController.clear();
     this.commandHistory.reset();
+    this.inputBuffer.clear();
+    this.inputFrame=0;
     this.commandFeedbackText="";
     this.commandFeedbackRemaining=0;
     this.cameraX=(this.player.x+this.opponent.x)/2-this.width/2;
