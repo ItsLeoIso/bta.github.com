@@ -70,6 +70,8 @@ test("active match visibly renders both fighters and the screen-space HUD", asyn
   await page.goto("/");
   await page.getByRole("button", { name: /PRESS ENTER TO START/ }).click();
   await page.getByRole("button", { name: /TRAINING/ }).click();
+  await expect(page.getByRole("heading", { name: "SELECT YOUR FIGHTER" })).toBeVisible();
+  await page.getByRole("button", { name: /CONFIRM FIGHTER/ }).click();
   await expect(page.locator("#engine-status")).toContainText("TRAINING MODE");
 
   const sampleCanvas = () => page.locator("#game-canvas").evaluate(canvas => {
