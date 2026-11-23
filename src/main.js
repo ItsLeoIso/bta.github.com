@@ -408,7 +408,7 @@ try {
     }
   }
 
-  menuRoot.addEventListener("pointerdown", () => {
+  menuRoot.addEventListener("click", () => {
     if (menu.screen === MENU_SCREENS.TITLE) menu.startIntro();
   });
 
