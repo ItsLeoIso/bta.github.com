@@ -1104,7 +1104,7 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 ### 2026-11-23 — ChatGPT — Data-driven character profiles and animation foundation (prototype 020)
 
 **Type:** Completed / Handoff  
-**Commit:** Pending CI verification.  
+**Commit:** https://github.com/ItsLeoIso/bta.github.com/commit/d284922d4ddfc13e778dee1c643909ab288c33e5  
 **Files / systems:**
 - src/characters/MoveSets.js
 - src/characters/CharacterDefinitions.js
@@ -1127,7 +1127,9 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 - Added tests for profile registration and preserved balance, clip selection / looping / completion, character-specific attack / projectile overrides, Arena animation transitions / reset, and unknown profile handling.
 
 **Verification:**
-- Automated tests and Chromium / Pages CI are pending for this commit.
+- Node.js unit / integration / source-integrity tests: **224/224 passed, 0 failures** — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45143497368
+- Chromium browser smoke tests: **2/2 passed** — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45143497400
+- GitHub Pages build, status reporting, and deployment: **all succeeded** — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45143497196
 - No human browser visual inspection has been performed; because no sprite source is configured, visible placeholder art should remain unchanged.
 
 **Suggested next step:**
