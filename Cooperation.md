@@ -1160,7 +1160,7 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 ### 2026-11-23 — ChatGPT — Registry-driven character select (prototype 021)
 
 **Type:** Completed / Handoff  
-**Commit:** Pending CI verification.
+**Commit:** https://github.com/ItsLeoIso/bta.github.com/commit/e615287b1eec636eb8460dd2a061abacade7abea (follow-up browser-test correction: https://github.com/ItsLeoIso/bta.github.com/commit/5fbc523bb129db3521ce95e629fc0adc6f16a4f8)
 
 **What changed:**
 - Added a Character Select state to the menu flow. Arcade and Training now open this screen instead of immediately creating the Arena.
@@ -1172,4 +1172,7 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 
 **Not included:** portraits, sprite art, character-specific finished animation, additional roster entries, online character select, or a full versus / player-two selection flow.
 
-**Verification:** Pending workflows.
+**Verification:**
+- Node.js unit / integration / source-integrity tests: **226/226 passed, 0 failures** — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45147484211
+- Chromium browser smoke tests: **4/4 passed**, including character switching / matchup launch and the existing visual rendering regression — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45147484342
+- GitHub Pages build, status reporting, and deployment: **all succeeded** — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45147483329
