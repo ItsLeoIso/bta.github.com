@@ -165,50 +165,41 @@ test("clear removes active projectiles between rounds", () => {
 });
 
 
-test("Vector Burst supports all eight screen-relative directions at a normalized speed", () => {
-  const diagonalSpeed = 540 / Math.sqrt(2);
+test("ground L always fires forward relative to facing, ignoring held aim directions", () => {
   const cases = [
-    { down: ["right"], x: 540, y: 0 },
-    { down: ["left"], x: -540, y: 0 },
-    { down: ["jump"], x: 0, y: -540 },
-    { down: ["crouch"], x: 0, y: 540 },
-    { down: ["right", "jump"], x: diagonalSpeed, y: -diagonalSpeed },
-    { down: ["left", "jump"], x: -diagonalSpeed, y: -diagonalSpeed },
-    { down: ["right", "crouch"], x: diagonalSpeed, y: diagonalSpeed },
-    { down: ["left", "crouch"], x: -diagonalSpeed, y: diagonalSpeed }
+    { facing: 1, down: ["left"], expectedX: 540 },
+    { facing: 1, down: ["right", "jump", "crouch"], expectedX: 540 },
+    { facing: -1, down: ["right"], expectedX: -540 },
+    { facing: -1, down: ["left", "jump"], expectedX: -540 }
   ];
-
   for (const scenario of cases) {
     const controller = new ProjectileController();
-    const fighter = makeFighter({ facing: -1 });
-    controller.updateFighter(
-      fighter,
-      input({ pressed: ["special"], down: scenario.down })
-    );
-    for (let frame = 0; frame < 7; frame += 1) {
-      controller.updateFighter(fighter, input());
-    }
-
+    const fighter = makeFighter({ facing: scenario.facing });
+    assert.equal(controller.updateFighter(
+      fighter, input({ pressed: ["special"], down: scenario.down })
+    ), true);
+    for (let frame = 0; frame < 7; frame += 1) controller.updateFighter(fighter, input());
     const projectile = controller.projectiles[0];
-    assert.ok(projectile, "directional projectile should spawn");
-    assert.ok(Math.abs(projectile.velocityX - scenario.x) < 1e-9);
-    assert.ok(Math.abs(projectile.velocityY - scenario.y) < 1e-9);
-    assert.ok(Math.abs(Math.hypot(projectile.velocityX, projectile.velocityY) - 540) < 1e-9);
+    assert.equal(projectile.moveId, "special");
+    assert.equal(projectile.velocityX, scenario.expectedX);
+    assert.equal(projectile.velocityY, 0);
   }
 });
 
-test("opposing directional inputs do not fall back to the button-only shot", () => {
-  const controller = new ProjectileController();
-  const fighter = makeFighter();
-
-  const started = controller.updateFighter(
-    fighter,
-    input({ pressed: ["special"], down: ["left", "right"] })
-  );
-
-  assert.equal(started, false);
-  assert.equal(fighter.state.action, STATES.action.NONE);
-  assert.equal(controller.projectiles.length, 0);
+test("airborne L always fires diagonally down-forward relative to facing", () => {
+  const diagonalSpeed = 540 / Math.sqrt(2);
+  for (const facing of [1, -1]) {
+    const controller = new ProjectileController();
+    const fighter = makeFighter({ facing, onGround: false, y: 300 });
+    assert.equal(controller.updateFighter(
+      fighter, input({ pressed: ["special"], down: ["jump", "left", "crouch"] })
+    ), true);
+    for (let frame = 0; frame < 7; frame += 1) controller.updateFighter(fighter, input());
+    const projectile = controller.projectiles[0];
+    assert.equal(projectile.moveId, "special");
+    assert.ok(Math.abs(projectile.velocityX - facing * diagonalSpeed) < 1e-9);
+    assert.ok(Math.abs(projectile.velocityY - diagonalSpeed) < 1e-9);
+  }
 });
 
 test("directional projectiles are removed after leaving the vertical arena bounds", () => {
@@ -233,20 +224,13 @@ test("directional projectiles are removed after leaving the vertical arena bound
 });
 
 
-test("backward Vector Burst points behind a fighter facing left",()=>{
-  const controller=new ProjectileController();
-  const fighter=makeFighter({facing:-1});
-
-  controller.updateFighter(
-    fighter,
-    input({pressed:["special"],down:["right"]})
-  );
-  for(let frame=0;frame<7;frame+=1) {
-    controller.updateFighter(fighter,input());
-  }
-
-  assert.equal(controller.projectiles[0].velocityX,540);
-  assert.equal(controller.projectiles[0].velocityY,0);
+test("holding back plus L still fires forward relative to a fighter facing left", () => {
+  const controller = new ProjectileController();
+  const fighter = makeFighter({ facing: -1 });
+  controller.updateFighter(fighter, input({ pressed: ["special"], down: ["right"] }));
+  for (let frame = 0; frame < 7; frame += 1) controller.updateFighter(fighter, input());
+  assert.equal(controller.projectiles[0].velocityX, -540);
+  assert.equal(controller.projectiles[0].velocityY, 0);
 });
 
 test("any projectile special can be used once per airtime",()=>{

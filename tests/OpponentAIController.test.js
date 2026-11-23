@@ -80,3 +80,22 @@ test("invalid AI ranges and timing values are rejected", () => {
   assert.throws(() => new OpponentAIController({ attackCooldownFrames: -1 }), RangeError);
   assert.throws(() => new OpponentAIController({ blockReactionFrames: -1 }), RangeError);
 });
+
+test("CPU waits through a deliberate neutral cooldown after an attack", () => {
+  const cpu = fighter(400, -1);
+  const target = fighter(200, 1);
+  const ai = new OpponentAIController();
+
+  assert.equal(ai.update(cpu, target).wasPressed("light"), true);
+  assert.equal(ai.attackCooldown, 30);
+
+  cpu.state.action = STATES.action.ATTACK;
+  for (let frame = 0; frame < 20; frame += 1) ai.update(cpu, target);
+  assert.equal(ai.attackCooldown, 30, "attack lockout must not consume the neutral decision delay");
+
+  cpu.state.action = STATES.action.NONE;
+  for (let frame = 0; frame < 29; frame += 1) {
+    assert.equal(ai.update(cpu, target).wasPressed("light"), false);
+  }
+  assert.equal(ai.update(cpu, target).wasPressed("medium"), true);
+});

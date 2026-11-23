@@ -100,43 +100,35 @@ test("air projectile cancels launch momentum but gravity continues through the m
 });
 
 
-test("back plus L releases guard and starts a backward Vector Burst", () => {
+test("back plus L releases guard but the grounded projectile still fires forward", () => {
   const arena = new Arena();
-
   arena.update(1 / 60, input({ axis: -1 }));
   assert.equal(arena.player.state.action, STATES.action.GUARD);
-
   arena.update(1 / 60, input({ axis: -1, pressed: ["special"] }));
   assert.equal(arena.player.state.action, STATES.action.SPECIAL);
-  assert.equal(arena.player.actionData.moveId, "directionalSpecial");
+  assert.equal(arena.player.actionData.moveId, "special");
   assert.equal(arena.player.guardData, null);
-
-  for (let frame = 0; frame < 7; frame += 1) {
-    arena.update(1 / 60, input());
-  }
+  for (let frame = 0; frame < 7; frame += 1) arena.update(1 / 60, input());
   assert.equal(arena.projectileController.projectiles.length, 1);
-  assert.equal(arena.projectileController.projectiles[0].velocityX, -540);
+  assert.equal(arena.projectileController.projectiles[0].velocityX, 540);
+  assert.equal(arena.projectileController.projectiles[0].velocityY, 0);
 });
 
-test("up plus L fires a Vector Burst vertically and uses its separate damage profile", () => {
+test("airborne L ignores aim inputs and fires down-forward", () => {
   const arena = new Arena();
-  arena.opponent.x = arena.player.x;
-  arena.opponent.y = 260;
-  arena.opponent.previousX = arena.opponent.x;
-  arena.opponent.previousY = arena.opponent.y;
-  arena.opponent.onGround = false;
-  arena.opponent.state.locomotion = STATES.locomotion.FALLING;
-
-  advanceUntilProjectileEvent(
-    arena,
-    input({ pressed: ["special"], down: ["jump"] })
-  );
-
-  assert.equal(arena.lastCombatEvent.moveId, "directionalSpecial");
-  assert.equal(arena.lastCombatEvent.moveName, "Vector Burst");
-  assert.equal(arena.lastCombatEvent.type, "hit");
-  assert.ok(Math.abs(arena.opponent.health - 0.92) < 1e-9);
-  assert.equal(arena.opponent.state.reaction, STATES.reaction.HITSTUN);
+  arena.player.x = 500;
+  arena.player.y = 260;
+  arena.player.previousX = 500;
+  arena.player.previousY = 260;
+  arena.player.onGround = false;
+  arena.player.state.locomotion = STATES.locomotion.FALLING;
+  arena.update(1 / 60, input({ pressed: ["special"], down: ["jump", "left"] }));
+  for (let frame = 0; frame < 7; frame += 1) arena.update(1 / 60, input());
+  const projectile = arena.projectileController.projectiles[0];
+  assert.ok(projectile);
+  assert.equal(projectile.moveId, "special");
+  assert.ok(Math.abs(projectile.velocityX - 540 / Math.sqrt(2)) < 1e-9);
+  assert.ok(Math.abs(projectile.velocityY - 540 / Math.sqrt(2)) < 1e-9);
 });
 
 
