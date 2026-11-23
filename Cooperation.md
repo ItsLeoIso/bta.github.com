@@ -1181,7 +1181,7 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 ### 2026-11-23 — ChatGPT — Restore the intended opening sequence (prototype 022)
 
 **Type:** Completed / Handoff  
-**Commit:** Pending CI verification.
+**Commit:** https://github.com/ItsLeoIso/bta.github.com/commit/3ec178ec4474ed29261c49e3802988b4ce9a3c69 (pointer / focus and browser-test timing follow-ups: https://github.com/ItsLeoIso/bta.github.com/commit/0d0a027b37c10d06d52cb292290f6ddb0605ce6c and https://github.com/ItsLeoIso/bta.github.com/commit/c0f67cff2308493667813305777fcb5a4e558e70)
 
 **Design source:** `docs/GAME_DESIGN.md`, Identity and presentation — the opening concept specifies a dark silent screen with pixelated START; on any button press, a fighter punches through the text, fast-paced music begins, the fighter appears on the right and poses, and the menu options appear on the left.
 
@@ -1195,4 +1195,7 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 
 **Not included:** final character sprite art, final soundtrack / sound design, volume settings, or additional animated background layers.
 
-**Verification:** Pending workflows.
+**Verification:**
+- Node.js unit / integration / source-integrity tests: **228/228 passed, 0 failures** — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45156917695
+- Chromium browser smoke tests: **4/4 passed**, covering the opening prompt, any-key transition, menu flow, character select, and active-match rendering — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45156917672
+- GitHub Pages build, status reporting, and deployment: **all succeeded** — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45156917180
