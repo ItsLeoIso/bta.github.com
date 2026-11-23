@@ -77,8 +77,8 @@ test("holding a direction with grounded L does not redirect the forward Energy S
 
   assert.equal(started, true);
   assert.equal(fighter.state.action, STATES.action.SPECIAL);
-  assert.equal(fighter.actionData.moveId, "directionalSpecial");
-  assert.equal(fighter.actionData.moveName, "Vector Burst");
+  assert.equal(fighter.actionData.moveId, "special");
+  assert.equal(fighter.actionData.moveName, "Energy Shot");
 
   for (let frame = 0; frame < 7; frame += 1) {
     controller.updateFighter(fighter, input());
