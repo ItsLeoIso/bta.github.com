@@ -1151,4 +1151,7 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 - Updated the HTML label to Gameplay Prototype 020 and corrected the Energy Shot / Arc Lance controls.
 - Added a Chromium pixel regression test that starts Training and samples the actual rendered player, opponent, and health-bar pixels. It also checks that the Canvas transform is restored after rendering.
 
-**Verification:** Pending workflows.
+**Verification:**
+- Node.js unit / integration / source-integrity tests: **224/224 passed, 0 failures** — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45145663619
+- Chromium browser smoke tests: **3/3 passed**, including the new on-canvas pixel checks for player, opponent, and HUD — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45145663659
+- GitHub Pages build, status reporting, and deployment: **all succeeded** — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45145663495
