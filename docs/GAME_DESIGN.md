@@ -221,3 +221,12 @@ These are menu destinations to plan for; their complete functionality will be im
 - Animation is advanced on the fixed simulation step. The clip selector prioritises hit reactions, then current action (normal, special, guard, dash), then locomotion (walk, crouch, jump, fall, idle). Clips specify atlas frame indices, frame duration, and whether they loop.
 - The Canvas renderer supports an optional same-origin sprite atlas using uniform frame dimensions, columns, scale, and pivot metadata. If no atlas source is supplied or it has not loaded, the renderer keeps the existing placeholder fighter.
 - This milestone is an extensible asset / data foundation, not finished character art. Both current profiles deliberately have no sprite-sheet source yet; original sprite sheets, character select, distinct move lists, portraits, and authored animations remain future work.
+
+
+## Local character select (prototype)
+
+- Arcade and Training now open a character-select screen before constructing the Arena. The roster is read from the character-definition registry, so adding a registered character automatically makes it available to the menu.
+- The current two-entry prototype roster is Striker and CPU Rival. The selected fighter is assigned to Player 01; the other registered fighter is assigned to the opponent slot. The matchup is displayed before launch, including archetype, short description, movement speed, and damage multiplier.
+- Left / Right or A / D cycles the selected fighter; Enter confirms; Escape returns to the mode menu. Mouse / touch buttons provide Previous, Next, Back, and Confirm actions.
+- The selected character IDs are passed into Arena construction. Training keeps the opponent passive; Arcade keeps the opponent AI active. Restarting a paused match preserves the selected matchup.
+- Character portraits and authored sprites are not part of this milestone. The menu uses typography and profile data rather than pretending the current placeholder fighters have finished art.

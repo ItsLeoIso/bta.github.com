@@ -1155,3 +1155,21 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 - Node.js unit / integration / source-integrity tests: **224/224 passed, 0 failures** — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45145663619
 - Chromium browser smoke tests: **3/3 passed**, including the new on-canvas pixel checks for player, opponent, and HUD — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45145663659
 - GitHub Pages build, status reporting, and deployment: **all succeeded** — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45145663495
+
+
+### 2026-11-23 — ChatGPT — Registry-driven character select (prototype 021)
+
+**Type:** Completed / Handoff  
+**Commit:** Pending CI verification.
+
+**What changed:**
+- Added a Character Select state to the menu flow. Arcade and Training now open this screen instead of immediately creating the Arena.
+- The menu reads the roster from `getAvailableCharacters()`, displays the selected fighter and opposing matchup, and exposes archetype, description, move speed, and damage multiplier.
+- Added keyboard navigation (A / D and Left / Right), Enter confirmation, Escape back, and accessible Previous / Next / Back / Confirm buttons.
+- The confirmed player and opponent character IDs are passed to Arena. The two current entries rotate as player / opponent, so either profile can be selected for either side.
+- Pause restart preserves the selected character matchup. Training still starts a passive dummy; Arcade still starts the CPU controller.
+- Added menu state-machine tests and browser coverage for default matchup, roster cycling, launch, and existing mode / pause flows.
+
+**Not included:** portraits, sprite art, character-specific finished animation, additional roster entries, online character select, or a full versus / player-two selection flow.
+
+**Verification:** Pending workflows.

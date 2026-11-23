@@ -61,7 +61,9 @@ try {
     onStart: (mode, options) => {
       arena = new Arena({
         opponentAIEnabled: mode === "arcade",
-        trainingMode: mode === "training"
+        trainingMode: mode === "training",
+        playerCharacterId: options.playerCharacterId,
+        opponentCharacterId: options.opponentCharacterId
       });
       renderer.showHitboxes = options.showHitboxes;
       stateDebugRoot.hidden = !options.showInspector;
@@ -127,6 +129,98 @@ try {
       hint.className = "menu-hint";
       hint.textContent = "W / S OR ↑ / ↓ TO SELECT · ENTER TO CONFIRM";
       menuContent.append(title, subtitle, list, hint);
+      return;
+    }
+
+    if (view.screen === MENU_SCREENS.CHARACTER_SELECT) {
+      const title = document.createElement("h2");
+      title.textContent = "SELECT YOUR FIGHTER";
+      const subtitle = document.createElement("p");
+      subtitle.className = "menu-subtitle";
+      subtitle.textContent = (view.pendingMode === "training" ? "TRAINING MODE" : "ARCADE MODE") + " · CHOOSE YOUR MATCHUP";
+
+      const matchup = document.createElement("div");
+      matchup.className = "character-select__matchup";
+
+      const playerCard = document.createElement("section");
+      playerCard.className = "character-card character-card--player";
+      playerCard.dataset.characterId = view.selectedCharacter.id;
+      playerCard.dataset.testid = "character-select-player";
+      const playerRole = document.createElement("p");
+      playerRole.className = "character-card__role";
+      playerRole.textContent = "PLAYER 01";
+      const playerName = document.createElement("h3");
+      playerName.textContent = view.selectedCharacter.name;
+      const playerArchetype = document.createElement("p");
+      playerArchetype.className = "character-card__archetype";
+      playerArchetype.textContent = view.selectedCharacter.archetype;
+      const playerDescription = document.createElement("p");
+      playerDescription.className = "character-card__description";
+      playerDescription.textContent = view.selectedCharacter.description;
+      const playerStats = document.createElement("dl");
+      playerStats.className = "character-card__stats";
+      [
+        ["MOVE SPEED", String(view.selectedCharacter.stats.moveSpeed)],
+        ["DAMAGE", (view.selectedCharacter.stats.damageMultiplier * 100).toFixed(0) + "%"]
+      ].forEach(([label, value]) => {
+        const item = document.createElement("div");
+        const term = document.createElement("dt");
+        term.textContent = label;
+        const detail = document.createElement("dd");
+        detail.textContent = value;
+        item.append(term, detail);
+        playerStats.append(item);
+      });
+      playerCard.append(playerRole, playerName, playerArchetype, playerDescription, playerStats);
+
+      const versus = document.createElement("div");
+      versus.className = "character-select__versus";
+      versus.textContent = "VS";
+
+      const opponentCard = document.createElement("section");
+      opponentCard.className = "character-card character-card--opponent";
+      opponentCard.dataset.characterId = view.opponentCharacter.id;
+      const opponentRole = document.createElement("p");
+      opponentRole.className = "character-card__role";
+      opponentRole.textContent = view.pendingMode === "training" ? "TRAINING DUMMY" : "CPU RIVAL";
+      const opponentName = document.createElement("h3");
+      opponentName.textContent = view.opponentCharacter.name;
+      const opponentArchetype = document.createElement("p");
+      opponentArchetype.className = "character-card__archetype";
+      opponentArchetype.textContent = view.opponentCharacter.archetype;
+      const opponentStats = document.createElement("dl");
+      opponentStats.className = "character-card__stats";
+      [
+        ["MOVE SPEED", String(view.opponentCharacter.stats.moveSpeed)],
+        ["DAMAGE", (view.opponentCharacter.stats.damageMultiplier * 100).toFixed(0) + "%"]
+      ].forEach(([label, value]) => {
+        const item = document.createElement("div");
+        const term = document.createElement("dt");
+        term.textContent = label;
+        const detail = document.createElement("dd");
+        detail.textContent = value;
+        item.append(term, detail);
+        opponentStats.append(item);
+      });
+      opponentCard.append(opponentRole, opponentName, opponentArchetype, opponentStats);
+      matchup.append(playerCard, versus, opponentCard);
+
+      const navigation = document.createElement("div");
+      navigation.className = "character-select__navigation";
+      navigation.append(
+        makeButton("← PREVIOUS", "menu-choice character-nav", () => menu.changeCharacter(-1)),
+        makeButton("NEXT →", "menu-choice character-nav", () => menu.changeCharacter(1))
+      );
+      const actions = document.createElement("div");
+      actions.className = "character-select__actions";
+      actions.append(
+        makeButton("BACK", "menu-choice character-back", () => menu.back()),
+        makeButton("CONFIRM FIGHTER", "menu-primary character-confirm", () => menu.confirmCharacter())
+      );
+      const hint = document.createElement("p");
+      hint.className = "menu-hint";
+      hint.textContent = "A / D OR ← / → TO CHANGE · ENTER TO CONFIRM · ESC TO BACK";
+      menuContent.append(title, subtitle, matchup, navigation, actions, hint);
       return;
     }
 

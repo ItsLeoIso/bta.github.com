@@ -15,6 +15,9 @@ test("title, mode menu, Online notice, and Arcade pause flow", async ({ page }) 
   await expect(page.getByRole("heading", { name: "MAIN MENU" })).toBeVisible();
 
   await page.getByRole("button", { name: /ARCADE/ }).click();
+  await expect(page.getByRole("heading", { name: "SELECT YOUR FIGHTER" })).toBeVisible();
+  await expect(page.locator('[data-testid="character-select-player"]')).toHaveAttribute("data-character-id", "striker");
+  await page.getByRole("button", { name: /CONFIRM FIGHTER/ }).click();
   await expect(page.locator("#game-canvas")).toBeVisible();
   await expect(page.locator("#engine-status")).toContainText("ARCADE MODE");
 
@@ -36,6 +39,8 @@ test("Training starts, resets the dummy, and keeps the canvas sized on mobile-wi
   await page.goto("/");
   await page.getByRole("button", { name: /PRESS ENTER TO START/ }).click();
   await page.getByRole("button", { name: /TRAINING/ }).click();
+  await expect(page.getByRole("heading", { name: "SELECT YOUR FIGHTER" })).toBeVisible();
+  await page.getByRole("button", { name: /CONFIRM FIGHTER/ }).click();
   await expect(page.locator("#game-canvas")).toBeVisible();
   await expect(page.locator("#engine-status")).toContainText("TRAINING MODE");
 
@@ -105,5 +110,27 @@ test("active match visibly renders both fighters and the screen-space HUD", asyn
   expect(rendered.transform.f).toBe(0);
   expect(Math.abs(rendered.transform.a - rendered.transform.expectedScale)).toBeLessThan(0.01);
   expect(Math.abs(rendered.transform.d - rendered.transform.expectedScale)).toBeLessThan(0.01);
+  expect(pageErrors).toEqual([]);
+});
+
+
+test("character select changes the player and opposing fighter before launching", async ({ page }) => {
+  const pageErrors = [];
+  page.on("pageerror", error => pageErrors.push(error.message));
+
+  await page.goto("/");
+  await page.getByRole("button", { name: /PRESS ENTER TO START/ }).click();
+  await page.getByRole("button", { name: /ARCADE/ }).click();
+  const playerCard = page.locator('[data-testid="character-select-player"]');
+  const opponentCard = page.locator(".character-card--opponent");
+
+  await expect(playerCard).toHaveAttribute("data-character-id", "striker");
+  await expect(opponentCard).toHaveAttribute("data-character-id", "cpu-rival");
+  await page.keyboard.press("ArrowRight");
+  await expect(playerCard).toHaveAttribute("data-character-id", "cpu-rival");
+  await expect(opponentCard).toHaveAttribute("data-character-id", "striker");
+  await page.getByRole("button", { name: /CONFIRM FIGHTER/ }).click();
+  await expect(page.locator("#engine-status")).toContainText("ARCADE MODE");
+  await expect(page.locator("#game-canvas")).toBeVisible();
   expect(pageErrors).toEqual([]);
 });

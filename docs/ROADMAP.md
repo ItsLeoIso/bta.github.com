@@ -64,6 +64,7 @@
 ## Phase 7 — Content and polish
 - [x] Add data-driven character profiles for Striker and CPU Rival, including per-character stats, move sets, and animation metadata.
 - [x] Add a fixed-step animation clip controller and optional sprite-atlas Canvas rendering path.
+- [x] Add registry-driven character select for Arcade / Training, including matchup preview, profile stats, keyboard and pointer controls, and selected IDs passed into Arena.
 - [ ] Replace placeholders with original pixel-art sprite sheets and authored animation frames.
 - [ ] Add sound effects and music.
 - [x] First procedural combat-feedback pass: hit / block / guard-break sparks, expanding impact rings, and restrained screen shake.

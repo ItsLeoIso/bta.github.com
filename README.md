@@ -51,3 +51,8 @@ Open http://localhost:8000. Do not open index.html directly as a file; native ES
 The Chromium smoke suite is run in CI. To run it locally, install the test-only tooling with `npm install --no-save --package-lock=false @playwright/test`, install Chromium with `npx playwright install chromium`, then run `npx playwright test`.
 
 The game itself has no runtime dependencies or build step.
+
+
+## Character select
+
+Arcade and Training now open a roster screen before the match. Use **A / D** or **Left / Right** to cycle Striker and CPU Rival, **Enter** to confirm, and **Escape** to return. Previous / Next / Confirm buttons are also available. The preview shows the selected fighter, the opposing matchup, archetype, movement speed, and damage multiplier. The selected profiles are passed into the match; finished portraits and sprite art are still planned separately.

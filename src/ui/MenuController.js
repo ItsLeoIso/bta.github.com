@@ -262,6 +262,7 @@ export class MenuController {
     if (this.screen !== MENU_SCREENS.ONLINE && this.screen !== MENU_SCREENS.OPTIONS) {
       return false;
     }
+    this.pendingMode = null;
     this.screen = MENU_SCREENS.MAIN;
     this.notify();
     return true;
