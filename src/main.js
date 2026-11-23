@@ -206,10 +206,12 @@ try {
       title.className = "opening-start";
       title.textContent = "START";
       title.setAttribute("aria-label", "Start BTA");
+      title.addEventListener("click", () => menu.startIntro());
       const hint = document.createElement("p");
       hint.className = "opening-hint";
       hint.textContent = "PRESS ANY BUTTON";
       menuContent.append(title, hint);
+      title.focus({ preventScroll: true });
       return;
     }
 
