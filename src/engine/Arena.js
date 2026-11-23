@@ -12,6 +12,8 @@ import { InputBuffer } from "../input/InputBuffer.js";
 import { ComboTracker } from "../combat/ComboTracker.js";
 import { OpponentAIController } from "../ai/OpponentAIController.js";
 import { CombatEffects } from "../effects/CombatEffects.js";
+import { getCharacterDefinition } from "../characters/CharacterDefinitions.js";
+import { FighterAnimator } from "../animation/FighterAnimator.js";
 
 const clamp = (value,min,max)=>Math.min(max,Math.max(min,value));
 export const STAGE_MARGIN=68;
@@ -23,34 +25,54 @@ const NEUTRAL_INPUT=Object.freeze({
   isDown:()=>false
 });
 
-function createFighter({x,facing,displayName,moveSpeed,damageMultiplier}) {
-  return {
-    x,y:440,previousX:x,previousY:440,facing,displayName,health:1,crouching:false,
-    guardMeter:100,guardMeterRecoveryDelayFrames:0,
-    moveSpeed,damageMultiplier,vx:0,vy:0,onGround:true,
-    state:{
-      locomotion:FIGHTER_STATES.locomotion.STANDING,
-      action:FIGHTER_STATES.action.NONE,
-      reaction:FIGHTER_STATES.reaction.NONE
+function createFighter({ x, facing, character }) {
+  const fighter = {
+    x, y: 440, previousX: x, previousY: 440, facing,
+    characterId: character.id,
+    character,
+    displayName: character.displayName,
+    health: 1,
+    crouching: false,
+    guardMeter: 100,
+    guardMeterRecoveryDelayFrames: 0,
+    moveSpeed: character.stats.moveSpeed,
+    damageMultiplier: character.stats.damageMultiplier,
+    vx: 0, vy: 0, onGround: true,
+    state: {
+      locomotion: FIGHTER_STATES.locomotion.STANDING,
+      action: FIGHTER_STATES.action.NONE,
+      reaction: FIGHTER_STATES.reaction.NONE
     },
-    actionData:{dashType:null,remaining:0,velocity:0},
-    dashType:null,dashRemaining:0,dashVelocity:0,
-    airDashAvailable:true,airProjectileAvailable:true,airHorizontalVelocity:0,
-    groundDashCooldownRemaining:0,lastAttackData:null,
-    guardData:null,reactionData:null
+    actionData: { dashType: null, remaining: 0, velocity: 0 },
+    dashType: null, dashRemaining: 0, dashVelocity: 0,
+    airDashAvailable: true, airProjectileAvailable: true, airHorizontalVelocity: 0,
+    groundDashCooldownRemaining: 0, lastAttackData: null,
+    guardData: null, reactionData: null
   };
+  fighter.animator = new FighterAnimator(character.animations);
+  fighter.animator.update(fighter);
+  return fighter;
 }
 
 export class Arena {
-  constructor({opponentAIEnabled=false,trainingMode=false}={}) {
+  constructor({
+    opponentAIEnabled=false,
+    trainingMode=false,
+    playerCharacterId="striker",
+    opponentCharacterId="cpu-rival"
+  }={}) {
     this.width=960; this.height=540; this.floorY=440;
     this.stageMargin=STAGE_MARGIN;
     this.trainingMode=Boolean(trainingMode);
     this.trainingDummyResetFrames=0;
     this.stateController=new FighterStateController();
     this.worldWidth=1920;
-    this.player=createFighter({x:780,facing:1,displayName:"PLAYER 01",moveSpeed:300,damageMultiplier:1});
-    this.opponent=createFighter({x:1140,facing:-1,displayName:"CPU RIVAL",moveSpeed:260,damageMultiplier:1.05});
+    const playerCharacter=getCharacterDefinition(playerCharacterId);
+    const opponentCharacter=getCharacterDefinition(opponentCharacterId);
+    if(!playerCharacter) throw new RangeError("Unknown player character: "+playerCharacterId);
+    if(!opponentCharacter) throw new RangeError("Unknown opponent character: "+opponentCharacterId);
+    this.player=createFighter({x:780,facing:1,character:playerCharacter});
+    this.opponent=createFighter({x:1140,facing:-1,character:opponentCharacter});
     this.stateController.initialize(this.player);
     this.stateController.initialize(this.opponent);
     this.player.stateController=this.stateController;
@@ -93,6 +115,7 @@ export class Arena {
       if (transition?.type==="nextRound" || transition?.type==="matchReset") {
         this.resetFighters();
       }
+      this.updateAnimations();
       return;
     }
 
@@ -246,6 +269,12 @@ export class Arena {
       });
     }
     if (this.rounds.phase !== ROUND_PHASES.ACTIVE) this.inputBuffer.clear();
+    this.updateAnimations();
+  }
+
+  updateAnimations() {
+    this.player.animator.update(this.player);
+    this.opponent.animator.update(this.opponent);
   }
 
   updateCamera() {
@@ -389,5 +418,7 @@ export class Arena {
     fighter.guardData=null;
     fighter.reactionData=null;
     this.stateController.initialize(fighter);
+    fighter.animator?.reset();
+    fighter.animator?.update(fighter);
   }
 }

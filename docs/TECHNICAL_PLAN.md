@@ -272,3 +272,15 @@ Implemented:
 - Automated tests cover deterministic hit effects, block / guard-break intensity, projectile contact positioning, expiration, reset, and ignored non-contact events.
 
 The Canvas-generated effects are a first presentation pass, not final character-specific VFX or a replacement for authored sprite animation, sound, or hitstop.
+
+
+## Character foundation milestone 020 — Profiles, move sets, and animation clock
+
+Implemented:
+- Added \`src/characters/CharacterDefinitions.js\` with a registry for Striker and CPU Rival. Arena accepts character IDs while retaining the same defaults, positions, movement speeds, and damage multipliers.
+- Moved shared prototype normal / projectile data into \`src/characters/MoveSets.js\`. AttackController reads the move set attached to each fighter; ProjectileController likewise reads per-character Energy Shot / Arc Lance tuning, including projectile spawn offsets. Existing exports remain available from their previous controller modules for compatibility.
+- Added \`src/animation/FighterAnimator.js\`. It maps reaction, action, and locomotion states to fixed-step animation clips and tracks atlas frame, frame index, elapsed simulation frames, looping, and completion.
+- Added animation metadata to the character definitions and a lazy-loaded, optional uniform-grid sprite-atlas path in CanvasRenderer. With the current null sprite sources, the existing geometric placeholder renderer remains the live fallback.
+- Regression coverage includes profile registration / immutability / balance preservation, animation selection and timing, custom per-character attack and projectile overrides, Arena animation transitions, and invalid character IDs.
+
+Not included: final art, custom sprite sheets, character select, portraits, bespoke roster move sets, or an asset authoring pipeline. The new pipeline makes those additions possible without coupling them to combat controller internals.

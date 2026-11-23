@@ -2,29 +2,8 @@ import { getHurtbox } from "./Hurtbox.js";
 import { boxesOverlap } from "./CombatCollision.js";
 import { FIGHTER_STATES, FighterStateController, isGrounded } from "../state/FighterStateController.js";
 
-export const PROJECTILE_DEFAULTS = Object.freeze({
-  startupFrames: 8,
-  recoveryFrames: 18,
-  speed: 540,
-  radius: 18,
-  lifetimeSeconds: 2.5,
-  spawnOffsetX: 76,
-  spawnOffsetY: -150,
-  moveId: "special",
-  moveName: "Energy Shot",
-  hitLevel: "mid"
-});
-
-export const MOTION_SPECIAL_DEFAULTS = Object.freeze({
-  moveId: "arcLance",
-  moveName: "Arc Lance",
-  hitLevel: "mid",
-  startupFrames: 14,
-  recoveryFrames: 26,
-  speed: 390,
-  radius: 26,
-  lifetimeSeconds: 2.8
-});
+import { MOTION_SPECIAL_DEFAULTS, PROJECTILE_DEFAULTS } from "../characters/MoveSets.js";
+export { MOTION_SPECIAL_DEFAULTS, PROJECTILE_DEFAULTS } from "../characters/MoveSets.js";
 
 function resolveSpecialDirection(fighter) {
   const facing = Math.sign(fighter.facing) || 1;
@@ -110,14 +89,17 @@ export class ProjectileController {
 
     if (!this.canStartSpecial(fighter, input)) return false;
 
-    const isMotionSpecial = input.specialMove === MOTION_SPECIAL_DEFAULTS.moveId;
+    const projectileMoves = fighter.character?.moveSet?.projectiles;
+    const energyShot = projectileMoves?.energyShot ?? PROJECTILE_DEFAULTS;
+    const arcLance = projectileMoves?.arcLance ?? MOTION_SPECIAL_DEFAULTS;
+    const isMotionSpecial = input.specialMove === arcLance.moveId;
     const specialFacing = Math.sign(input.specialFacing ?? fighter.facing) || 1;
     const direction = isMotionSpecial
       ? { x: specialFacing, y: 0, directional: false }
       : resolveSpecialDirection(fighter);
     const isAirProjectile = !isGrounded(fighter);
 
-    const move = isMotionSpecial ? MOTION_SPECIAL_DEFAULTS : PROJECTILE_DEFAULTS;
+    const move = isMotionSpecial ? arcLance : energyShot;
     const startupFrames = move.startupFrames ?? this.startupFrames;
     const recoveryFrames = move.recoveryFrames ?? this.recoveryFrames;
     const started = states.startAction(
@@ -132,6 +114,8 @@ export class ProjectileController {
         projectileSpeed: move.speed ?? this.speed,
         projectileRadius: move.radius ?? this.radius,
         projectileLifetimeSeconds: move.lifetimeSeconds ?? this.lifetimeSeconds,
+        projectileSpawnOffsetX: move.spawnOffsetX ?? this.spawnOffsetX,
+        projectileSpawnOffsetY: move.spawnOffsetY ?? this.spawnOffsetY,
         elapsedFrames: 0,
         phase: "startup",
         phaseFrame: 0,
@@ -182,7 +166,9 @@ export class ProjectileController {
           hitLevel: data.hitLevel,
           speed: data.projectileSpeed,
           radius: data.projectileRadius,
-          lifetimeSeconds: data.projectileLifetimeSeconds
+          lifetimeSeconds: data.projectileLifetimeSeconds,
+          spawnOffsetX: data.projectileSpawnOffsetX,
+          spawnOffsetY: data.projectileSpawnOffsetY
         });
         data.projectileSpawned = true;
         data.phase = "recovery";
@@ -212,8 +198,8 @@ export class ProjectileController {
     const projectile = {
       id: this.nextProjectileId++,
       owner: fighter,
-      x: fighter.x + spawnDirectionX * this.spawnOffsetX,
-      y: fighter.y + this.spawnOffsetY + directionY * this.spawnOffsetX,
+      x: fighter.x + spawnDirectionX * (moveData.spawnOffsetX ?? this.spawnOffsetX),
+      y: fighter.y + (moveData.spawnOffsetY ?? this.spawnOffsetY) + directionY * (moveData.spawnOffsetX ?? this.spawnOffsetX),
       direction,
       directionX,
       directionY,

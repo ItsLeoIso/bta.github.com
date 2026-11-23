@@ -89,7 +89,7 @@ Please report one issue per ticket where possible. For balance feedback, include
 
 ## Known limitations
 
-- Placeholder fighter shapes and Canvas stage art; procedural impact sparks / screen shake are prototypes, not final character VFX. No final sprites, animation set, music, or sound effects.
+- Fighter shapes and Canvas stage art remain placeholders. The data-driven profiles and fixed-step animation / optional atlas pipeline are in place, but current sprite-sheet sources are intentionally empty, so no finished character animation is visible yet. Procedural impact sparks / screen shake are prototypes, not final character VFX. No final sprites, music, or sound effects.
 - One playable CPU opponent; AI is deterministic and deliberately simple.
 - Online is not implemented.
 - Keyboard is the supported input path; no gamepad / touch controls or remapping.

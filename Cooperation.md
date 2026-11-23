@@ -1099,3 +1099,36 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 
 **Suggested next step:**
 - Play Training and Arcade in the hosted build. Judge whether the impacts are readable without obscuring the fighters, whether block feedback is clearly weaker than hit feedback, and whether screen shake feels restrained. Final authored VFX, sound, hitstop, and sprite animation remain future work.
+
+
+### 2026-11-23 — ChatGPT — Data-driven character profiles and animation foundation (prototype 020)
+
+**Type:** Completed / Handoff  
+**Commit:** Pending CI verification.  
+**Files / systems:**
+- src/characters/MoveSets.js
+- src/characters/CharacterDefinitions.js
+- src/animation/FighterAnimator.js
+- src/combat/AttackController.js
+- src/combat/ProjectileController.js
+- src/engine/Arena.js
+- src/engine/CanvasRenderer.js
+- tests/CharacterDefinitions.test.js
+- tests/FighterAnimator.test.js
+- tests/CharacterGameplayIntegration.test.js
+- tests/AttackController.test.js
+- README.md, docs/ROADMAP.md, docs/GAME_DESIGN.md, docs/TECHNICAL_PLAN.md, docs/PLAYTEST_GUIDE.md
+
+**What changed:**
+- Replaced hard-coded Arena fighter profiles with named Striker / CPU Rival character definitions. Default speed and damage values, display labels, stage positions, and the current matchup are preserved.
+- Extracted normal and projectile frame / tuning data into a shared move-set module. AttackController and ProjectileController now resolve definitions from the active fighter, enabling per-character overrides without controller rewrites.
+- Added a fixed-step animation clock with state-priority clip resolution for reactions, attacks, specials, guard, dashes, and locomotion. Character definitions include frame-index / timing metadata and an optional atlas descriptor.
+- Added lazy-loaded uniform-grid sprite-atlas rendering support. The two current profiles intentionally have null atlas sources, so the visible fighters continue to use the known placeholder geometry until original sprite assets are authored.
+- Added tests for profile registration and preserved balance, clip selection / looping / completion, character-specific attack / projectile overrides, Arena animation transitions / reset, and unknown profile handling.
+
+**Verification:**
+- Automated tests and Chromium / Pages CI are pending for this commit.
+- No human browser visual inspection has been performed; because no sprite source is configured, visible placeholder art should remain unchanged.
+
+**Suggested next step:**
+- Review the architecture / tests, then author the first real Striker sprite sheet and wire it into the atlas metadata. After one fighter animates correctly, create distinct CPU Rival art and begin character select / roster work.

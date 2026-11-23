@@ -14,6 +14,7 @@ export class CanvasRenderer {
     if (!this.context) throw new Error("Canvas 2D context is unavailable.");
     this.width = 960; this.height = 540; this.pixelRatio = 1; this.resizeObserver = null;
     this.showHitboxes = false;
+    this.spriteSheetImages = new Map();
     this.resize = this.resize.bind(this);
   }
   attach() {
@@ -199,13 +200,22 @@ export class CanvasRenderer {
     ctx.save();
     ctx.fillStyle = "#3b3542";
     ctx.fillRect(x-(bodyWidth* fighterScale+10)/2,y-8,bodyWidth*fighterScale+10,8);
+
+    if (!this.drawSprite(ctx, fighter, x, y)) {
+      ctx.save();
+      ctx.translate(x,y);
+      ctx.scale(fighterScale,fighterScale);
+      ctx.fillStyle = color;
+      ctx.fillRect(-bodyWidth/2,top+18,bodyWidth,bodyHeight-18);
+      ctx.fillRect(-17,top,34,27);
+      ctx.fillStyle = "#090909";
+      ctx.fillRect(fighter.facing*7,top+10,5,5);
+      ctx.restore();
+    }
+
+    ctx.save();
     ctx.translate(x,y);
     ctx.scale(fighterScale,fighterScale);
-    ctx.fillStyle = color;
-    ctx.fillRect(-bodyWidth/2,top+18,bodyWidth,bodyHeight-18);
-    ctx.fillRect(-17,top,34,27);
-    ctx.fillStyle = "#090909";
-    ctx.fillRect(fighter.facing*7,top+10,5,5);
     if (fighter.state?.action === "guard") {
       ctx.strokeStyle = "#8ecbff";
       ctx.lineWidth = 3;
@@ -223,6 +233,51 @@ export class CanvasRenderer {
     }
     ctx.restore();
   }
+
+  drawSprite(ctx, fighter, x, y) {
+    const sheet = fighter.character?.spriteSheet;
+    if (!sheet?.src || typeof Image === "undefined") return false;
+
+    let entry = this.spriteSheetImages.get(sheet.src);
+    if (!entry) {
+      const image = new Image();
+      entry = { image, ready: false, failed: false };
+      image.onload = () => { entry.ready = true; };
+      image.onerror = () => { entry.failed = true; };
+      this.spriteSheetImages.set(sheet.src, entry);
+      image.src = sheet.src;
+    }
+    if (!entry.ready || entry.failed) return false;
+
+    const frameWidth = sheet.frameWidth;
+    const frameHeight = sheet.frameHeight;
+    const columns = sheet.columns;
+    if (![frameWidth, frameHeight, columns].every(Number.isInteger) ||
+        frameWidth <= 0 || frameHeight <= 0 || columns <= 0) return false;
+
+    const frame = fighter.animation?.spriteFrame ?? 0;
+    if (!Number.isInteger(frame) || frame < 0) return false;
+    const sourceX = (frame % columns) * frameWidth;
+    const sourceY = Math.floor(frame / columns) * frameHeight;
+    if (sourceX + frameWidth > entry.image.naturalWidth ||
+        sourceY + frameHeight > entry.image.naturalHeight) return false;
+
+    const scale = Number.isFinite(sheet.scale) && sheet.scale > 0 ? sheet.scale : 3;
+    const pivotX = Number.isFinite(sheet.pivotX) ? sheet.pivotX : 0.5;
+    const pivotY = Number.isFinite(sheet.pivotY) ? sheet.pivotY : 1;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale((fighter.facing < 0 ? -1 : 1) * scale, scale);
+    ctx.drawImage(
+      entry.image,
+      sourceX, sourceY, frameWidth, frameHeight,
+      -frameWidth * pivotX, -frameHeight * pivotY,
+      frameWidth, frameHeight
+    );
+    ctx.restore();
+    return true;
+  }
+
   drawProjectiles(ctx, arena) {
     for (const projectile of arena.projectileController.projectiles) {
       ctx.save();

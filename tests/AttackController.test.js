@@ -180,3 +180,22 @@ test("advantage remains unset until hit and block resolution exist", () => {
   assert.equal(fighter.lastAttackData.hitAdvantage, null);
   assert.equal(fighter.lastAttackData.blockAdvantage, null);
 });
+
+
+test("attack frame data can be overridden per character without changing the shared defaults", () => {
+  const fighter = makeFighter();
+  fighter.character = {
+    moveSet: {
+      attacks: {
+        ...ATTACK_DEFINITIONS,
+        light: { ...ATTACK_DEFINITIONS.light, name: "Quick Cut", startupFrames: 9 }
+      }
+    }
+  };
+
+  new AttackController().update(fighter, input(["light"]));
+
+  assert.equal(fighter.actionData.moveName, "Quick Cut");
+  assert.equal(fighter.actionData.startupFrames, 9);
+  assert.equal(ATTACK_DEFINITIONS.light.startupFrames, 5);
+});

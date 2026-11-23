@@ -212,3 +212,12 @@ These are menu destinations to plan for; their complete functionality will be im
 - Blocks create a smaller blue impact response. Guard breaks use a larger, brighter violet burst and stronger shake.
 - Screen shake is restrained, cosmetic-only, and limited to the world / fighter layer. HUD, timer, round banners, and menu UI stay stable.
 - This first pass uses Canvas geometry and seeded particle motion. It does not change hitstop, frame data, collision, damage, or fighter physics. Final sprite-based VFX, authored animation, audio, and hitstop remain separate future work.
+
+
+## Character definitions and animation pipeline (prototype)
+
+- Each fighter is created from a named character definition rather than hard-coded Arena constructor stats. The initial registry contains Striker and CPU Rival and preserves the existing prototype values (300 / 1.00× and 260 / 1.05× respectively).
+- Character definitions carry their own stats, normal-attack definitions, projectile definitions, animation clips, and optional sprite-sheet metadata. The combat controllers read each fighter's move set, so a character can override frame data or projectile tuning without changing global controller logic.
+- Animation is advanced on the fixed simulation step. The clip selector prioritises hit reactions, then current action (normal, special, guard, dash), then locomotion (walk, crouch, jump, fall, idle). Clips specify atlas frame indices, frame duration, and whether they loop.
+- The Canvas renderer supports an optional same-origin sprite atlas using uniform frame dimensions, columns, scale, and pivot metadata. If no atlas source is supplied or it has not loaded, the renderer keeps the existing placeholder fighter.
+- This milestone is an extensible asset / data foundation, not finished character art. Both current profiles deliberately have no sprite-sheet source yet; original sprite sheets, character select, distinct move lists, portraits, and authored animations remain future work.
