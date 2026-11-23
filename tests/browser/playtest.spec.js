@@ -56,3 +56,54 @@ test("Training starts, resets the dummy, and keeps the canvas sized on mobile-wi
   await expect(page.getByRole("heading", { name: "MAIN MENU" })).toBeVisible();
   expect(pageErrors).toEqual([]);
 });
+
+
+test("active match visibly renders both fighters and the screen-space HUD", async ({ page }) => {
+  const pageErrors = [];
+  page.on("pageerror", error => pageErrors.push(error.message));
+
+  await page.goto("/");
+  await page.getByRole("button", { name: /PRESS ENTER TO START/ }).click();
+  await page.getByRole("button", { name: /TRAINING/ }).click();
+  await expect(page.locator("#engine-status")).toContainText("TRAINING MODE");
+
+  const sampleCanvas = () => page.locator("#game-canvas").evaluate(canvas => {
+    const rect = canvas.getBoundingClientRect();
+    const context = canvas.getContext("2d");
+    const scale = Math.min(rect.width / 960, rect.height / 540);
+    const offsetX = (rect.width - 960 * scale) / 2;
+    const offsetY = (rect.height - 540 * scale) / 2;
+    const ratioX = canvas.width / rect.width;
+    const ratioY = canvas.height / rect.height;
+    const pixel = (worldX, worldY) => {
+      const x = Math.max(0, Math.min(canvas.width - 1, Math.round((worldX * scale + offsetX) * ratioX)));
+      const y = Math.max(0, Math.min(canvas.height - 1, Math.round((worldY * scale + offsetY) * ratioY)));
+      return Array.from(context.getImageData(x, y, 1, 1).data).slice(0, 3);
+    };
+    const transform = context.getTransform();
+    return {
+      player: pixel(300, 400),
+      opponent: pixel(660, 400),
+      playerHealth: pixel(60, 35),
+      transform: {
+        a: transform.a,
+        d: transform.d,
+        e: transform.e,
+        f: transform.f,
+        expectedScale: ratioX
+      }
+    };
+  });
+
+  await expect.poll(sampleCanvas).toMatchObject({
+    player: [217, 212, 226],
+    opponent: [141, 135, 152],
+    playerHealth: [217, 212, 226]
+  });
+  const rendered = await sampleCanvas();
+  expect(rendered.transform.e).toBe(0);
+  expect(rendered.transform.f).toBe(0);
+  expect(Math.abs(rendered.transform.a - rendered.transform.expectedScale)).toBeLessThan(0.01);
+  expect(Math.abs(rendered.transform.d - rendered.transform.expectedScale)).toBeLessThan(0.01);
+  expect(pageErrors).toEqual([]);
+});

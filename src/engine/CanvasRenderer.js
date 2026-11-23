@@ -232,6 +232,8 @@ export class CanvasRenderer {
       ctx.stroke();
     }
     ctx.restore();
+    // Close the outer save so camera transforms cannot leak into the HUD.
+    ctx.restore();
   }
 
   drawSprite(ctx, fighter, x, y) {

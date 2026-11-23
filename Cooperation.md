@@ -1134,3 +1134,21 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 
 **Suggested next step:**
 - Review the architecture / tests, then author the first real Striker sprite sheet and wire it into the atlas metadata. After one fighter animates correctly, create distinct CPU Rival art and begin character select / roster work.
+
+
+### 2026-11-23 — ChatGPT — Fix blank fighter / missing HUD rendering (playtest blocker)
+
+**Type:** Bug fix / Release-blocking visual regression  
+**Source:** User-provided screenshot showing the stage only, with no fighters or HUD.
+
+**Root cause:**
+- The new optional-sprite drawFighter refactor opened an outer Canvas save for the shadow but did not close it. Its nested transforms were locally restored, but the outer world/camera state remained on the Canvas stack.
+- The renderer then restored the wrong stack entries after drawing the world, leaving the camera transform active while drawing the HUD and allowing the Canvas state stack to grow on every frame. This caused subsequent frame drawing and the HUD to drift off the visible canvas.
+- The HTML build label and special-move help had not been updated after prototype 018 and the Vector Burst input route were retired, which made the deployed page look older than the current implementation.
+
+**Fix:**
+- Balanced the outer Canvas save / restore in drawFighter so each fighter returns the context to the world layer before the HUD is drawn.
+- Updated the HTML label to Gameplay Prototype 020 and corrected the Energy Shot / Arc Lance controls.
+- Added a Chromium pixel regression test that starts Training and samples the actual rendered player, opponent, and health-bar pixels. It also checks that the Canvas transform is restored after rendering.
+
+**Verification:** Pending workflows.
