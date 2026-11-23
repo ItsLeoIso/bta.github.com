@@ -1,5 +1,8 @@
+import { getAvailableCharacters } from "../characters/CharacterDefinitions.js";
+
 export const MENU_SCREENS = Object.freeze({
   TITLE: "title",
+  CHARACTER_SELECT: "character-select",
   MAIN: "main",
   ONLINE: "online",
   OPTIONS: "options",
@@ -36,6 +39,9 @@ export class MenuController {
     this.optionIndex = 0;
     this.pauseSelectedIndex = 0;
     this.mode = null;
+    this.pendingMode = null;
+    this.characters = getAvailableCharacters();
+    this.characterIndex = 0;
     this.options = { showHitboxes: false, showInspector: false };
   }
 
@@ -53,6 +59,17 @@ export class MenuController {
       pauseSelectedIndex: this.pauseSelectedIndex,
       pauseItems: this.getPauseItems(),
       mode: this.mode,
+      pendingMode: this.pendingMode,
+      characters: this.characters.map(character => ({
+        id: character.id,
+        name: character.name,
+        archetype: character.archetype,
+        description: character.description,
+        stats: { ...character.stats }
+      })),
+      characterIndex: this.characterIndex,
+      selectedCharacter: this.characters[this.characterIndex],
+      opponentCharacter: this.characters[(this.characterIndex + 1) % this.characters.length],
       options: { ...this.options },
       items: [...MAIN_MENU_ITEMS],
       optionItems: MENU_OPTIONS.map(option => ({
@@ -119,6 +136,28 @@ export class MenuController {
       if (key === "Escape") {
         this.screen = MENU_SCREENS.TITLE;
         this.notify();
+        return true;
+      }
+      return false;
+    }
+
+    if (this.screen === MENU_SCREENS.CHARACTER_SELECT) {
+      if (key === "Escape") {
+        this.pendingMode = null;
+        this.screen = MENU_SCREENS.MAIN;
+        this.notify();
+        return true;
+      }
+      if (key === "ArrowLeft" || key.toLowerCase?.() === "a") {
+        this.changeCharacter(-1);
+        return true;
+      }
+      if (key === "ArrowRight" || key.toLowerCase?.() === "d") {
+        this.changeCharacter(1);
+        return true;
+      }
+      if (key === "Enter" || key === " ") {
+        this.confirmCharacter();
         return true;
       }
       return false;
@@ -199,14 +238,14 @@ export class MenuController {
   activateSelected() {
     switch (MAIN_MENU_ITEMS[this.selectedIndex]) {
       case "Arcade":
-        this.start("arcade");
+        this.openCharacterSelect("arcade");
         break;
       case "Online":
         this.screen = MENU_SCREENS.ONLINE;
         this.notify();
         break;
       case "Training":
-        this.start("training");
+        this.openCharacterSelect("training");
         break;
       case "Option":
         this.screen = MENU_SCREENS.OPTIONS;
@@ -219,10 +258,52 @@ export class MenuController {
     return true;
   }
 
-  start(mode) {
+  openCharacterSelect(mode) {
+    if (mode !== "arcade" && mode !== "training") return false;
+    this.pendingMode = mode;
+    this.screen = MENU_SCREENS.CHARACTER_SELECT;
+    this.notify();
+    return true;
+  }
+
+  changeCharacter(direction) {
+    if (this.screen !== MENU_SCREENS.CHARACTER_SELECT || !Number.isFinite(direction)) return false;
+    const step = Math.sign(direction);
+    if (step === 0) return false;
+    this.characterIndex = (this.characterIndex + step + this.characters.length) % this.characters.length;
+    this.notify();
+    return true;
+  }
+
+  selectCharacter(index) {
+    if (this.screen !== MENU_SCREENS.CHARACTER_SELECT || !Number.isInteger(index) ||
+        index < 0 || index >= this.characters.length) return false;
+    this.characterIndex = index;
+    this.notify();
+    return true;
+  }
+
+  confirmCharacter() {
+    if (this.screen !== MENU_SCREENS.CHARACTER_SELECT || !this.pendingMode) return false;
+    const player = this.characters[this.characterIndex];
+    const opponent = this.characters[(this.characterIndex + 1) % this.characters.length];
+    this.start(this.pendingMode, {
+      playerCharacterId: player.id,
+      opponentCharacterId: opponent.id
+    });
+    this.pendingMode = null;
+    return true;
+  }
+
+  start(mode, characterSelection = null) {
     this.mode = mode;
     this.screen = MENU_SCREENS.PLAYING;
-    this.onStart(mode, { ...this.options });
+    this.onStart(mode, {
+      ...this.options,
+      playerCharacterId: characterSelection?.playerCharacterId ?? this.characters[this.characterIndex].id,
+      opponentCharacterId: characterSelection?.opponentCharacterId ??
+        this.characters[(this.characterIndex + 1) % this.characters.length].id
+    });
     this.notify();
   }
 
@@ -259,7 +340,8 @@ export class MenuController {
   }
 
   back() {
-    if (this.screen !== MENU_SCREENS.ONLINE && this.screen !== MENU_SCREENS.OPTIONS) {
+    if (this.screen !== MENU_SCREENS.ONLINE && this.screen !== MENU_SCREENS.OPTIONS &&
+        this.screen !== MENU_SCREENS.CHARACTER_SELECT) {
       return false;
     }
     this.pendingMode = null;
