@@ -540,3 +540,191 @@ body {
   .character-select__versus { font-size: 9px; }
   .character-confirm { padding: 10px 12px; }
 }
+
+
+/* Original opening sequence: silent START prompt, impact transition, then fighter-led menu. */
+.front-menu[data-screen="title"] .front-menu__card,
+.front-menu[data-screen="intro"] .front-menu__card,
+.front-menu[data-screen="main"] .front-menu__card {
+  width: 100%;
+  min-height: 100%;
+  padding: clamp(24px, 5vw, 64px);
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.front-menu[data-screen="title"] .front-menu__mark,
+.front-menu[data-screen="title"] .front-menu__footer,
+.front-menu[data-screen="intro"] .front-menu__mark,
+.front-menu[data-screen="intro"] .front-menu__footer,
+.front-menu[data-screen="main"] .front-menu__mark,
+.front-menu[data-screen="main"] .front-menu__footer {
+  display: none;
+}
+.front-menu[data-screen="title"] .front-menu__content {
+  min-height: 360px;
+  gap: 24px;
+}
+.opening-start {
+  padding: 0;
+  border: 0;
+  color: #f3e9fa;
+  background: transparent;
+  font: 900 clamp(76px, 15vw, 174px)/.9 "Courier New", monospace;
+  letter-spacing: .14em;
+  text-shadow:
+    5px 5px 0 #593a68,
+    10px 10px 0 #241a30,
+    0 0 32px rgba(196, 128, 226, .42);
+  image-rendering: pixelated;
+  cursor: pointer;
+  animation: start-flicker 2.8s steps(2, end) infinite;
+}
+.opening-start:hover,
+.opening-start:focus-visible {
+  color: #fff;
+  outline: 2px dashed #d9a8ed;
+  outline-offset: 14px;
+}
+.opening-hint {
+  color: #9d91a7;
+  font: 10px "Courier New", monospace;
+  letter-spacing: .28em;
+  animation: hint-blink 1.1s steps(2, end) infinite;
+}
+.front-menu[data-screen="intro"] .front-menu__content {
+  min-height: 390px;
+  position: relative;
+  overflow: hidden;
+}
+.opening-scene {
+  position: absolute;
+  inset: -12% -8%;
+  overflow: hidden;
+}
+.opening-word {
+  position: absolute;
+  z-index: 2;
+  top: 28%;
+  left: 10%;
+  color: #f3e9fa;
+  font: 900 clamp(76px, 15vw, 174px)/.9 "Courier New", monospace;
+  letter-spacing: .14em;
+  text-shadow: 5px 5px 0 #593a68, 10px 10px 0 #241a30, 0 0 32px rgba(196, 128, 226, .42);
+  animation: start-punched 1.35s cubic-bezier(.16,.82,.28,1) forwards;
+}
+.opening-fighter-art {
+  position: absolute;
+  z-index: 3;
+  right: -38%;
+  bottom: -20%;
+  width: min(58%, 390px);
+  height: 112%;
+  overflow: visible;
+  filter: drop-shadow(0 0 20px rgba(194, 116, 225, .7));
+  shape-rendering: crispEdges;
+  animation: fighter-breakthrough 1.7s cubic-bezier(.14,.78,.22,1) forwards;
+}
+.opening-impact {
+  position: absolute;
+  z-index: 4;
+  top: 33%;
+  left: 54%;
+  width: 12px;
+  height: 12px;
+  opacity: 0;
+  background: #fff1ff;
+  box-shadow: 0 0 0 12px #c98be6, 0 0 0 28px rgba(190, 116, 221, .25), 0 0 50px 25px #e8b8ff;
+  transform: rotate(45deg);
+  animation: impact-flash .55s .62s ease-out forwards;
+}
+.front-menu[data-screen="main"] .front-menu__card {
+  justify-content: center;
+  align-items: flex-start;
+}
+.front-menu[data-screen="main"] .front-menu__content {
+  width: min(48%, 430px);
+  min-height: 350px;
+  align-items: flex-start;
+  text-align: left;
+  justify-content: center;
+  animation: menu-reveal .65s ease-out both;
+}
+.front-menu[data-screen="main"] .front-menu__content h2 {
+  font-size: clamp(26px, 4vw, 42px);
+  text-shadow: 0 0 22px rgba(190, 119, 222, .35);
+}
+.front-menu[data-screen="main"] .menu-subtitle { margin-bottom: 24px; }
+.front-menu[data-screen="main"] .menu-list { width: min(330px, 100%); }
+.front-menu[data-screen="main"] .menu-choice { min-height: 48px; font-size: 13px; }
+.front-menu[data-screen="main"] .menu-hint { margin-top: 22px; }
+.menu-fighter-art {
+  position: absolute;
+  z-index: 1;
+  right: 7%;
+  bottom: -4%;
+  width: min(43%, 440px);
+  height: 94%;
+  overflow: visible;
+  filter: drop-shadow(0 0 22px rgba(190, 111, 222, .46));
+  shape-rendering: crispEdges;
+  animation: fighter-pose .8s cubic-bezier(.2,.8,.2,1) both;
+}
+@keyframes start-flicker {
+  0%, 93%, 100% { opacity: 1; transform: translateY(0); }
+  94% { opacity: .72; transform: translateY(2px); }
+  96% { opacity: .95; transform: translateY(-1px); }
+}
+@keyframes hint-blink { 0%, 48% { opacity: .35; } 49%, 100% { opacity: 1; } }
+@keyframes start-punched {
+  0% { opacity: 1; transform: translateX(0) scale(1); filter: blur(0); }
+  35% { transform: translateX(-7%) scale(1.08, .9) skewX(-9deg); }
+  60% { opacity: 1; transform: translate(-22%, -8%) scale(1.35, .55) skewX(-22deg); filter: blur(1px); }
+  100% { opacity: 0; transform: translate(-65%, 12%) scale(1.8, .15) skewX(-35deg); filter: blur(8px); }
+}
+@keyframes fighter-breakthrough {
+  0% { right: -38%; transform: translateX(0) scale(.72) rotate(8deg); }
+  38% { right: 22%; transform: translateX(0) scale(1.08) rotate(-5deg); }
+  58% { right: 18%; transform: translateX(0) scale(1.03) rotate(0); }
+  100% { right: 7%; transform: translateX(0) scale(1) rotate(0); }
+}
+@keyframes impact-flash {
+  0% { opacity: 0; transform: translate(-50%, -50%) rotate(45deg) scale(.2); }
+  18% { opacity: 1; transform: translate(-50%, -50%) rotate(45deg) scale(2.8); }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(45deg) scale(7); }
+}
+@keyframes fighter-pose {
+  from { opacity: 0; transform: translateY(28px) scale(.94); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes menu-reveal {
+  from { opacity: 0; transform: translateX(-24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@media (max-width: 600px) {
+  .front-menu[data-screen="title"] .front-menu__card,
+  .front-menu[data-screen="intro"] .front-menu__card,
+  .front-menu[data-screen="main"] .front-menu__card { padding: 18px; }
+  .front-menu[data-screen="title"] .front-menu__content { min-height: 300px; }
+  .front-menu[data-screen="intro"] .front-menu__content { min-height: 330px; }
+  .front-menu[data-screen="main"] .front-menu__content {
+    width: 68%;
+    min-height: 320px;
+    z-index: 2;
+  }
+  .front-menu[data-screen="main"] .menu-fighter-art {
+    right: -7%;
+    width: 54%;
+    height: 76%;
+    opacity: .78;
+  }
+  .front-menu[data-screen="main"] .front-menu__content h2 { font-size: 24px; }
+  .front-menu[data-screen="main"] .menu-choice { min-height: 42px; font-size: 11px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .opening-start, .opening-hint, .opening-word, .opening-fighter-art,
+  .opening-impact, .menu-fighter-art, .front-menu[data-screen="main"] .front-menu__content {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

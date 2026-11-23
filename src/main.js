@@ -14,6 +14,102 @@ const controlsRoot = document.querySelector(".controls");
 const menuRoot = document.querySelector("#front-menu");
 const menuContent = document.querySelector("#front-menu-content");
 
+
+function createFighterArt(className) {
+  const svgNS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("viewBox", "0 0 240 360");
+  svg.setAttribute("class", className);
+  svg.setAttribute("role", "img");
+  svg.setAttribute("aria-label", "Striker placeholder fighter pose");
+  svg.setAttribute("focusable", "false");
+  const add = (tag, attributes) => {
+    const element = document.createElementNS(svgNS, tag);
+    Object.entries(attributes).forEach(([name, value]) => element.setAttribute(name, String(value)));
+    svg.append(element);
+    return element;
+  };
+  add("path", { d: "M78 75 L70 40 L94 53 L111 23 L133 52 L163 38 L151 83 L139 101 L91 101 Z", fill: "#21172c", stroke: "#d59af0", "stroke-width": 5 });
+  add("rect", { x: 91, y: 70, width: 53, height: 61, fill: "#d6b4cf", stroke: "#f7e4ff", "stroke-width": 4 });
+  add("rect", { x: 102, y: 91, width: 8, height: 5, fill: "#21172c" });
+  add("rect", { x: 126, y: 91, width: 8, height: 5, fill: "#21172c" });
+  add("path", { d: "M82 135 L151 128 L177 207 L150 231 L74 220 L57 174 Z", fill: "#4d315f", stroke: "#c58bdc", "stroke-width": 5 });
+  add("path", { d: "M77 146 L42 174 L18 154 L8 167 L39 205 L95 183", fill: "#9b72b0", stroke: "#e2b6f1", "stroke-width": 5, "stroke-linejoin": "miter" });
+  add("path", { d: "M150 145 L177 159 L199 139 L213 151 L186 191 L151 181", fill: "#8a628f", stroke: "#d7a4e5", "stroke-width": 5 });
+  add("path", { d: "M83 218 L150 225 L151 259 L130 278 L93 269 L66 251 Z", fill: "#272033", stroke: "#b77dcc", "stroke-width": 5 });
+  add("path", { d: "M91 263 L130 271 L116 325 L83 337 L70 325 Z", fill: "#4a345b", stroke: "#c38bd7", "stroke-width": 5 });
+  add("path", { d: "M130 270 L157 256 L177 310 L165 337 L135 329 L119 299 Z", fill: "#392b49", stroke: "#c38bd7", "stroke-width": 5 });
+  add("path", { d: "M70 324 L111 326 L113 344 L58 344 Z M140 326 L170 330 L185 346 L135 346 Z", fill: "#17131f", stroke: "#d6a0e9", "stroke-width": 4 });
+  add("path", { d: "M6 166 L17 149 L34 148 L45 158 L38 177 L19 182 Z", fill: "#e3c5df", stroke: "#fff0ff", "stroke-width": 4 });
+  return svg;
+}
+
+let introTimer = null;
+let titleAudioContext = null;
+let titleMusicStarted = false;
+
+function startTitleMusic() {
+  if (titleMusicStarted) return;
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return;
+  try {
+    titleAudioContext ??= new AudioContextClass();
+    const context = titleAudioContext;
+    void context.resume();
+    const sampleRate = context.sampleRate;
+    const duration = 4;
+    const buffer = context.createBuffer(1, sampleRate * duration, sampleRate);
+    const channel = buffer.getChannelData(0);
+    const melody = [659.25, 783.99, 987.77, 783.99, 587.33, 698.46, 880, 698.46, 523.25, 659.25, 783.99, 659.25, 587.33, 698.46, 880, 1046.5, 783.99, 987.77, 1174.66, 987.77];
+    const bass = [82.41, 82.41, 110, 110, 73.42, 73.42, 98, 98];
+    for (let index = 0; index < channel.length; index += 1) {
+      const time = index / sampleRate;
+      const step = Math.floor(time / 0.2);
+      const noteTime = time % 0.2;
+      const melodyFrequency = melody[step % melody.length];
+      const bassFrequency = bass[Math.floor(time / 0.5) % bass.length];
+      const envelope = Math.min(1, noteTime * 45) * Math.max(0, 1 - noteTime / 0.2);
+      const lead = Math.sign(Math.sin(2 * Math.PI * melodyFrequency * time)) * 0.12 * envelope;
+      const low = Math.sin(2 * Math.PI * bassFrequency * time) * 0.15;
+      const kickPhase = time % 0.4;
+      const kick = Math.sin(2 * Math.PI * (55 - 35 * kickPhase) * kickPhase) *
+        Math.exp(-kickPhase * 18) * 0.2;
+      channel[index] = lead + low + kick;
+    }
+    const source = context.createBufferSource();
+    const volume = context.createGain();
+    source.buffer = buffer;
+    source.loop = true;
+    volume.gain.value = 0.24;
+    source.connect(volume);
+    volume.connect(context.destination);
+    source.start();
+    titleMusicStarted = true;
+  } catch (error) {
+    console.warn("BTA title music unavailable:", error);
+  }
+}
+
+function playPunchImpact() {
+  if (!titleAudioContext) return;
+  try {
+    const context = titleAudioContext;
+    const oscillator = context.createOscillator();
+    const volume = context.createGain();
+    oscillator.type = "sawtooth";
+    oscillator.frequency.setValueAtTime(125, context.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(32, context.currentTime + 0.16);
+    volume.gain.setValueAtTime(0.22, context.currentTime);
+    volume.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.18);
+    oscillator.connect(volume);
+    volume.connect(context.destination);
+    oscillator.start();
+    oscillator.stop(context.currentTime + 0.19);
+  } catch {
+    // Audio is an enhancement; the opening transition must always work.
+  }
+}
+
 function reportEngineError(error) {
   const message = error instanceof Error ? error.message : String(error);
   console.error("BTA engine error:", error);
@@ -79,6 +175,15 @@ try {
   });
 
   function handleMenuChange(view) {
+    if (view.screen === MENU_SCREENS.INTRO) {
+      startTitleMusic();
+      playPunchImpact();
+      if (introTimer !== null) window.clearTimeout(introTimer);
+      introTimer = window.setTimeout(() => {
+        introTimer = null;
+        menu.finishIntro();
+      }, 1850);
+    }
     if(view.screen===MENU_SCREENS.MAIN && gameStarted){
       gameStarted=false;
       gamePanel.hidden=true;
@@ -92,19 +197,33 @@ try {
 
   function renderMenu(view = menu.getViewModel()) {
     menuContent.replaceChildren();
+    menuRoot.querySelectorAll(".menu-fighter-art, .opening-fighter-art").forEach(element => element.remove());
     menuRoot.dataset.screen = view.screen;
 
     if (view.screen === MENU_SCREENS.TITLE) {
-      const eyebrow = document.createElement("p");
-      eyebrow.className = "menu-eyebrow";
-      eyebrow.textContent = "A TWO-DIMENSIONAL FIGHTING GAME";
-      const title = document.createElement("h1");
-      title.textContent = "BELT TO ASS";
-      const subtitle = document.createElement("p");
-      subtitle.className = "menu-subtitle";
-      subtitle.textContent = "NEON BACKSTREET · LOCAL COMBAT PROTOTYPE";
-      const startButton = makeButton("PRESS ENTER TO START", "menu-primary", () => menu.handleKey("Enter"));
-      menuContent.append(eyebrow, title, subtitle, startButton);
+      const title = document.createElement("button");
+      title.type = "button";
+      title.className = "opening-start";
+      title.textContent = "START";
+      title.setAttribute("aria-label", "Start BTA");
+      const hint = document.createElement("p");
+      hint.className = "opening-hint";
+      hint.textContent = "PRESS ANY BUTTON";
+      menuContent.append(title, hint);
+      return;
+    }
+
+    if (view.screen === MENU_SCREENS.INTRO) {
+      const scene = document.createElement("div");
+      scene.className = "opening-scene";
+      const word = document.createElement("div");
+      word.className = "opening-word";
+      word.textContent = "START";
+      const impact = document.createElement("div");
+      impact.className = "opening-impact";
+      impact.setAttribute("aria-hidden", "true");
+      scene.append(word, impact, createFighterArt("opening-fighter-art"));
+      menuContent.append(scene);
       return;
     }
 
@@ -129,6 +248,7 @@ try {
       hint.className = "menu-hint";
       hint.textContent = "W / S OR ↑ / ↓ TO SELECT · ENTER TO CONFIRM";
       menuContent.append(title, subtitle, list, hint);
+      menuRoot.append(createFighterArt("menu-fighter-art"));
       return;
     }
 
@@ -287,6 +407,10 @@ try {
       menuContent.append(title, subtitle, list, hint, back);
     }
   }
+
+  menuRoot.addEventListener("pointerdown", () => {
+    if (menu.screen === MENU_SCREENS.TITLE) menu.startIntro();
+  });
 
   const onMenuKeyDown = event => {
     if (menu.screen === MENU_SCREENS.PLAYING) {

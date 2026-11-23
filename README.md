@@ -56,3 +56,8 @@ The game itself has no runtime dependencies or build step.
 ## Character select
 
 Arcade and Training now open a roster screen before the match. Use **A / D** or **Left / Right** to cycle Striker and CPU Rival, **Enter** to confirm, and **Escape** to return. Previous / Next / Confirm buttons are also available. The preview shows the selected fighter, the opposing matchup, archetype, movement speed, and damage multiplier. The selected profiles are passed into the match; finished portraits and sprite art are still planned separately.
+
+
+## Opening sequence
+
+The game opens on a dark, silent **START** prompt. Press any ordinary key or click/tap the screen: Striker punches through the lettering, an original synthesized chiptune placeholder theme and impact sound begin, and the fighter settles into a pose on the right as the Arcade / Online / Training / Option menu appears on the left. The title music is generated in-browser and is not the final soundtrack.

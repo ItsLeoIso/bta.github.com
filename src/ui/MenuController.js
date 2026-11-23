@@ -2,6 +2,7 @@ import { getAvailableCharacters } from "../characters/CharacterDefinitions.js";
 
 export const MENU_SCREENS = Object.freeze({
   TITLE: "title",
+  INTRO: "intro",
   CHARACTER_SELECT: "character-select",
   MAIN: "main",
   ONLINE: "online",
@@ -83,6 +84,20 @@ export class MenuController {
     this.onChange(this.getViewModel());
   }
 
+  startIntro() {
+    if (this.screen !== MENU_SCREENS.TITLE) return false;
+    this.screen = MENU_SCREENS.INTRO;
+    this.notify();
+    return true;
+  }
+
+  finishIntro() {
+    if (this.screen !== MENU_SCREENS.INTRO) return false;
+    this.screen = MENU_SCREENS.MAIN;
+    this.notify();
+    return true;
+  }
+
   handleKey(key) {
     if (this.screen === MENU_SCREENS.PLAYING) return false;
 
@@ -110,13 +125,12 @@ export class MenuController {
     }
 
     if (this.screen === MENU_SCREENS.TITLE) {
-      if (key === "Enter" || key === " ") {
-        this.screen = MENU_SCREENS.MAIN;
-        this.notify();
-        return true;
-      }
-      return false;
+      if (["Shift", "Control", "Alt", "Meta", "CapsLock", "Tab"].includes(key)) return false;
+      this.startIntro();
+      return true;
     }
+
+    if (this.screen === MENU_SCREENS.INTRO) return true;
 
     if (this.screen === MENU_SCREENS.MAIN) {
       if (key === "ArrowUp" || key.toLowerCase?.() === "w") {

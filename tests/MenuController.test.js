@@ -10,6 +10,8 @@ test("title screen advances to the ordered main menu with keyboard confirmation"
   const menu=new MenuController();
   assert.equal(menu.screen,MENU_SCREENS.TITLE);
   assert.equal(menu.handleKey("Enter"),true);
+  assert.equal(menu.screen,MENU_SCREENS.INTRO);
+  assert.equal(menu.finishIntro(),true);
   assert.equal(menu.screen,MENU_SCREENS.MAIN);
   assert.deepEqual(MAIN_MENU_ITEMS,["Arcade","Online","Training","Option"]);
   assert.equal(menu.selectedIndex,0);
@@ -176,4 +178,24 @@ test("character select can be cancelled without starting a match",()=>{
   menu.handleKey("Escape");
   assert.equal(menu.screen,MENU_SCREENS.MAIN);
   assert.deepEqual(starts,[]);
+});
+
+
+test("any ordinary key starts the intro, which only reveals the main menu when finished",()=>{
+  const menu=new MenuController();
+  assert.equal(menu.handleKey("x"),true);
+  assert.equal(menu.screen,MENU_SCREENS.INTRO);
+  assert.equal(menu.handleKey("ArrowDown"),true);
+  assert.equal(menu.screen,MENU_SCREENS.INTRO);
+  assert.equal(menu.finishIntro(),true);
+  assert.equal(menu.screen,MENU_SCREENS.MAIN);
+  assert.equal(menu.finishIntro(),false);
+});
+
+test("title intro can also be started by pointer and cannot be skipped mid-animation",()=>{
+  const menu=new MenuController();
+  assert.equal(menu.startIntro(),true);
+  assert.equal(menu.screen,MENU_SCREENS.INTRO);
+  assert.equal(menu.startIntro(),false);
+  assert.equal(menu.finishIntro(),true);
 });

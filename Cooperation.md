@@ -1176,3 +1176,23 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 - Node.js unit / integration / source-integrity tests: **226/226 passed, 0 failures** — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45147484211
 - Chromium browser smoke tests: **4/4 passed**, including character switching / matchup launch and the existing visual rendering regression — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45147484342
 - GitHub Pages build, status reporting, and deployment: **all succeeded** — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45147483329
+
+
+### 2026-11-23 — ChatGPT — Restore the intended opening sequence (prototype 022)
+
+**Type:** Completed / Handoff  
+**Commit:** Pending CI verification.
+
+**Design source:** `docs/GAME_DESIGN.md`, Identity and presentation — the opening concept specifies a dark silent screen with pixelated START; on any button press, a fighter punches through the text, fast-paced music begins, the fighter appears on the right and poses, and the menu options appear on the left.
+
+**What changed:**
+- Replaced the generic title card with the large pixelated START prompt. Any ordinary keyboard key or pointer press begins the sequence; Enter is no longer required.
+- Added a short animated impact / breakthrough transition, with the placeholder Striker fighter art entering from the right and settling into a pose.
+- Reworked the main menu composition so Arcade, Online, Training, and Option appear on the left while the fighter holds the right side. The existing menu order and navigation behavior are unchanged.
+- Added original procedural chiptune placeholder music and a synthesized punch-impact sound, started only after the user's first interaction to comply with browser audio gesture requirements.
+- Added reduced-motion styling and responsive layout behavior. The opening remains usable if Web Audio is unavailable.
+- Added state-machine and Chromium coverage for arbitrary-key / pointer start, the intro state, and transition into the main menu.
+
+**Not included:** final character sprite art, final soundtrack / sound design, volume settings, or additional animated background layers.
+
+**Verification:** Pending workflows.

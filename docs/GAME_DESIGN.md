@@ -181,12 +181,12 @@ These are menu destinations to plan for; their complete functionality will be im
 - The first stage is a dark, stylised city backstreet built from Canvas geometry rather than external image assets.
 - A distant skyline, lit windows, small BTA signs, stars, and a neon horizon sit behind the fighters. The foreground uses a tiled arena floor and subtle center / edge landmarks.
 - Stage art is drawn in world coordinates, so the camera scrolls through the environment together with fighters and projectiles. HUD and match feedback remain fixed to the viewport.
-- This is a presentation placeholder. Original pixel-art backgrounds, environmental animation, and music / sound are still future content work.
+- This is a presentation placeholder. Original pixel-art backgrounds, environmental animation, and the final music / sound package are still future content work; the opening currently uses an original synthesized placeholder theme and impact.
 
 
 ## Front-end flow, arcade, and training foundations (prototype)
 
-- The game boots to an intro / START screen. Confirm with Enter or click to reach the main menu.
+- The game boots to a dark, silent opening with a large pixelated START prompt. Any ordinary key or pointer press triggers a fighter punching through the START lettering; an original synthesized chiptune theme and impact sound begin on that user gesture. The fighter lands in a pose on the right while Arcade, Online, Training, and Option reveal on the left. The intro then settles into the main menu. The title music is procedural placeholder audio, not the final soundtrack.
 - The main-menu order is Arcade, Online, Training, Option. Keyboard navigation uses W / S or Up / Down, Enter to confirm, and Escape to go back.
 - **Arcade** starts the local best-of-three match against the deterministic CPU Rival.
 - **Training** starts with a passive dummy: round timer / score flow is frozen, the dummy does not attack, but it still runs normal knockback, gravity, and landing physics. Its health / guard meter automatically recover two seconds after the last registered hit or block. The pause menu offers a reset-position action.

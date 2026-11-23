@@ -6,8 +6,9 @@ test("title, mode menu, Online notice, and Arcade pause flow", async ({ page }) 
 
   await page.goto("/");
   await expect(page).toHaveTitle("BTA — Belt to Ass");
-  await page.getByRole("button", { name: /PRESS ENTER TO START/ }).click();
-  await expect(page.getByRole("heading", { name: "MAIN MENU" })).toBeVisible();
+  await page.getByRole("button", { name: "Start BTA" }).click();
+  await expect(page.locator("#front-menu")).toHaveAttribute("data-screen", "intro");
+  await expect(page.getByRole("heading", { name: "MAIN MENU" })).toBeVisible({ timeout: 5000 });
 
   await page.getByRole("button", { name: /ONLINE/ }).click();
   await expect(page.getByText(/NETWORK MATCHMAKING IS NOT CONNECTED YET/)).toBeVisible();
@@ -37,7 +38,9 @@ test("Training starts, resets the dummy, and keeps the canvas sized on mobile-wi
   page.on("pageerror", error => pageErrors.push(error.message));
 
   await page.goto("/");
-  await page.getByRole("button", { name: /PRESS ENTER TO START/ }).click();
+  await page.keyboard.press("x");
+  await expect(page.locator("#front-menu")).toHaveAttribute("data-screen", "intro");
+  await expect(page.getByRole("heading", { name: "MAIN MENU" })).toBeVisible({ timeout: 5000 });
   await page.getByRole("button", { name: /TRAINING/ }).click();
   await expect(page.getByRole("heading", { name: "SELECT YOUR FIGHTER" })).toBeVisible();
   await page.getByRole("button", { name: /CONFIRM FIGHTER/ }).click();
@@ -68,7 +71,8 @@ test("active match visibly renders both fighters and the screen-space HUD", asyn
   page.on("pageerror", error => pageErrors.push(error.message));
 
   await page.goto("/");
-  await page.getByRole("button", { name: /PRESS ENTER TO START/ }).click();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("heading", { name: "MAIN MENU" })).toBeVisible({ timeout: 5000 });
   await page.getByRole("button", { name: /TRAINING/ }).click();
   await expect(page.getByRole("heading", { name: "SELECT YOUR FIGHTER" })).toBeVisible();
   await page.getByRole("button", { name: /CONFIRM FIGHTER/ }).click();
@@ -121,7 +125,8 @@ test("character select changes the player and opposing fighter before launching"
   page.on("pageerror", error => pageErrors.push(error.message));
 
   await page.goto("/");
-  await page.getByRole("button", { name: /PRESS ENTER TO START/ }).click();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("heading", { name: "MAIN MENU" })).toBeVisible({ timeout: 5000 });
   await page.getByRole("button", { name: /ARCADE/ }).click();
   const playerCard = page.locator('[data-testid="character-select-player"]');
   const opponentCard = page.locator(".character-card--opponent");
