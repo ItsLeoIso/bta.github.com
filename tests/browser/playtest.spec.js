@@ -38,6 +38,7 @@ test("Training starts, resets the dummy, and keeps the canvas sized on mobile-wi
   page.on("pageerror", error => pageErrors.push(error.message));
 
   await page.goto("/");
+  await expect(page.getByRole("button", { name: "Start BTA" })).toBeVisible();
   await page.keyboard.press("x");
   await expect(page.locator("#front-menu")).toHaveAttribute("data-screen", "intro");
   await expect(page.getByRole("heading", { name: "MAIN MENU" })).toBeVisible({ timeout: 5000 });
@@ -71,6 +72,7 @@ test("active match visibly renders both fighters and the screen-space HUD", asyn
   page.on("pageerror", error => pageErrors.push(error.message));
 
   await page.goto("/");
+  await expect(page.getByRole("button", { name: "Start BTA" })).toBeVisible();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("heading", { name: "MAIN MENU" })).toBeVisible({ timeout: 5000 });
   await page.getByRole("button", { name: /TRAINING/ }).click();
@@ -125,6 +127,7 @@ test("character select changes the player and opposing fighter before launching"
   page.on("pageerror", error => pageErrors.push(error.message));
 
   await page.goto("/");
+  await expect(page.getByRole("button", { name: "Start BTA" })).toBeVisible();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("heading", { name: "MAIN MENU" })).toBeVisible({ timeout: 5000 });
   await page.getByRole("button", { name: /ARCADE/ }).click();
