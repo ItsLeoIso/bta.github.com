@@ -1075,7 +1075,7 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 ### 2026-11-23 — ChatGPT — Procedural combat impact feedback (prototype 019)
 
 **Type:** Completed / Handoff  
-**Commit:** Pending verification.  
+**Commit:** https://github.com/ItsLeoIso/bta.github.com/commit/f3b10994c927be7579ca1ec2769b295cde4b7d9b  
 **Files / systems:**
 - src/effects/CombatEffects.js
 - src/engine/Arena.js
@@ -1092,7 +1092,9 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 
 **Verification:**
 - Added focused tests for deterministic particles, hit / block / guard-break intensity, projectile contact position, expiry, reset, ignored event filtering, and live Arena hit dispatch / reset.
-- CI results will be recorded after the workflow runs complete.
+- Node.js unit / integration / source-integrity tests: **210/210 passed, 0 failures** — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45132025565
+- Chromium browser smoke tests: **2/2 passed** — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45132025592
+- GitHub Pages build, status reporting, and deployment: **all succeeded** — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45132024545
 - No manual browser visual / feel inspection has been performed in this pass.
 
 **Suggested next step:**
