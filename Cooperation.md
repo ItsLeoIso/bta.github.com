@@ -1048,3 +1048,25 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 - Regression tests were committed first in `4a9699f87f2754eee6febb2c1e60eb9c3c8e7873` — https://github.com/ItsLeoIso/bta.github.com/commit/4a9699f87f2754eee6febb2c1e60eb9c3c8e7873
 - Red CI reproduced the requested issues: **204 tests, 198 passed, 6 failed** — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45129312237
 - The failures cover the new CPU delay and old free-aim expectations. The implementation commit and final green verification are recorded in the follow-up entry below.
+
+
+### 2026-11-23 — ChatGPT — Complete CPU / Special playtest feedback
+**Type:** Gameplay tuning / Input rules / Test alignment / Release verification
+
+**Final implementation:**
+- The CPU's post-attack decision delay is **30 neutral frames** (0.5 seconds at 60 Hz). It only counts while the CPU is free to act; attack, hitstun, blockstun, and active guard time do not consume it. The CPU still approaches, rotates its deterministic move cycle, and can reactively guard.
+- Grounded L fires Energy Shot straight forward relative to facing. Airborne L fires the same projectile diagonally down-forward relative to facing. Held directions, including back and conflicting directions, do not redirect or suppress it.
+- Removed the old directional Vector Burst free-aim route and removed direction snapshots from the ordinary Special input buffer. QCF+L remains Arc Lance and retains its buffered facing / move identity.
+- Updated canonical controls and rules in README, Playtest Guide, Game Design, Roadmap, and Technical Plan. Earlier Cooperation / Technical Plan entries remain as historical implementation notes.
+
+**Test-first / correction record:**
+- Regression tests first committed in `4a9699f87f2754eee6febb2c1e60eb9c3c8e7873` — https://github.com/ItsLeoIso/bta.github.com/commit/4a9699f87f2754eee6febb2c1e60eb9c3c8e7873
+- The first implementation CI run exposed a cooldown assignment mistake plus tests still asserting the retired Vector Burst / direction-snapshot behavior. Corrected the AI reset / post-attack timer placement and aligned the remaining old tests with the new input rule.
+- Final verification commit: `9739fb7fc1a0e4b44d429e2676c4058193b8419b` — https://github.com/ItsLeoIso/bta.github.com/commit/9739fb7fc1a0e4b44d429e2676c4058193b8419b
+- Node unit / integration / source-integrity tests: **204/204 passed, 0 failures** — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45130023872
+- Chromium browser smoke tests: **2/2 passed** — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45130023855
+- GitHub Pages build, status reporting, and deployment: **all succeeded** — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45130022526
+
+**Remaining validation:**
+- This verifies deterministic AI pacing and special trajectory rules through automated unit / integration coverage. Human playtesting is still needed to judge whether the 30-frame CPU breather feels fair and whether the down-forward air shot has the intended utility.
+- No manual visual / hands-on browser combat session was performed in this pass.
