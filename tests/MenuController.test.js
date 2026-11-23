@@ -6,6 +6,11 @@ import {
   MAIN_MENU_ITEMS
 } from "../src/ui/MenuController.js";
 
+function openMainMenu(menu) {
+  menu.handleKey("Enter");
+  if (menu.screen === MENU_SCREENS.INTRO) menu.finishIntro();
+}
+
 test("title screen advances to the ordered main menu with keyboard confirmation",()=>{
   const menu=new MenuController();
   assert.equal(menu.screen,MENU_SCREENS.TITLE);
@@ -20,14 +25,14 @@ test("title screen advances to the ordered main menu with keyboard confirmation"
 test("main-menu selection wraps and starts Arcade or Training with the chosen mode",()=>{
   const starts=[];
   const menu=new MenuController({onStart:(mode,options)=>starts.push({mode,options})});
-  menu.handleKey("Enter");
+  openMainMenu(menu);
   menu.handleKey("ArrowUp");
   assert.equal(menu.selectedIndex,3);
   menu.handleKey("ArrowDown");
   assert.equal(menu.selectedIndex,0);
   menu.handleKey("ArrowDown");
   menu.handleKey("ArrowDown");
-  menu.handleKey("Enter");
+  openMainMenu(menu);
   assert.equal(menu.screen,MENU_SCREENS.CHARACTER_SELECT);
   assert.equal(menu.getViewModel().selectedCharacter.id,"striker");
   assert.equal(menu.confirmCharacter(),true);
@@ -45,9 +50,9 @@ test("main-menu selection wraps and starts Arcade or Training with the chosen mo
 
 test("Online explains its unavailable status and returns to the main menu",()=>{
   const menu=new MenuController();
-  menu.handleKey("Enter");
+  openMainMenu(menu);
   menu.handleKey("ArrowDown");
-  menu.handleKey("Enter");
+  openMainMenu(menu);
   assert.equal(menu.screen,MENU_SCREENS.ONLINE);
   menu.handleKey("Escape");
   assert.equal(menu.screen,MENU_SCREENS.MAIN);
@@ -55,14 +60,14 @@ test("Online explains its unavailable status and returns to the main menu",()=>{
 
 test("Option screen toggles debug overlays and returns to the main menu",()=>{
   const menu=new MenuController();
-  menu.handleKey("Enter");
+  openMainMenu(menu);
   for(let i=0;i<3;i+=1)menu.handleKey("ArrowDown");
-  menu.handleKey("Enter");
+  openMainMenu(menu);
   assert.equal(menu.screen,MENU_SCREENS.OPTIONS);
-  menu.handleKey("Enter");
+  openMainMenu(menu);
   assert.equal(menu.options.showHitboxes,true);
   menu.handleKey("ArrowDown");
-  menu.handleKey("Enter");
+  openMainMenu(menu);
   assert.equal(menu.options.showInspector,true);
   menu.handleKey("Escape");
   assert.equal(menu.screen,MENU_SCREENS.MAIN);
@@ -71,7 +76,7 @@ test("Option screen toggles debug overlays and returns to the main menu",()=>{
 test("direct button selection activates the requested main-menu item",()=>{
   const starts=[];
   const menu=new MenuController({onStart:mode=>starts.push(mode)});
-  menu.handleKey("Enter");
+  openMainMenu(menu);
   assert.equal(menu.selectItem(0),true);
   assert.equal(menu.screen,MENU_SCREENS.CHARACTER_SELECT);
   assert.equal(menu.confirmCharacter(),true);
@@ -90,7 +95,7 @@ test("invalid menu actions are safely rejected and callbacks are validated",()=>
 test("pause menu resumes, restarts the current mode, and exits back to Arcade selection",()=>{
   const starts=[];
   const menu=new MenuController({onStart:mode=>starts.push(mode)});
-  menu.handleKey("Enter");
+  openMainMenu(menu);
   menu.selectItem(2);
   menu.confirmCharacter();
   assert.equal(menu.screen,MENU_SCREENS.PLAYING);
@@ -118,7 +123,7 @@ test("pause menu resumes, restarts the current mode, and exits back to Arcade se
 test("Training pause menu resets positions through its callback and resumes",()=>{
   let resetCount=0;
   const menu=new MenuController({onResetTraining:()=>{resetCount+=1;}});
-  menu.handleKey("Enter");
+  openMainMenu(menu);
   menu.selectItem(2);
   menu.confirmCharacter();
   menu.pause();
@@ -129,7 +134,7 @@ test("Training pause menu resets positions through its callback and resumes",()=
 
 test("Arcade pause menu has no Training-only reset action",()=>{
   const menu=new MenuController();
-  menu.handleKey("Enter");
+  openMainMenu(menu);
   menu.selectItem(0);
   menu.confirmCharacter();
   menu.pause();
@@ -142,7 +147,7 @@ test("Arcade pause menu has no Training-only reset action",()=>{
 test("character select cycles the roster, updates the opposing matchup, and starts with selected ids",()=>{
   const starts=[];
   const menu=new MenuController({onStart:(mode,options)=>starts.push({mode,options})});
-  menu.handleKey("Enter");
+  openMainMenu(menu);
   menu.selectItem(0);
   assert.equal(menu.screen,MENU_SCREENS.CHARACTER_SELECT);
   assert.equal(menu.getViewModel().selectedCharacter.id,"striker");
@@ -155,7 +160,7 @@ test("character select cycles the roster, updates the opposing matchup, and star
   assert.equal(menu.getViewModel().selectedCharacter.id,"striker");
   menu.handleKey("ArrowLeft");
   assert.equal(menu.getViewModel().selectedCharacter.id,"cpu-rival");
-  menu.handleKey("Enter");
+  openMainMenu(menu);
 
   assert.equal(menu.screen,MENU_SCREENS.PLAYING);
   assert.deepEqual(starts,[{
@@ -172,7 +177,7 @@ test("character select cycles the roster, updates the opposing matchup, and star
 test("character select can be cancelled without starting a match",()=>{
   const starts=[];
   const menu=new MenuController({onStart:mode=>starts.push(mode)});
-  menu.handleKey("Enter");
+  openMainMenu(menu);
   menu.selectItem(2);
   assert.equal(menu.screen,MENU_SCREENS.CHARACTER_SELECT);
   menu.handleKey("Escape");
