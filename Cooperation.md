@@ -1070,3 +1070,30 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 **Remaining validation:**
 - This verifies deterministic AI pacing and special trajectory rules through automated unit / integration coverage. Human playtesting is still needed to judge whether the 30-frame CPU breather feels fair and whether the down-forward air shot has the intended utility.
 - No manual visual / hands-on browser combat session was performed in this pass.
+
+
+### 2026-11-23 — ChatGPT — Procedural combat impact feedback (prototype 019)
+
+**Type:** Completed / Handoff  
+**Commit:** Pending verification.  
+**Files / systems:**
+- src/effects/CombatEffects.js
+- src/engine/Arena.js
+- src/engine/CanvasRenderer.js
+- tests/CombatEffects.test.js
+- docs/ROADMAP.md, docs/GAME_DESIGN.md, docs/TECHNICAL_PLAN.md, docs/PLAYTEST_GUIDE.md, README.md
+
+**What changed:**
+- Added deterministic Canvas-generated impact rings and directional spark bursts for confirmed melee / projectile hits, blocks, and guard breaks.
+- Differentiated cool-blue block feedback, hit-level palettes, violet special-move accents, and stronger guard-break feedback.
+- Added restrained screen shake to the world / fighter layer only. HUD, timer, round banners, and menus remain steady.
+- Kept every effect cosmetic-only: no fighter physics, collision, damage, frame advantage, attack state, or input timing is changed.
+- Reset clears transient particles and shake; the active particle list is capped.
+
+**Verification:**
+- Added focused tests for deterministic particles, hit / block / guard-break intensity, projectile contact position, expiry, reset, ignored event filtering, and live Arena hit dispatch / reset.
+- CI results will be recorded after the workflow runs complete.
+- No manual browser visual / feel inspection has been performed in this pass.
+
+**Suggested next step:**
+- Play Training and Arcade in the hosted build. Judge whether the impacts are readable without obscuring the fighters, whether block feedback is clearly weaker than hit feedback, and whether screen shake feels restrained. Final authored VFX, sound, hitstop, and sprite animation remain future work.

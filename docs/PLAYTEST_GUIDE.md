@@ -64,6 +64,7 @@ Use Training first, then play at least one Arcade set. Record the browser, opera
 - [ ] Training dummy is passive, can be launched, lands, can be hit by Heavy after landing, and can be reset.
 - [ ] Pause / resume, restart, exit-to-menu, round transition, KO, timeout, and rematch work.
 - [ ] Options toggle overlays without breaking the match.
+- [ ] Hits, blocks, and guard breaks show distinct brief impact effects; world shake stays restrained and the HUD remains steady.
 - [ ] No console errors, stuck keys, severe slowdown, or unreadable HUD / menu text.
 
 The CI Chromium smoke suite automatically checks the basic title/menu, Online notice, Arcade pause / exit, Training reset, and narrow viewport flows. It does not validate combat feel, visual quality, or every browser.
@@ -88,7 +89,7 @@ Please report one issue per ticket where possible. For balance feedback, include
 
 ## Known limitations
 
-- Placeholder fighter shapes and Canvas stage art; no final sprites, animation set, music, or sound effects.
+- Placeholder fighter shapes and Canvas stage art; procedural impact sparks / screen shake are prototypes, not final character VFX. No final sprites, animation set, music, or sound effects.
 - One playable CPU opponent; AI is deterministic and deliberately simple.
 - Online is not implemented.
 - Keyboard is the supported input path; no gamepad / touch controls or remapping.

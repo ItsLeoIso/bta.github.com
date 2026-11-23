@@ -259,3 +259,16 @@ Implemented:
 - Ordinary Special no longer has free eight-way directional aim. Grounded L always fires forward relative to facing; airborne L always fires diagonally down-forward relative to facing. Held directions cannot turn the Energy Shot backward or vertically.
 - QCF+L remains the separate facing-relative Arc Lance motion special. It keeps its existing startup, recovery, projectile tuning, buffering, and hit-confirm cancel route.
 - Regression tests cover grounded shots from both facing directions, ignored aim inputs, airborne diagonal shots from both facing directions, the CPU's neutral-time cooldown, and Arena-level input dispatch.
+
+
+## Presentation milestone 019 — Procedural combat impact feedback
+
+Implemented:
+- Added a deterministic CombatEffects presentation system for confirmed melee and projectile hits, blocks, and guard breaks.
+- Impacts create a short expanding ring and a small palette-matched burst of streak particles. Blocks use a restrained cool-blue response; hits vary by attack height / strength; Arc Lance and guard break receive stronger violet accents.
+- Screen shake is render-only and applies to the scrolling world layer, leaving health / guard HUD, timer, round UI, and menus stable.
+- Particle motion and shake use deterministic simulation time and seeded impact sequences. Effects do not modify fighter positions, damage, collision, frame advantage, or attack state.
+- Resetting a match clears transient particles and shake. The effect list is capped to avoid unbounded growth.
+- Automated tests cover deterministic hit effects, block / guard-break intensity, projectile contact positioning, expiration, reset, and ignored non-contact events.
+
+The Canvas-generated effects are a first presentation pass, not final character-specific VFX or a replacement for authored sprite animation, sound, or hitstop.

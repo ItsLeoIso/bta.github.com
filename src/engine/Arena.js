@@ -11,6 +11,7 @@ import { CommandHistory } from "../input/CommandHistory.js";
 import { InputBuffer } from "../input/InputBuffer.js";
 import { ComboTracker } from "../combat/ComboTracker.js";
 import { OpponentAIController } from "../ai/OpponentAIController.js";
+import { CombatEffects } from "../effects/CombatEffects.js";
 
 const clamp = (value,min,max)=>Math.min(max,Math.max(min,value));
 export const STAGE_MARGIN=68;
@@ -73,9 +74,11 @@ export class Arena {
     this.previousCameraX=this.cameraX;
     this.lastCombatEvent=null;
     this.lastHit=null;
+    this.combatEffects=new CombatEffects();
   }
 
   update(deltaSeconds,input) {
+    this.combatEffects.update(deltaSeconds);
     this.previousCameraX=this.cameraX;
     // The round controller owns all non-active transitions. Combat and physics
     // stay frozen during result/ready-up screens and after the match is decided.
@@ -311,6 +314,7 @@ export class Arena {
     }
 
     event.outcome=event.resolution?.outcome ?? event.type;
+    this.combatEffects.trigger(event);
     this.lastCombatEvent=event;
     if(this.trainingMode && defender===this.opponent &&
       (event.type==="hit" || event.type==="block")){
@@ -351,6 +355,7 @@ export class Arena {
     this.previousCameraX=this.cameraX;
     this.lastCombatEvent=null;
     this.lastHit=null;
+    this.combatEffects.reset();
   }
 
   resetFighter(fighter,x,facing) {

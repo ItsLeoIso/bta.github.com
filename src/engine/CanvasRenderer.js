@@ -38,11 +38,13 @@ export class CanvasRenderer {
     ctx.save(); ctx.translate(offsetX, offsetY); ctx.scale(scale, scale);
     const cameraX = (arena.previousCameraX ?? arena.cameraX ?? 0) +
       ((arena.cameraX ?? 0) - (arena.previousCameraX ?? arena.cameraX ?? 0)) * alpha;
-    ctx.save(); ctx.translate(-cameraX, 0);
+    const shake = arena.combatEffects?.getShakeOffset?.() ?? { x: 0, y: 0 };
+    ctx.save(); ctx.translate(shake.x, shake.y); ctx.translate(-cameraX, 0);
     this.drawBackdrop(ctx, arena);
     this.drawFighter(ctx, arena.player, COLORS.player, alpha);
     this.drawFighter(ctx, arena.opponent, COLORS.opponent, alpha);
     this.drawProjectiles(ctx, arena);
+    this.drawCombatEffects(ctx, arena.combatEffects);
     this.drawCombatBoxes(ctx, arena);
     ctx.restore();
     this.drawHud(ctx, arena);
@@ -236,6 +238,33 @@ export class CanvasRenderer {
       ctx.stroke();
       ctx.restore();
     }
+  }
+
+  drawCombatEffects(ctx, effects) {
+    if (!effects?.particles?.length) return;
+    ctx.save();
+    ctx.lineCap = "round";
+    for (const particle of effects.particles) {
+      const alpha = Math.max(0, Math.min(1, particle.life / particle.maxLife));
+      if (alpha <= 0) continue;
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = particle.color;
+      ctx.shadowColor = particle.color;
+      ctx.shadowBlur = particle.kind === "ring" ? 10 : 7;
+      if (particle.kind === "ring") {
+        ctx.lineWidth = Math.max(1, particle.width * alpha);
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
+        ctx.stroke();
+      } else {
+        ctx.lineWidth = Math.max(1, particle.size * alpha);
+        ctx.beginPath();
+        ctx.moveTo(particle.x, particle.y);
+        ctx.lineTo(particle.x - particle.vx * 0.04, particle.y - particle.vy * 0.04);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
   }
 
   drawCombatBoxes(ctx, arena) {

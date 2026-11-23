@@ -204,3 +204,11 @@ These are menu destinations to plan for; their complete functionality will be im
 - **Projectile floor contact:** downward-moving projectiles are removed on floor contact after checking whether they hit a fighter during that step.
 - **Ground-state compatibility:** state-aware combat treats a missing `onGround` measurement as grounded for legacy fixtures; only explicit `false` is airborne.
 - **Crouch vs crouch-guard trade-off:** as currently documented, crouching without guard ducks High attacks, while crouch-guard is Low guard and is vulnerable to High attacks. This is consistent with the current guard-height rules but may feel unintuitive; leave it unchanged until a browser playtest informs whether crouch-guard needs a change.
+
+
+## Prototype combat impact feedback
+
+- Confirmed hits create a brief expanding impact ring and a deterministic burst of directional sparks. The palette differentiates High / Mid / Low hits; Energy Shot / Arc Lance use a violet special-move accent.
+- Blocks create a smaller blue impact response. Guard breaks use a larger, brighter violet burst and stronger shake.
+- Screen shake is restrained, cosmetic-only, and limited to the world / fighter layer. HUD, timer, round banners, and menu UI stay stable.
+- This first pass uses Canvas geometry and seeded particle motion. It does not change hitstop, frame data, collision, damage, or fighter physics. Final sprite-based VFX, authored animation, audio, and hitstop remain separate future work.

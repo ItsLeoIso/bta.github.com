@@ -64,7 +64,8 @@
 ## Phase 7 — Content and polish
 - [ ] Replace placeholders with original pixel-art sprites and animations.
 - [ ] Add sound effects and music.
-- [ ] Visual effects, hit sparks, screen shake, and impact feedback.
+- [x] First procedural combat-feedback pass: hit / block / guard-break sparks, expanding impact rings, and restrained screen shake.
+- [ ] Expand character- and stage-specific visual effects, impact animation, and authored VFX.
 - [ ] Balance, accessibility, performance, and browser compatibility pass.
 
 ## Later possibilities
