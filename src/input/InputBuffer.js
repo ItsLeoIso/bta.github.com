@@ -1,12 +1,9 @@
 const BUFFERED_ACTIONS = Object.freeze(["light", "medium", "heavy", "special"]);
-const DIRECTION_ACTIONS = Object.freeze(["left", "right", "jump", "crouch"]);
-
 /**
  * Short, fixed-frame queue for combat button presses.
  *
- * The direction held with a buffered Special is snapshotted at press time so
- * Vector Burst keeps its original aim even if the player releases the direction
- * during the current move's recovery.
+ * Directional aim is not buffered: ordinary Energy Shot trajectories are fixed
+ * by grounded / airborne state, while Arc Lance stores its facing snapshot.
  */
 export class InputBuffer {
   constructor({ bufferFrames = 8 } = {}) {
@@ -34,7 +31,6 @@ export class InputBuffer {
       action,
       pressedFrame: frame,
       expiresFrame: frame + this.bufferFrames - 1,
-      directions: DIRECTION_ACTIONS.filter(direction => Boolean(input.isDown?.(direction))),
       specialMove: action === "special" ? specialMove : null,
       specialFacing: action === "special" && Number.isFinite(specialFacing)
         ? Math.sign(specialFacing) || 1
@@ -54,9 +50,7 @@ export class InputBuffer {
       specialFacing: pending.specialFacing ?? null,
       wasPressed: action =>
         action === pending.action || Boolean(input.wasPressed?.(action)),
-      isDown: action => DIRECTION_ACTIONS.includes(action)
-        ? pending.directions.includes(action)
-        : Boolean(input.isDown?.(action))
+      isDown: action => Boolean(input.isDown?.(action))
     };
   }
 

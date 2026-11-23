@@ -28,25 +28,25 @@ test("expires an unconsumed command after exactly the configured number of frame
   assert.equal(buffer.remainingFrames(8),0);
 });
 
-test("a newer combat button press replaces the older buffered command",()=>{
+test("a newer combat button press replaces the older buffered command without aim snapshots",()=>{
   const buffer=new InputBuffer();
   buffer.capture(input({pressed:["medium"],down:["left"]}),2);
   buffer.capture(input({pressed:["special"],down:["right","jump"]}),4);
   assert.equal(buffer.pending.action,"special");
   const buffered=buffer.getInput(input(),4);
   assert.equal(buffered.wasPressed("special"),true);
-  assert.equal(buffered.isDown("right"),true);
-  assert.equal(buffered.isDown("jump"),true);
+  assert.equal(buffered.isDown("right"),false);
+  assert.equal(buffered.isDown("jump"),false);
   assert.equal(buffered.isDown("left"),false);
 });
 
-test("Special preserves the directional aim from its original press",()=>{
+test("buffered Special reads current directions but does not preserve old aim",()=>{
   const buffer=new InputBuffer();
   buffer.capture(input({pressed:["special"],down:["left","crouch"]}),1);
   const buffered=buffer.getInput(input({down:["right"]}),2);
-  assert.equal(buffered.isDown("left"),true);
-  assert.equal(buffered.isDown("crouch"),true);
-  assert.equal(buffered.isDown("right"),false);
+  assert.equal(buffered.isDown("left"),false);
+  assert.equal(buffered.isDown("crouch"),false);
+  assert.equal(buffered.isDown("right"),true);
 });
 
 test("motion commands can exclude Special from ordinary button buffering",()=>{
@@ -73,6 +73,6 @@ test("buffered Arc Lance preserves its move identity and input-time facing",()=>
   assert.equal(buffered.specialMove,"arcLance");
   assert.equal(buffered.specialFacing,-1);
   assert.equal(buffered.wasPressed("special"),true);
-  assert.equal(buffered.isDown("left"),true);
-  assert.equal(buffered.isDown("right"),false);
+  assert.equal(buffered.isDown("left"),false);
+  assert.equal(buffered.isDown("right"),true);
 });

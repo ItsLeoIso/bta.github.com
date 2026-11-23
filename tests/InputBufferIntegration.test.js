@@ -38,7 +38,7 @@ test("an attack input expires when the current recovery outlasts its buffer wind
   assert.equal(arena.inputBuffer.pending,null);
 });
 
-test("buffers Special through attack recovery and preserves its directional aim",()=>{
+test("buffers Special through attack recovery and resolves the fixed grounded trajectory",()=>{
   const arena=new Arena();
   arena.update(1/60,input({pressed:["heavy"]}));
   for(let frame=0;frame<30;frame++) arena.update(1/60,input());
@@ -46,8 +46,8 @@ test("buffers Special through attack recovery and preserves its directional aim"
   assert.equal(arena.inputBuffer.pending.action,"special");
   for(let frame=0;frame<7;frame++) arena.update(1/60,input());
   assert.equal(arena.player.state.action,STATES.action.SPECIAL);
-  assert.equal(arena.player.actionData.moveId,"directionalSpecial");
-  assert.equal(arena.player.actionData.directionX,-1);
+  assert.equal(arena.player.actionData.moveId,"special");
+  assert.equal(arena.player.actionData.directionX,1);
   assert.equal(arena.player.actionData.directionY,0);
   assert.equal(arena.inputBuffer.pending,null);
 });

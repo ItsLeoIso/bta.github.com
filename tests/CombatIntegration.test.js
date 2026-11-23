@@ -196,11 +196,6 @@ test("illegal Special cancels do not delete the current attack recovery",()=>{
       },
       specialInput:input({pressed:["special"]})
     },
-    {
-      name:"opposing directional inputs",
-      configure:()=>{},
-      specialInput:input({pressed:["special"],down:["left","right"]})
-    }
   ];
 
   for(const scenario of scenarios){

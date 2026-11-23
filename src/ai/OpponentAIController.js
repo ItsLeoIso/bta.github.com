@@ -95,9 +95,7 @@ export class OpponentAIController {
         if (!fighter.onGround && move === "heavy") move = "light";
         pressed.push(move);
         this.moveIndex += 1;
-        // Let the CPU make its opening approach / attack without a startup wait.
-    // Every later attack earns the full neutral-time decision delay.
-    this.attackCooldown = 0;
+        this.attackCooldown = this.attackCooldownFrames;
       }
     }
 
@@ -117,7 +115,9 @@ export class OpponentAIController {
   }
 
   reset() {
-    this.attackCooldown = this.attackCooldownFrames;
+    // Let the CPU make its opening approach / attack without a startup wait.
+    // Every later attack earns the full neutral-time decision delay.
+    this.attackCooldown = 0;
     this.blockCooldown = 0;
     this.blockFramesRemaining = 0;
     this.guardHeight = "high";

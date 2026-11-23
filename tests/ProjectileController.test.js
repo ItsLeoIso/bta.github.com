@@ -66,7 +66,7 @@ test("projectile direction follows the fighter's facing when fired", () => {
   assert.equal(controller.projectiles[0].x, 324);
 });
 
-test("direction plus L starts a distinct Vector Burst aimed in the held direction", () => {
+test("holding a direction with grounded L does not redirect the forward Energy Shot", () => {
   const controller = new ProjectileController();
   const fighter = makeFighter();
 
@@ -85,9 +85,9 @@ test("direction plus L starts a distinct Vector Burst aimed in the held directio
   }
 
   assert.equal(controller.projectiles.length, 1);
-  assert.equal(controller.projectiles[0].velocityX, -540);
+  assert.equal(controller.projectiles[0].velocityX, 540);
   assert.equal(controller.projectiles[0].velocityY, 0);
-  assert.equal(controller.projectiles[0].moveId, "directionalSpecial");
+  assert.equal(controller.projectiles[0].moveId, "special");
 });
 
 test("special remains locked through startup and recovery, then returns to neutral", () => {

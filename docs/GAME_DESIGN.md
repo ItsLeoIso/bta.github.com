@@ -148,7 +148,7 @@ These are menu destinations to plan for; their complete functionality will be im
 
 ## Aerial projectile behavior (prototype)
 
-- Energy Shot (L alone) and directional Vector Burst (direction + L) share one air-projectile allowance. Starting either move while airborne consumes the allowance; landing refreshes it. The projectile allowance is independent of the air-dash allowance.
+- Energy Shot shares one air-projectile allowance with Arc Lance. Starting either move while airborne consumes the allowance; landing refreshes it. The projectile allowance is independent of the air-dash allowance.
 - Starting an aerial projectile cancels horizontal drift and upward momentum. Horizontal movement remains locked for the special, but gravity continues during startup and recovery; the fighter falls naturally instead of hovering.
 - The special keeps its existing startup and recovery timer if the fighter lands early. It remains locked on the ground until the original recovery finishes. No extra landing-recovery frames are applied in this prototype.
 - A projectile started close to the floor still completes its startup and spawns on frame 8 even if the fighter lands first. The action remains locked until its normal recovery ends.
