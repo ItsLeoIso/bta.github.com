@@ -1027,3 +1027,24 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 **Remaining validation:**
 - These are automated headless Chromium smoke tests, not a human visual review or a combat-feel / balance playtest. The actual game still needs human sessions across supported browsers and screen sizes.
 - Online networking, controller support, original fighter art / animation, audio, VFX, and final balance remain out of scope for this local keyboard playtest candidate.
+
+
+### 2026-11-23 — ChatGPT — CPU pacing and fixed Special trajectories
+**Type:** Gameplay feedback / AI tuning / Special-input rules / Regression coverage
+
+**Player feedback addressed:**
+- CPU was attacking again almost immediately after its previous move recovered, making it feel like constant button spam.
+- Ordinary Special could be aimed in any screen direction, including backward. The requested rule is forward-only on the ground and diagonal down-forward while airborne.
+
+**Implementation:**
+- CPU attack decisions now have a 30-frame neutral-time breather after each attack. The timer does not drain while the CPU is committed to an attack, hitstun, blockstun, or guard, so recovery cannot consume the pause before the CPU is able to act again. The opening approach / attack remains immediate; deterministic move rotation and startup-reactive guarding are retained.
+- Grounded L now always fires Energy Shot straight forward relative to facing, ignoring held direction keys.
+- Airborne L now always fires Energy Shot diagonally down-forward relative to facing, ignoring held direction keys.
+- Removed the ordinary Special's eight-way Vector Burst free-aim path. QCF+L still launches the separate Arc Lance motion special.
+- Updated README, Playtest Guide, Game Design, Roadmap, and Technical Plan.
+- Added unit / integration regressions for CPU pacing, both grounded facing directions, airborne down-forward aim from both facing directions, ignored directional inputs, and Arena dispatch.
+
+**Test-first evidence:**
+- Regression tests were committed first in `4a9699f87f2754eee6febb2c1e60eb9c3c8e7873` — https://github.com/ItsLeoIso/bta.github.com/commit/4a9699f87f2754eee6febb2c1e60eb9c3c8e7873
+- Red CI reproduced the requested issues: **204 tests, 198 passed, 6 failed** — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45129312237
+- The failures cover the new CPU delay and old free-aim expectations. The implementation commit and final green verification are recorded in the follow-up entry below.

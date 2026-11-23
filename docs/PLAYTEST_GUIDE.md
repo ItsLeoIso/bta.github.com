@@ -31,8 +31,7 @@ Do not open `index.html` as a `file://` URL. Native ES modules need an HTTP serv
 | H | Light — High |
 | J | Medium — Mid |
 | K | Heavy — Low |
-| L | Energy Shot |
-| Direction + L | Eight-way Vector Burst |
+| L | Energy Shot — forward when grounded; diagonal down-forward when airborne |
 | Down → Down-Forward → Forward + L | Arc Lance (relative to the direction you face) |
 | Hold away from opponent | Stand guard |
 | Hold away + S | Crouch guard |
@@ -60,7 +59,7 @@ Use Training first, then play at least one Arcade set. Record the browser, opera
 - [ ] A/D movement, jump, crouch, ground dash, and air dash feel responsive.
 - [ ] Light / Medium / Heavy hit levels behave as described.
 - [ ] Stand guard, crouch guard, chip damage, guard meter, and guard break work.
-- [ ] Energy Shot, Vector Burst, and QCF+L Arc Lance launch in the expected direction.
+- [ ] Grounded Energy Shot always travels forward; airborne Energy Shot always travels diagonal down-forward; QCF+L Arc Lance launches forward.
 - [ ] Light / Medium hit confirms, Medium launcher, air follow-ups, and juggle limit behave correctly.
 - [ ] Training dummy is passive, can be launched, lands, can be hit by Heavy after landing, and can be reset.
 - [ ] Pause / resume, restart, exit-to-menu, round transition, KO, timeout, and rematch work.
@@ -93,5 +92,5 @@ Please report one issue per ticket where possible. For balance feedback, include
 - One playable CPU opponent; AI is deterministic and deliberately simple.
 - Online is not implemented.
 - Keyboard is the supported input path; no gamepad / touch controls or remapping.
-- Combat frame data, CPU reaction, guard heights, round length, and movement values are provisional.
+- CPU waits 30 neutral frames after each attack before choosing another; attack / hitstun lockout does not consume that delay. CPU reaction, guard heights, round length, and movement values remain provisional.
 - Human browser playtesting is still required for visual quality, feel, balance, and broad browser compatibility. Automated tests do not replace it.

@@ -37,9 +37,9 @@
 
 ## Phase 4 — Special moves and combos
 - [x] Special button alone: projectile (initial button-only prototype).
-- [x] Direction + Special moves (eight-way Vector Burst).
+- [x] Contextual Energy Shot trajectory: forward when grounded and diagonal down-forward when airborne.
 - [x] Facing-relative 24-frame Quarter-Circle Forward + Special recognition connected to the buffered Arc Lance projectile special.
-- [x] Eight-frame combat input buffer for Light / Medium / Heavy / Special, including direction snapshots for buffered Vector Burst.
+- [x] Eight-frame combat input buffer for Light / Medium / Heavy / Special, preserving Arc Lance identity and facing for buffered motion commands.
 - [x] Hit-confirm cancels, jump-cancels, air Light / Medium attacks, launcher-based air combos, combo tracking / damage scaling, juggle limits, and recovery rules.
 
 ## Phase 5 — First playable match

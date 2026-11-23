@@ -15,12 +15,6 @@ export const PROJECTILE_DEFAULTS = Object.freeze({
   hitLevel: "mid"
 });
 
-export const DIRECTIONAL_SPECIAL_DEFAULTS = Object.freeze({
-  moveId: "directionalSpecial",
-  moveName: "Vector Burst",
-  hitLevel: "mid"
-});
-
 export const MOTION_SPECIAL_DEFAULTS = Object.freeze({
   moveId: "arcLance",
   moveName: "Arc Lance",
@@ -32,33 +26,20 @@ export const MOTION_SPECIAL_DEFAULTS = Object.freeze({
   lifetimeSeconds: 2.8
 });
 
-function resolveSpecialDirection(input, facing) {
-  const isDown = action => Boolean(input.isDown?.(action));
-  const left = isDown("left");
-  const right = isDown("right");
-  const up = isDown("jump");
-  const down = isDown("crouch");
-
-  // Opposing directions are ambiguous; do not silently turn them into L-only.
-  if ((left && right) || (up && down)) return { invalid: true };
-
-  const horizontal = Number(right) - Number(left);
-  const vertical = Number(down) - Number(up);
-  if (horizontal === 0 && vertical === 0) {
-    return { x: Math.sign(facing) || 1, y: 0, directional: false };
+function resolveSpecialDirection(fighter) {
+  const facing = Math.sign(fighter.facing) || 1;
+  if (isGrounded(fighter)) {
+    return { x: facing, y: 0, directional: false };
   }
-
-  const magnitude = Math.hypot(horizontal, vertical);
-  return {
-    x: horizontal / magnitude,
-    y: vertical / magnitude,
-    directional: true
-  };
+  // Airborne Energy Shot is always angled down and toward the opponent.
+  const diagonal = 1 / Math.sqrt(2);
+  return { x: facing * diagonal, y: diagonal, directional: false };
 }
 
 /**
- * Handles both the button-only Energy Shot and the eight-way Vector Burst.
- * Movement directions stay screen-relative, matching A/D movement controls.
+ * Handles the forward Energy Shot and the separate QCF Arc Lance.
+ * Grounded Energy Shots travel forward; airborne shots angle down-forward.
+ * The ordinary Special button never accepts free-aim directional input.
  */
 export class ProjectileController {
   constructor({
@@ -113,10 +94,6 @@ export class ProjectileController {
       fighter.state.action === FIGHTER_STATES.action.ATTACK;
     if (!inNeutral && !cancelingAttack) return false;
 
-    const isMotionSpecial = input.specialMove === MOTION_SPECIAL_DEFAULTS.moveId;
-    if (!isMotionSpecial && resolveSpecialDirection(input, fighter.facing).invalid) {
-      return false;
-    }
     if (!isGrounded(fighter) && !fighter.airProjectileAvailable) return false;
     return true;
   }
@@ -137,14 +114,10 @@ export class ProjectileController {
     const specialFacing = Math.sign(input.specialFacing ?? fighter.facing) || 1;
     const direction = isMotionSpecial
       ? { x: specialFacing, y: 0, directional: false }
-      : resolveSpecialDirection(input, fighter.facing);
+      : resolveSpecialDirection(fighter);
     const isAirProjectile = !isGrounded(fighter);
 
-    const move = isMotionSpecial
-      ? MOTION_SPECIAL_DEFAULTS
-      : direction.directional
-        ? DIRECTIONAL_SPECIAL_DEFAULTS
-        : PROJECTILE_DEFAULTS;
+    const move = isMotionSpecial ? MOTION_SPECIAL_DEFAULTS : PROJECTILE_DEFAULTS;
     const startupFrames = move.startupFrames ?? this.startupFrames;
     const recoveryFrames = move.recoveryFrames ?? this.recoveryFrames;
     const started = states.startAction(

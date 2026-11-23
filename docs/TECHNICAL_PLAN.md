@@ -251,3 +251,11 @@ Implemented:
 - Training starts without CPU AI, freezes the round timer, and restores the dummy's health / guard meter two seconds after its last hit or block so repeated practice is possible.
 - Added options for combat hurtbox / active-hitbox overlays and the DOM state / frame-data inspector. Debug overlays now start hidden, and both player and CPU active melee hitboxes can be inspected.
 - Added menu state-machine and training-mode integration tests. Training reset-position is now available from the pause menu; input recording / playback and character select remain future work.
+
+
+## 2026-11-23 playtest adjustment — CPU pacing and Special trajectories
+
+- CPU attack pacing now uses a 30-frame neutral-time breather after each attack. The delay pauses while the CPU is committed to an action or reaction, so it cannot expire invisibly during recovery and trigger another immediate attack. The CPU remains deterministic and keeps its startup-reactive guard.
+- Ordinary Special no longer has free eight-way directional aim. Grounded L always fires forward relative to facing; airborne L always fires diagonally down-forward relative to facing. Held directions cannot turn the Energy Shot backward or vertically.
+- QCF+L remains the separate facing-relative Arc Lance motion special. It keeps its existing startup, recovery, projectile tuning, buffering, and hit-confirm cancel route.
+- Regression tests cover grounded shots from both facing directions, ignored aim inputs, airborne diagonal shots from both facing directions, the CPU's neutral-time cooldown, and Arena-level input dispatch.

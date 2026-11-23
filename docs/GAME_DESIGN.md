@@ -36,7 +36,7 @@ This document records the decisions confirmed so far. Anything labelled **Open**
 | Light | H | High attack — can be crouched under |
 | Medium | J | Mid attack — hits standing and crouching opponents |
 | Heavy | K | Low attack — hits grounded opponents, misses airborne opponents |
-| Special | L | L alone fires Energy Shot; hold a direction with L to fire Vector Burst; Quarter-Circle Forward + L launches Arc Lance |
+| Special | L | Grounded: Energy Shot forward; airborne: Energy Shot diagonal down-forward; Quarter-Circle Forward + L launches Arc Lance |
 
 Movement keys are screen-relative and never reverse when fighters cross: A always means left and D always means right. Fighters automatically turn to face the opponent. Whether a dash is classified as a forward dash or backdash is determined by comparing its screen direction with the fighter's facing direction.
 
@@ -87,26 +87,24 @@ These dimensions and movement details are prototype values to validate in the br
 
 - Attack buttons: Light (H / High), Medium (J / Mid), Heavy (K / Low), Special (L).
 - Attack height is separate from the move's strength and frame data. High attacks occupy the upper body and can be crouched under; Mid attacks cover the torso and catch standing or crouching opponents; Low attacks strike near the feet, hit grounded opponents, and pass under airborne opponents.
-- All three special-input styles are intended to coexist:
-  1. **Button-only:** L by itself performs the forward-facing Energy Shot projectile.
-  2. **Direction + button:** hold A, D, W, or S with L to perform the eight-way Vector Burst; diagonal combinations are supported. The aim vector is screen-relative, matching A/D movement, and diagonals are normalized so they do not travel faster than straight shots.
-  3. **Motion input:** a traditional motion such as quarter-circle forward + L performs an advanced special.
+- Two special-input styles coexist:
+  1. **Contextual button-only:** L performs the Energy Shot. When grounded it always travels straight forward relative to facing; when airborne it always travels diagonally down-forward relative to facing. Held movement directions never redirect the ordinary Special.
+  2. **Motion input:** Quarter-Circle Forward + L performs the advanced Arc Lance projectile.
 
-### Initial projectile special prototype (Phase 4)
+### Projectile special prototype (playtest rules)
 
-- Pressing L with no direction held fires an `Energy Shot` projectile toward the fighter's facing.
-- Holding a direction with L performs the eight-way `Vector Burst`. A/D aim screen-left/right, W aims up, S aims down, and diagonal combinations aim between those axes. The direction is captured when L is pressed; later movement or facing changes do not bend an active projectile.
-- If both opposing directions on the same axis are held, the special does not start rather than silently falling back to Energy Shot.
-- Vector Burst uses the same initial startup, recovery, speed, projectile size, lifetime, hit level, and damage as Energy Shot, but has its own move ID and balance profile so it can be tuned separately. It can be used grounded or airborne, and a directional special takes priority over back-guard on the input frame.
+- Pressing L while grounded fires an `Energy Shot` straight forward relative to the fighter's facing, regardless of held movement directions.
+- Pressing L while airborne fires the same Energy Shot diagonally down-forward relative to facing (45 degrees down toward the opponent). This trajectory is fixed at launch; held A/D/W/S inputs do not alter it.
+- The former eight-way `Vector Burst` free-aim behaviour is retired. Holding back, up, down, or opposing directions with L cannot make the ordinary projectile fire backward, vertically, or at arbitrary angles.
 - The initial projectile can be used from the ground or air when the fighter has no active action or reaction. It uses 8 startup frames and 18 recovery frames at 60 Hz.
 - Prototype projectile values: 540 arena units/second, 18-unit radius, 2.5-second lifetime, 8% hit damage, 18 frames of hitstun, and 280 units/second knockback. A block deals 0.8% chip damage and 25 guard-meter damage.
 - The projectile is a mid and can be guarded with either standing or crouching guard. Once launched, it remains active even if the owner leaves recovery or is interrupted. Prototype values are for playtesting, not final balance.
 - **Blocking:** Hold the screen direction opposite the opponent (away from the opponent) to guard. The required direction is resolved from the fighter's current facing, so the guard direction automatically changes when the fighters cross sides. This is deliberately separate from screen-relative movement: A always moves left and D always moves right.
 - Quarter-Circle Forward + L is recognised relative to facing using Down → Down-Forward → Forward within a 24-frame window.
 - The command launches **Arc Lance**: 14 startup / 26 recovery frames, 390 units/second speed, 26-unit radius, 14% damage, 24 hitstun frames, and 400 knockback. It applies 1.4% chip damage and 38 guard-meter damage on block.
-- Arc Lance is slower and more punishable than Energy Shot, but has a larger projectile and greater reward. It shares the one-projectile-per-airtime resource with Energy Shot and Vector Burst.
+- Arc Lance is slower and more punishable than Energy Shot, but has a larger projectile and greater reward. It shares the one-projectile-per-airtime resource with Energy Shot.
 - The eight-frame buffer preserves Arc Lance identity and the facing direction from the motion input, and the move can be cancelled into from a confirmed Light / Medium attack.
-- Light, Medium, Heavy, and Special button presses use an eight-fixed-frame input buffer when an action or reaction blocks immediate execution. A newer combat-button press replaces the pending one. Special aim directions are captured when the button is pressed. Movement, guard, jump, and dash are not buffered; pending combat inputs are discarded when a round ends or resets.
+- Light, Medium, Heavy, and Special button presses use an eight-fixed-frame input buffer when an action or reaction blocks immediate execution. A newer combat-button press replaces the pending one. Arc Lance identity and facing are captured when the motion input is pressed; ordinary Energy Shot trajectory is resolved from grounded / airborne state when it starts. Movement, guard, jump, and dash are not buffered; pending combat inputs are discarded when a round ends or resets.
 - The input system should be data-driven / extensible so different characters can receive different moves later.
 - The game should be easy to learn but offer room for technical mastery.
 - Fast, flashy combat and air combos are core goals.
@@ -173,7 +171,7 @@ These are menu destinations to plan for; their complete functionality will be im
 - **Player — Striker:** 300 arena units/second grounded walk speed; 1.00× outgoing damage.
 - **CPU Rival:** 260 arena units/second grounded walk speed; 1.05× outgoing damage. The slower approach is offset by a small damage advantage.
 - The browser match enables the CPU by default. Isolated Arena tests leave it disabled unless explicitly requested, keeping combat and movement regression tests deterministic.
-- The CPU approaches using screen-relative movement, then rotates through Light, Medium, Heavy, and Energy Shot when within its attack range. It uses the same state, attack, projectile, collision, damage, hitstun, round, and pushbox systems as the player.
+- The CPU approaches using screen-relative movement, then rotates through Light, Medium, Heavy, and Energy Shot when within its attack range. After each attack it waits 30 neutral simulation frames before choosing another; attack, hitstun, blockstun, and guard lockout do not consume this breather. It uses the same state, attack, projectile, collision, damage, hitstun, round, and pushbox systems as the player.
 - The CPU can guard a nearby active melee attack only after at least eight startup frames have elapsed. This deterministic reaction delay lets a 5-frame Light beat the CPU's reaction, while Medium (8 frames) is borderline and Heavy (12 frames) is reactable. It chooses crouch guard for Low attacks and standing guard otherwise; a cooldown prevents permanent blocking.
 - The first CPU is deliberately deterministic rather than random, making playtesting and bug reproduction repeatable. AI timing and properties are prototype values, not character balance.
 

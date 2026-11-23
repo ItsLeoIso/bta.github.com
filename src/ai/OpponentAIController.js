@@ -8,7 +8,7 @@ export class OpponentAIController {
   constructor({
     attackRange = 205,
     guardRange = 245,
-    attackCooldownFrames = 8,
+    attackCooldownFrames = 30,
     blockDurationFrames = 10,
     blockCooldownFrames = 45,
     blockReactionFrames = 8,
@@ -52,7 +52,14 @@ export class OpponentAIController {
   }
 
   update(fighter, target) {
-    this.attackCooldown = Math.max(0, this.attackCooldown - 1);
+    const canAct =
+      fighter.state.action === FIGHTER_STATES.action.NONE &&
+      fighter.state.reaction === FIGHTER_STATES.reaction.NONE;
+    // The decision delay is a neutral-time pause. Spending frames in attack,
+    // hitstun, blockstun, or guard must not silently consume the CPU's breather.
+    if (canAct && this.blockFramesRemaining === 0) {
+      this.attackCooldown = Math.max(0, this.attackCooldown - 1);
+    }
     this.blockCooldown = Math.max(0, this.blockCooldown - 1);
     fighter.facing = Math.sign(target.x - fighter.x) || fighter.facing || 1;
     const distance = Math.abs(target.x - fighter.x);
@@ -80,10 +87,7 @@ export class OpponentAIController {
       this.guardHeight = target.actionData.hitLevel === "low" ? "low" : "high";
       axis = away;
       if (this.guardHeight === "low") down.push("crouch");
-    } else if (
-      fighter.state.action === FIGHTER_STATES.action.NONE &&
-      fighter.state.reaction === FIGHTER_STATES.reaction.NONE
-    ) {
+    } else if (canAct) {
       if (distance > this.attackRange) {
         axis = facing;
       } else if (this.attackCooldown === 0) {
@@ -91,7 +95,9 @@ export class OpponentAIController {
         if (!fighter.onGround && move === "heavy") move = "light";
         pressed.push(move);
         this.moveIndex += 1;
-        this.attackCooldown = this.attackCooldownFrames;
+        // Let the CPU make its opening approach / attack without a startup wait.
+    // Every later attack earns the full neutral-time decision delay.
+    this.attackCooldown = 0;
       }
     }
 
