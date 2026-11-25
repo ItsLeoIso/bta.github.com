@@ -29,16 +29,18 @@ Add these repository Actions secrets (Settings → Secrets and variables → Act
 
 - GEMINI_API_KEY — Google AI Studio API key with access to the Antigravity agent
   and Interactions API.
-- OPENAI_API_KEY — OpenAI API key with access to the Agents API.
+- OPENAI_API_KEY — OpenAI Platform API key with Agents API access. Enable
+  `api.agents.read`, `api.agents.write`, and `api.responses.write` for the key.
 
 These are API credentials, not ChatGPT or Google AI consumer subscriptions. API
-usage may be billed separately. The API models and preview availability are
-controlled by their providers.
+usage is billed separately by the providers. The Antigravity interaction has a
+60,000-token per-turn ceiling in this starter; OpenAI API usage is billed separately
+and is not capped by this workflow.
 
-This starter uses the public GitHub source for ItsLeoIso/bta.github.com; no GitHub
-PAT is given to the Antigravity worker. If the repository becomes private, add a
-separate read-only repository credential to the Google managed environment before
-using this workflow. Do not give the worker a write token.
+This starter reads the public GitHub source for ItsLeoIso/bta.github.com. It does not
+yet configure Google-managed credentials for private repository clones. Do not switch
+this repo to private until private-source authentication is added and tested. No GitHub
+write token or OpenAI key is given to the Antigravity worker. Do not give the worker a write token.
 
 Optional repository Actions variables:
 
@@ -75,7 +77,8 @@ commands from the repository owner.
 - The OpenAI architect reviews Antigravity's plan before implementation; a second
   independent review happens after the code and automated tests are ready.
 - The sandbox gets repository source access only; it does not receive GITHUB_TOKEN
-  or OPENAI_API_KEY.
+  or OPENAI_API_KEY. The GitHub runner removes API secrets from its environment
+  before launching npm, Playwright, or other project test/package processes.
 - The runner writes only to a new branch and opens a PR. No automatic merge, release,
   deployment, secret changes, branch-protection changes, or repository settings edits.
 - Workflow concurrency prevents overlapping runs for the same issue (or dispatch run).
@@ -95,6 +98,8 @@ commands from the repository owner.
 - The workflow has a three-round repair cap. If the agents disagree, tests fail, or
   the service is unavailable, it leaves a draft PR or fails visibly; it does not
   claim completion.
+- The Antigravity worker and OpenAI reviewer are API agents. They do not control or
+  continue an existing browser-based Antigravity or ChatGPT conversation.
 - GitHub Actions runtime, provider quotas, and API availability limit task duration.
   Very large tasks may need to be split into several runs.
 
