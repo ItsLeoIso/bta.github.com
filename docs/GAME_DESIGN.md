@@ -135,14 +135,14 @@ These are menu destinations to plan for; their complete functionality will be im
 - Initial playable target: two placeholder fighters in a simple arena, movement, attacks, health bars, and a basic round flow.
 - Custom pixel-art sprites and animations will replace placeholders later.
 - Assists are deferred and may be reconsidered after the 1v1 foundation is solid.
-- Online multiplayer is a desired menu mode, but its technical implementation is a later phase.
+- Online multiplayer is a confirmed future mode: GGPO-style rollback netcode over WebRTC peer-to-peer (`RTCDataChannel`), with a zero-backend copy-paste invite fallback on GitHub Pages and a lightweight room-code signaling service planned later (see `docs/ONLINE_PLAN.md`). Implementation is deferred to its dedicated milestones.
 
 ## Open decisions
 
 - Detailed move lists and per-character identities.
 - Exact movement and combat frame data / physics values.
 - Throws, meter, resource systems, and final competitive round/timer rules beyond the prototype defaults.
-- Online networking architecture and matchmaking approach.
+- Online signaling host choice, NAT/TURN fallback policy, and public matchmaking scope (architecture and rollback plan recorded in `docs/ONLINE_PLAN.md`).
 - Audio direction and final sprite specifications.
 
 

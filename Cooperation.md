@@ -1224,3 +1224,48 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 **Suggested next step:**
 - Awaiting direction from Leo on the next task (e.g., Striker sprite integration, playtest feedback fixes, or an independent code review).
 
+
+### 2026-11-25 — Antigravity — Phase 5 sign-off and Phase 6 Online mode investigation & plan
+
+**Type:** Completed / Design decision / Handoff  
+**Commit:** Added in the commit containing this entry.  
+**Files / systems:**
+- `docs/ONLINE_PLAN.md` (new)
+- `docs/ROADMAP.md`
+- `docs/GAME_DESIGN.md`
+- `docs/TECHNICAL_PLAN.md`
+- `Cooperation.md`
+
+**Owner decisions recorded (Leo, 2026-11-25):**
+- Signed off on Phase 5 and moved forward to finish Phase 6 planning.
+- **Scope:** Plan Phase 6 Online mode only — do not implement networking or engine changes yet.
+- **Netcode model:** GGPO-style rollback netcode with deterministic state snapshots and configurable input delay.
+- **Transport / hosting:** WebRTC peer-to-peer (`RTCDataChannel`) with a zero-backend copy-paste invite fallback on GitHub Pages and a lightweight room-code signaling service planned later.
+
+**What changed / what I noticed:**
+- Audited `src/` (`Arena.js`, `GameLoop.js`, `MovementController.js`, `ProjectileController.js`, `ComboTracker.js`, `RoundController.js`, `CommandHistory.js`, `InputBuffer.js`, `CombatEffects.js`, `FighterAnimator.js`, `MenuController.js`, `main.js`, and stateless combat/state controllers) for rollback and 2P readiness.
+- **Good baseline:** fixed 60 Hz simulation, zero `Math.random()` / `Date.now()` / `performance.now()` in gameplay or AI, stateless combat/state controllers, and simultaneous melee trade gathering.
+- **Concrete gaps documented for future implementation (`docs/ONLINE_PLAN.md`):**
+  1. `Arena.update` is currently asymmetric (only P1 gets `CommandHistory`, `InputBuffer`, QCF Arc Lance, and hit-confirm Special cancels; P2 only gets AI or neutral input).
+  2. `MAX_FIGHTER_SEPARATION` currently adjusts only `opponent.x` toward `player.x` (P1 bias); needs symmetric clamping.
+  3. Canonical Slot 0 / Slot 1 execution is required on both peers so facing tie-breaks and update ordering match identically.
+  4. State serialization needs slot-indexed combo/projectile ownership (replacing object references in `ComboTracker` / `ProjectileController`), frame-safe timers (replacing `-Infinity` / float accumulation in `MovementController` / `RoundController`), and explicit `saveState()` / `loadState()` + FNV-1a checksums.
+  5. `CombatEffects` and one-shot audio need resimulation gating so rollbacks do not double-trigger VFX/SFX.
+  6. Online `Escape` pause must be non-blocking, and match-over rematch needs explicit two-player consent.
+- Defined the 16-bit per-frame input bitmask, WebRTC dual-channel transport (unreliable redundant input channel + reliable control channel), signaling phases, Online menu flow, and five incremental milestones (`O1`–`O5`) isolated under `src/net/`.
+- Marked Phase 5 (owner sign-off) and Phase 6's `Online mode investigation and implementation plan` complete in `docs/ROADMAP.md`, explicitly noting that Online implementation milestones `O1`–`O5` remain planned and unbuilt.
+- Updated `docs/GAME_DESIGN.md` and `docs/TECHNICAL_PLAN.md` to match. No gameplay, UI, or test source files were modified.
+
+**Verification:**
+- Tests run: `npm test` executed locally before edits — **228/228 passed, 0 failures**. Re-run after documentation edits to verify source integrity.
+- Browser/manual checks: none (documentation/planning-only pass).
+- Not verified: no online transport or rollback code exists yet; cross-browser determinism remains to be verified during milestones `O2`–`O3`.
+
+**Review requested / concerns:**
+- ChatGPT / Claude: feel free to review `docs/ONLINE_PLAN.md` for any missed determinism hazards or snapshot fields before milestone `O1` starts.
+- Open future decisions noted in `docs/ONLINE_PLAN.md`: signaling worker host choice (when reaching `O5`), STUN-only vs. TURN fallback policy, and whether public matchmaking is desired beyond private 1v1 rooms.
+
+**Suggested next step:**
+- Phase 6 planning is complete. Next up is either **Phase 7** (e.g., Striker pixel-art sprite sheet production/integration, audio/SFX, VFX polish) or beginning **Online Milestone O1** (symmetric 2P `Arena` + bitmask input adapter) once Leo gives the go-ahead to implement.
+
+

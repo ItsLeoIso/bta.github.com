@@ -49,8 +49,8 @@
 - [x] Publish a tester-facing guide with controls, mode scope, checklist, and issue-report template.
 - [x] Add automated JavaScript syntax, relative-import, and browser-entry asset checks.
 - [x] Add a Chromium browser smoke suite for menu, Online notice, Arcade pause / exit, Training reset, and narrow-viewport canvas.
-- [ ] Human browser match playtesting and visual validation.
-- [ ] Playtest and fix core movement / combat issues.
+- [x] Human browser match playtesting and visual validation (owner sign-off on Phase 5, 2026-11-25).
+- [x] Playtest and fix core movement / combat issues (owner sign-off on Phase 5, 2026-11-25; ongoing balance tuning continues in Phase 7).
 
 ## Phase 6 — Menus and modes
 - [x] Intro / START screen sequence.
@@ -59,7 +59,7 @@
 - [x] Arcade mode foundations (local best-of-three CPU match).
 - [x] Options menu (combat box and state-inspector toggles).
 - [x] Pause menu (Resume, Restart Mode, Exit to Menu; Training adds Reset Positions).
-- [ ] Online mode investigation and implementation plan.
+- [x] Online mode investigation and implementation plan (recorded in `docs/ONLINE_PLAN.md`; implementation milestones O1–O5 remain planned, not yet built).
 
 ## Phase 7 — Content and polish
 - [x] Add data-driven character profiles for Striker and CPU Rival, including per-character stats, move sets, and animation metadata.

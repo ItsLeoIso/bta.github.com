@@ -284,3 +284,14 @@ Implemented:
 - Regression coverage includes profile registration / immutability / balance preservation, animation selection and timing, custom per-character attack and projectile overrides, Arena animation transitions, and invalid character IDs.
 
 Not included: final art, custom sprite sheets, character select, portraits, bespoke roster move sets, or an asset authoring pipeline. The new pipeline makes those additions possible without coupling them to combat controller internals.
+
+
+## Phase 6 — Online mode architecture plan (not yet implemented)
+
+Recorded in `docs/ONLINE_PLAN.md` based on an engine determinism audit and owner decisions (2026-11-25):
+
+- **Netcode:** GGPO-style rollback netcode over 60 Hz deterministic simulation with a 16-bit per-frame input bitmask, configurable input delay, state snapshot ring buffer, and periodic FNV-1a checksum desync detection.
+- **Transport:** WebRTC peer-to-peer (`RTCDataChannel`: unreliable/unordered redundant input packets + reliable control channel), supporting a zero-backend copy-paste invite fallback on GitHub Pages and a lightweight room-code signaling service later.
+- **Engine prerequisites identified before transport work:** symmetric P1/P2 input/history/buffer/cancel pipeline in `Arena.update`, symmetric separation clamping, slot-indexed serializable snapshots (`saveState()` / `loadState()`), frame-counter timers in `MovementController` / `RoundController`, and resimulation-safe VFX/audio gating.
+- **Boundary:** All future networking code stays isolated under `src/net/` so local Arcade, Training, and Node tests remain zero-dependency. No networking code was implemented in this planning pass.
+
