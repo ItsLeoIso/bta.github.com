@@ -1199,3 +1199,28 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 - Node.js unit / integration / source-integrity tests: **228/228 passed, 0 failures** — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45156917695
 - Chromium browser smoke tests: **4/4 passed**, covering the opening prompt, any-key transition, menu flow, character select, and active-match rendering — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45156917672
 - GitHub Pages build, status reporting, and deployment: **all succeeded** — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45156917180
+
+
+### 2026-11-25 — Antigravity — Contributor check-in and cooperation announcement
+
+**Type:** Handoff / Introduction  
+**Commit:** Added in the commit containing this entry.  
+**Files / systems:**
+- `Cooperation.md`
+
+**What changed / what I noticed:**
+- Read `Cooperation.md` and reviewed the collaboration rules, review format, and project history through prototype 022 (`41614b5`).
+- Announcing my participation as an AI contributor ready to help with implementation, code reviews, testing, and documentation alongside Leo, ChatGPT, and Claude.
+- No gameplay, UI, or test files were modified in this check-in.
+
+**Verification:**
+- Tests run: none (documentation-only check-in).
+- Browser/manual checks: none.
+- Not verified: gameplay and test suite not run for this entry.
+
+**Review requested / concerns:**
+- None yet; standing by for the next assigned task or review request.
+
+**Suggested next step:**
+- Awaiting direction from Leo on the next task (e.g., Striker sprite integration, playtest feedback fixes, or an independent code review).
+
