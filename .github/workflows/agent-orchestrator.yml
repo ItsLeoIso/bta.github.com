@@ -15,7 +15,7 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: autonomous-agent-\${{ github.event.issue.number || github.run_id }}
+  group: autonomous-agent-${{ github.event.issue.number || github.run_id }}
   cancel-in-progress: false
 
 jobs:
@@ -44,16 +44,16 @@ jobs:
         run: python -m pip install --upgrade google-genai openai requests
       - name: Run the two-agent workflow
         env:
-          GEMINI_API_KEY: \${{ secrets.GEMINI_API_KEY }}
-          OPENAI_API_KEY: \${{ secrets.OPENAI_API_KEY }}
-          GITHUB_TOKEN: \${{ github.token }}
-          GITHUB_REPOSITORY: \${{ github.repository }}
-          GITHUB_RUN_ID: \${{ github.run_id }}
-          GITHUB_RUN_ATTEMPT: \${{ github.run_attempt }}
-          TASK_INPUT: \${{ github.event_name == 'workflow_dispatch' && inputs.task || github.event.comment.body }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
+          TASK_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.task || github.event.comment.body }}
           BASE_BRANCH: main
-          ANTIGRAVITY_AGENT_ID: \${{ vars.ANTIGRAVITY_AGENT_ID }}
-          OPENAI_REVIEW_MODEL: \${{ vars.OPENAI_REVIEW_MODEL }}
+          ANTIGRAVITY_AGENT_ID: ${{ vars.ANTIGRAVITY_AGENT_ID }}
+          OPENAI_REVIEW_MODEL: ${{ vars.OPENAI_REVIEW_MODEL }}
         run: |
           python -m unittest discover -s scripts -p 'test_*.py'
           python scripts/agent_orchestrator.py
