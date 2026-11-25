@@ -31,7 +31,7 @@ export class CanvasRenderer {
     this.canvas.height = Math.round(this.height * this.pixelRatio);
     this.context.setTransform(this.pixelRatio, 0, 0, this.pixelRatio, 0, 0);
   }
-  render(arena, alpha = 0, paused = false) {
+  render(arena, alpha = 0, paused = false, onlineView = null) {
     const ctx = this.context, width = this.width, height = this.height;
     const scale = Math.min(width / arena.width, height / arena.height);
     const offsetX = (width - arena.width * scale) / 2, offsetY = (height - arena.height * scale) / 2;
@@ -48,12 +48,13 @@ export class CanvasRenderer {
     this.drawCombatEffects(ctx, arena.combatEffects);
     this.drawCombatBoxes(ctx, arena);
     ctx.restore();
-    this.drawHud(ctx, arena);
-    this.drawComboCounter(ctx, arena);
-    this.drawInputBuffer(ctx, arena);
+    this.drawHud(ctx, arena, onlineView);
+    this.drawOnlineHud(ctx, arena, onlineView);
+    this.drawComboCounter(ctx, arena, onlineView);
+    this.drawInputBuffer(ctx, arena, onlineView);
     this.drawCommandFeedback(ctx, arena);
-    this.drawRoundOverlay(ctx, arena);
-    if (paused) {
+    this.drawRoundOverlay(ctx, arena, onlineView);
+    if (paused && !onlineView) {
       ctx.fillStyle = "rgba(0,0,0,.68)"; ctx.fillRect(0,0,arena.width,arena.height);
       ctx.fillStyle = COLORS.accent; ctx.textAlign = "center"; ctx.font = "bold 34px monospace";
       ctx.fillText("PAUSED", arena.width/2, arena.height/2);
@@ -379,10 +380,19 @@ export class CanvasRenderer {
     ctx.restore();
   }
 
-  drawHud(ctx, arena) {
+  drawHud(ctx, arena, onlineView = null) {
     const guardWidth = fighter => 300 * Math.max(0, Math.min(1, (fighter.guardMeter ?? 100) / 100));
-    ctx.fillStyle = COLORS.text; ctx.font = "bold 16px monospace"; ctx.textAlign = "left"; ctx.fillText("PLAYER 01",32,22);
-    ctx.textAlign = "right"; ctx.fillText(arena.opponent.displayName ?? "CPU RIVAL",arena.width-32,22);
+    const slot0Name = (arena.player.displayName ?? "PLAYER 01").toUpperCase();
+    const slot1Name = (arena.opponent.displayName ?? "CPU RIVAL").toUpperCase();
+    const leftLabel = onlineView
+      ? (onlineView.localSlot === 0 ? `${slot0Name} · YOU` : `${slot0Name} · RIVAL`)
+      : "PLAYER 01";
+    const rightLabel = onlineView
+      ? (onlineView.localSlot === 1 ? `${slot1Name} · YOU` : `${slot1Name} · RIVAL`)
+      : (arena.opponent.displayName ?? "CPU RIVAL");
+
+    ctx.fillStyle = COLORS.text; ctx.font = "bold 16px monospace"; ctx.textAlign = "left"; ctx.fillText(leftLabel,32,22);
+    ctx.textAlign = "right"; ctx.fillText(rightLabel,arena.width-32,22);
     ctx.fillStyle = "#302d35"; ctx.fillRect(32,30,300,12); ctx.fillRect(arena.width-332,30,300,12);
     ctx.fillStyle = COLORS.player; ctx.fillRect(32,30,300*arena.player.health,12);
     ctx.fillStyle = COLORS.opponent; ctx.fillRect(arena.width-332+300*(1-arena.opponent.health),30,300*arena.opponent.health,12);
@@ -409,29 +419,65 @@ export class CanvasRenderer {
     ctx.fillText(arena.trainingMode ? "PRACTICE MODE" : rounds.score.player + "  -  " + rounds.score.opponent,arena.width/2,82);
   }
 
-  drawComboCounter(ctx, arena) {
-    const combo=arena.comboTracker?.getComboForAttacker(arena.player);
+  drawOnlineHud(ctx, arena, onlineView) {
+    if (!onlineView) return;
+    const stats = onlineView.stats;
+    const pingText = Number.isFinite(onlineView.rttMs) ? `${onlineView.rttMs}MS` : "--MS";
+    const delayText = `D:${onlineView.inputDelay}F`;
+    const rbText = `RB:${stats?.lastRollbackFrames ?? 0}F`;
+    const syncText = stats?.desynced
+      ? "DESYNC!"
+      : stats?.stalled
+        ? "WAITING..."
+        : stats?.lastVerifiedChecksum
+          ? `SYNC ${stats.lastVerifiedChecksum.slice(0, 4).toUpperCase()}`
+          : "P2P LIVE";
+
+    const label = `ONLINE · ${pingText} · ${delayText} · ${rbText} · ${syncText}`;
+    ctx.save();
+    ctx.font = "bold 10px monospace";
+    ctx.textAlign = "center";
+    const badgeWidth = Math.max(290, ctx.measureText(label).width + 24);
+    ctx.fillStyle = stats?.desynced
+      ? "rgba(110, 22, 36, .88)"
+      : stats?.stalled
+        ? "rgba(92, 66, 16, .86)"
+        : "rgba(14, 12, 22, .78)";
+    ctx.fillRect(arena.width / 2 - badgeWidth / 2, 89, badgeWidth, 18);
+    ctx.strokeStyle = stats?.desynced ? "#ff7a90" : stats?.stalled ? "#ffe096" : "#4b415a";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(arena.width / 2 - badgeWidth / 2, 89, badgeWidth, 18);
+    ctx.fillStyle = stats?.desynced ? "#ffd1d9" : stats?.stalled ? "#ffe096" : "#d9c8f0";
+    ctx.fillText(label, arena.width / 2, 102);
+    ctx.restore();
+  }
+
+  drawComboCounter(ctx, arena, onlineView = null) {
+    const localFighter = onlineView?.localSlot === 1 ? arena.opponent : arena.player;
+    const combo = arena.comboTracker?.getComboForAttacker(localFighter);
     if(!combo || combo.hitCount<2) return;
     ctx.save();
     ctx.textAlign="center";
     ctx.fillStyle=combo.airCombo ? "#8ecbff" : "#ffe096";
     ctx.font="bold 20px monospace";
-    ctx.fillText((combo.airCombo ? "AIR COMBO" : "COMBO") + " x" + combo.hitCount,arena.width/2,112);
+    const yBase = onlineView ? 132 : 112;
+    ctx.fillText((combo.airCombo ? "AIR COMBO" : "COMBO") + " x" + combo.hitCount,arena.width/2,yBase);
     ctx.fillStyle=COLORS.text;
     ctx.font="bold 10px monospace";
-    ctx.fillText((combo.totalDamage*100).toFixed(1) + "% DAMAGE",arena.width/2,128);
+    ctx.fillText((combo.totalDamage*100).toFixed(1) + "% DAMAGE",arena.width/2,yBase + 16);
     ctx.restore();
   }
 
-  drawInputBuffer(ctx, arena) {
-    const remaining=arena.inputBuffer?.remainingFrames(arena.inputFrame ?? 0) ?? 0;
-    const action=arena.inputBuffer?.pending?.action;
+  drawInputBuffer(ctx, arena, onlineView = null) {
+    const buffer = onlineView?.localSlot === 1 ? arena.opponentInputBuffer : arena.inputBuffer;
+    const remaining = buffer?.remainingFrames(arena.inputFrame ?? 0) ?? 0;
+    const action = buffer?.pending?.action;
     if (!remaining || !action) return;
     ctx.save();
     ctx.fillStyle="#ffe096";
     ctx.font="bold 11px monospace";
     ctx.textAlign="left";
-    const label=action==="special" && arena.inputBuffer.pending?.specialMove==="arcLance"
+    const label=action==="special" && buffer.pending?.specialMove==="arcLance"
       ? "ARC LANCE"
       : action.toUpperCase();
     ctx.fillText("BUFFER " + label + " · " + remaining + "F",32,arena.height-18);
@@ -448,18 +494,26 @@ export class CanvasRenderer {
     ctx.restore();
   }
 
-  drawRoundOverlay(ctx, arena) {
+  drawRoundOverlay(ctx, arena, onlineView = null) {
     const rounds = arena.rounds;
     let headline = null;
     let detail = "";
     let prompt = "";
+
+    const winnerLabel = winner => {
+      if (!onlineView) {
+        return winner === "player" ? "PLAYER 01" : "CPU RIVAL";
+      }
+      const winnerSlot = winner === "player" ? 0 : 1;
+      return winnerSlot === onlineView.localSlot ? "YOU" : "RIVAL";
+    };
 
     if (rounds.phase === ROUND_PHASES.ROUND_INTRO) {
       headline = "ROUND " + rounds.roundNumber;
       detail = "GET READY";
     } else if (rounds.phase === ROUND_PHASES.ROUND_OVER) {
       headline = rounds.roundWinner
-        ? (rounds.roundWinner === "player" ? "PLAYER 01 WINS ROUND" : "CPU RIVAL WINS ROUND")
+        ? winnerLabel(rounds.roundWinner) + " WINS ROUND"
         : "ROUND DRAW";
       detail = rounds.resultReason === "timeout"
         ? "TIME UP"
@@ -467,9 +521,14 @@ export class CanvasRenderer {
           ? "DOUBLE K.O."
           : "K.O.";
     } else if (rounds.phase === ROUND_PHASES.MATCH_OVER) {
-      headline = rounds.matchWinner === "player" ? "PLAYER 01 WINS" : "CPU RIVAL WINS";
-      detail = "MATCH COMPLETE";
-      prompt = "PRESS ENTER TO REMATCH";
+      headline = winnerLabel(rounds.matchWinner) + " WINS";
+      detail = onlineView ? "ONLINE MATCH COMPLETE" : "MATCH COMPLETE";
+      if (onlineView) {
+        const votes = Number(Boolean(onlineView.localRematchVote)) + Number(Boolean(onlineView.remoteRematchVote));
+        prompt = `REMATCH VOTES: ${votes}/2 · USE MENU BELOW`;
+      } else {
+        prompt = "PRESS ENTER TO REMATCH";
+      }
     } else if (rounds.phase === ROUND_PHASES.ACTIVE && rounds.bannerRemaining > 0) {
       headline = rounds.bannerText;
     }

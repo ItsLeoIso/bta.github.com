@@ -1,9 +1,17 @@
-/** Fixed-step simulation loop with interpolated rendering. */
+/** Fixed-step simulation loop with interpolated rendering and optional wall-clock pacing. */
 export class GameLoop {
-  constructor({ update, render, fixedDelta = 1 / 60, maxFrameDelta = 0.25, onError = console.error }) {
+  constructor({
+    update,
+    render,
+    fixedDelta = 1 / 60,
+    maxFrameDelta = 0.25,
+    getStepIntervalSeconds = null,
+    onError = console.error
+  }) {
     if (typeof update !== "function" || typeof render !== "function") throw new TypeError("GameLoop requires update and render functions.");
     this.update = update; this.render = render; this.fixedDelta = fixedDelta;
     this.maxFrameDelta = maxFrameDelta; this.onError = onError;
+    this.getStepIntervalSeconds = typeof getStepIntervalSeconds === "function" ? getStepIntervalSeconds : null;
     this.accumulator = 0; this.lastTime = null; this.frameId = null; this.running = false;
     this.frame = this.frame.bind(this);
   }
@@ -24,11 +32,14 @@ export class GameLoop {
       if (this.lastTime === null) this.lastTime = now;
       const elapsed = Math.min(Math.max(0, now - this.lastTime), this.maxFrameDelta);
       this.lastTime = now; this.accumulator += elapsed;
-      while (this.accumulator >= this.fixedDelta) {
+      const stepInterval = this.getStepIntervalSeconds
+        ? Math.max(this.fixedDelta, this.getStepIntervalSeconds())
+        : this.fixedDelta;
+      while (this.accumulator >= stepInterval) {
         this.update(this.fixedDelta);
-        this.accumulator -= this.fixedDelta;
+        this.accumulator -= stepInterval;
       }
-      this.render(this.accumulator / this.fixedDelta);
+      this.render(Math.min(1, this.accumulator / stepInterval));
       this.frameId = requestAnimationFrame(this.frame);
     } catch (error) {
       this.stop(); this.onError(error);

@@ -2,9 +2,11 @@ import { GameLoop } from "./engine/GameLoop.js";
 import { CanvasRenderer } from "./engine/CanvasRenderer.js";
 import { Arena } from "./engine/Arena.js";
 import { KeyboardInput } from "./input/KeyboardInput.js";
+import { encodeInputMask } from "./input/BitmaskInput.js";
 import { StateDebugPanel } from "./ui/StateDebugPanel.js";
 import { ROUND_PHASES } from "./combat/RoundController.js";
 import { MenuController, MENU_SCREENS } from "./ui/MenuController.js";
+import { OnlineMatchController, ONLINE_PHASES } from "./net/OnlineMatchController.js";
 
 const canvas = document.querySelector("#game-canvas");
 const status = document.querySelector("#engine-status");
@@ -13,6 +15,7 @@ const gamePanel = document.querySelector(".game-panel");
 const controlsRoot = document.querySelector(".controls");
 const menuRoot = document.querySelector("#front-menu");
 const menuContent = document.querySelector("#front-menu-content");
+const onlineMatchBar = document.querySelector("#online-match-bar");
 
 
 function createFighterArt(className) {
@@ -138,9 +141,22 @@ try {
   let arena = new Arena();
   let gameStarted = false;
 
+  const urlParams = new URLSearchParams(window.location.search);
+  const defaultLocalSignaling = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+    ? "ws://localhost:8787"
+    : "";
+  let onlineTab = urlParams.get("signal") || urlParams.get("room") ? "room" : "direct";
+  let draftSignalingUrl = urlParams.get("signal") ?? window.BTA_ONLINE_CONFIG?.signalingUrl ?? defaultLocalSignaling;
+  let draftRoomCode = (urlParams.get("room") ?? "").toUpperCase();
+  let draftRemoteOffer = "";
+  let draftRemoteAnswer = "";
+  let lastOnlinePhaseRendered = null;
+  let lastOnlineMatchBarKey = "";
+
   gamePanel.hidden = true;
   stateDebugRoot.hidden = true;
   controlsRoot.hidden = true;
+  if (onlineMatchBar) onlineMatchBar.hidden = true;
 
   const makeButton = (label, className, onClick, pressed = false) => {
     const button = document.createElement("button");
@@ -152,8 +168,78 @@ try {
     return button;
   };
 
+  const copyToClipboard = async (text, button) => {
+    if (!text) return;
+    try {
+      await navigator.clipboard?.writeText(text);
+      const original = button.textContent;
+      button.textContent = "COPIED!";
+      window.setTimeout(() => { button.textContent = original; }, 1200);
+    } catch {
+      // Fallback: focus/select handled by user clicking the readonly box.
+    }
+  };
+
+  const online = new OnlineMatchController({
+    signalingUrl: draftSignalingUrl,
+    iceServers: window.BTA_ONLINE_CONFIG?.iceServers,
+    onMatchStart: (session) => {
+      arena = session.arena;
+      const opts = menu.getViewModel().options;
+      renderer.showHitboxes = opts.showHitboxes;
+      stateDebugRoot.hidden = !opts.showInspector;
+      gamePanel.hidden = false;
+      controlsRoot.hidden = false;
+      menuRoot.hidden = true;
+      menuRoot.dataset.onlinePause = "false";
+      gameStarted = true;
+      menu.startOnline();
+      renderOnlineMatchBar(online.getViewModel());
+      status.textContent = "ONLINE ROLLBACK · P2P LIVE · FIXED 60 HZ";
+    },
+    onStateChange: (onlineView) => {
+      if (onlineView.phase === ONLINE_PHASES.CHARACTER_SELECT && gameStarted && menu.mode === "online") {
+        gameStarted = false;
+        gamePanel.hidden = true;
+        controlsRoot.hidden = true;
+        stateDebugRoot.hidden = true;
+        if (onlineMatchBar) onlineMatchBar.hidden = true;
+        menuRoot.dataset.onlinePause = "false";
+        menu.openOnline();
+        return;
+      }
+
+      if (menu.screen === MENU_SCREENS.ONLINE) {
+        // Avoid wiping active typing focus during RTT-only pings when in lobby;
+        // always re-render on phase/code/ready/char changes.
+        const key = JSON.stringify([
+          onlineView.phase,
+          onlineView.roomCode,
+          onlineView.localOfferCode,
+          onlineView.localAnswerCode,
+          onlineView.localCharacterId,
+          onlineView.remoteCharacterId,
+          onlineView.localReady,
+          onlineView.remoteReady,
+          onlineView.inputDelay,
+          onlineView.statusMessage,
+          onlineView.errorMessage
+        ]);
+        if (key !== lastOnlinePhaseRendered) {
+          lastOnlinePhaseRendered = key;
+          renderMenu(menu.getViewModel());
+        }
+      } else if (menu.mode === "online" && gameStarted) {
+        renderOnlineMatchBar(onlineView);
+      }
+    }
+  });
+
   const menu = new MenuController({
     onResetTraining: () => arena.resetTraining(),
+    onForfeitOnline: () => {
+      online.forfeitAndExit();
+    },
     onStart: (mode, options) => {
       arena = new Arena({
         opponentAIEnabled: mode === "arcade",
@@ -166,6 +252,8 @@ try {
       gamePanel.hidden = false;
       controlsRoot.hidden = false;
       menuRoot.hidden = true;
+      menuRoot.dataset.onlinePause = "false";
+      if (onlineMatchBar) onlineMatchBar.hidden = true;
       gameStarted = true;
       status.textContent = mode === "training"
         ? "TRAINING MODE · DUMMY AUTO-RECOVERS"
@@ -173,6 +261,99 @@ try {
     },
     onChange: handleMenuChange
   });
+
+  function renderOnlineMatchBar(onlineView) {
+    if (!onlineMatchBar) return;
+    if (menu.mode !== "online" || !gameStarted) {
+      onlineMatchBar.hidden = true;
+      lastOnlineMatchBarKey = "";
+      return;
+    }
+
+    const showDisconnected = onlineView.phase === ONLINE_PHASES.DISCONNECTED || onlineView.phase === ONLINE_PHASES.ERROR;
+    const showDesync = Boolean(onlineView.stats?.desynced);
+    const showMatchOver = Boolean(onlineView.matchOver);
+
+    if (!showDisconnected && !showDesync && !showMatchOver) {
+      onlineMatchBar.hidden = true;
+      lastOnlineMatchBarKey = "";
+      return;
+    }
+
+    const key = JSON.stringify([
+      showDisconnected,
+      showDesync,
+      showMatchOver,
+      onlineView.localRematchVote,
+      onlineView.remoteRematchVote,
+      onlineView.statusMessage
+    ]);
+    if (key === lastOnlineMatchBarKey) return;
+    lastOnlineMatchBarKey = key;
+
+    onlineMatchBar.replaceChildren();
+    onlineMatchBar.hidden = false;
+
+    const text = document.createElement("span");
+    text.className = "online-match-bar__text";
+
+    if (showDisconnected) {
+      text.textContent = onlineView.statusMessage.toUpperCase();
+      onlineMatchBar.append(
+        text,
+        makeButton("RETURN TO LOBBY", "menu-primary", () => {
+          online.disconnect();
+          gameStarted = false;
+          gamePanel.hidden = true;
+          controlsRoot.hidden = true;
+          stateDebugRoot.hidden = true;
+          onlineMatchBar.hidden = true;
+          menu.openOnline();
+        }),
+        makeButton("MAIN MENU", "menu-choice", () => {
+          online.disconnect();
+          menu.exitToMenu();
+        })
+      );
+      return;
+    }
+
+    if (showDesync) {
+      text.textContent = (onlineView.stats?.desyncInfo?.reason ?? "STATE DESYNC DETECTED").toUpperCase();
+      onlineMatchBar.append(
+        text,
+        makeButton("EXIT TO LOBBY", "menu-primary", () => {
+          online.disconnect();
+          gameStarted = false;
+          gamePanel.hidden = true;
+          controlsRoot.hidden = true;
+          stateDebugRoot.hidden = true;
+          onlineMatchBar.hidden = true;
+          menu.openOnline();
+        })
+      );
+      return;
+    }
+
+    const votes = Number(onlineView.localRematchVote) + Number(onlineView.remoteRematchVote);
+    text.textContent = `REMATCH (${votes}/2)`;
+    const rematchBtn = makeButton(
+      onlineView.localRematchVote ? "WAITING FOR RIVAL..." : "VOTE REMATCH",
+      "menu-primary",
+      () => online.voteRematch()
+    );
+    if (onlineView.localRematchVote) rematchBtn.disabled = true;
+
+    onlineMatchBar.append(
+      text,
+      rematchBtn,
+      makeButton("CHARACTER SELECT", "menu-choice", () => online.requestCharacterSelect()),
+      makeButton("EXIT TO MENU", "menu-choice", () => {
+        online.forfeitAndExit();
+        menu.exitToMenu();
+      })
+    );
+  }
 
   function handleMenuChange(view) {
     if (view.screen === MENU_SCREENS.INTRO) {
@@ -184,15 +365,317 @@ try {
         menu.finishIntro();
       }, 1850);
     }
-    if(view.screen===MENU_SCREENS.MAIN && gameStarted){
-      gameStarted=false;
-      gamePanel.hidden=true;
-      controlsRoot.hidden=true;
-      stateDebugRoot.hidden=true;
-      status.textContent="SELECT MODE · ENTER TO CONFIRM";
+    if (view.screen === MENU_SCREENS.MAIN && gameStarted) {
+      if (view.mode === "online") online.disconnect();
+      gameStarted = false;
+      gamePanel.hidden = true;
+      controlsRoot.hidden = true;
+      stateDebugRoot.hidden = true;
+      if (onlineMatchBar) onlineMatchBar.hidden = true;
+      status.textContent = "SELECT MODE · ENTER TO CONFIRM";
     }
-    menuRoot.hidden=view.screen===MENU_SCREENS.PLAYING;
+    if (view.screen === MENU_SCREENS.MAIN && online.phase !== ONLINE_PHASES.LOBBY) {
+      online.disconnect();
+    }
+    const isOnlinePause = view.screen === MENU_SCREENS.PAUSE && view.mode === "online";
+    menuRoot.dataset.onlinePause = isOnlinePause ? "true" : "false";
+    menuRoot.hidden = view.screen === MENU_SCREENS.PLAYING;
+    if (view.screen === MENU_SCREENS.ONLINE) lastOnlinePhaseRendered = null;
     renderMenu(view);
+  }
+
+  function renderOnlineScreen() {
+    const ov = online.getViewModel();
+    const title = document.createElement("h2");
+    title.textContent = ov.phase === ONLINE_PHASES.CHARACTER_SELECT || ov.phase === ONLINE_PHASES.HANDSHAKING
+      ? "ONLINE · SELECT YOUR FIGHTER"
+      : "ONLINE · 1V1 ROLLBACK";
+
+    const statusBox = document.createElement("p");
+    statusBox.className = "online-status";
+    statusBox.dataset.testid = "online-status";
+    statusBox.dataset.error = ov.phase === ONLINE_PHASES.ERROR || ov.phase === ONLINE_PHASES.DISCONNECTED ? "true" : "false";
+    statusBox.textContent = ov.statusMessage;
+
+    if (ov.phase === ONLINE_PHASES.CHARACTER_SELECT || ov.phase === ONLINE_PHASES.HANDSHAKING) {
+      const subtitle = document.createElement("p");
+      subtitle.className = "menu-subtitle";
+      const pingInfo = Number.isFinite(ov.rttMs) ? ` · PING ${ov.rttMs}MS` : "";
+      subtitle.textContent =
+        `P2P CONNECTED (${ov.localSlot === 0 ? "HOST · SLOT 1" : "GUEST · SLOT 2"}) · DELAY ${ov.inputDelay}F${pingInfo}`;
+
+      const localChar = ov.characters.find(c => c.id === ov.localCharacterId) ?? ov.characters[0];
+      const remoteChar = ov.characters.find(c => c.id === ov.remoteCharacterId) ?? ov.characters[0];
+
+      const matchup = document.createElement("div");
+      matchup.className = "character-select__matchup";
+
+      const makeOnlineCard = (char, roleText, isReady, testId, extraClass) => {
+        const card = document.createElement("section");
+        card.className = "character-card " + extraClass;
+        card.dataset.characterId = char.id;
+        card.dataset.testid = testId;
+        const role = document.createElement("p");
+        role.className = "character-card__role";
+        role.textContent = roleText;
+        const name = document.createElement("h3");
+        name.textContent = char.name;
+        const archetype = document.createElement("p");
+        archetype.className = "character-card__archetype";
+        archetype.textContent = char.archetype;
+        const stats = document.createElement("dl");
+        stats.className = "character-card__stats";
+        [
+          ["MOVE SPEED", String(char.stats.moveSpeed)],
+          ["DAMAGE", (char.stats.damageMultiplier * 100).toFixed(0) + "%"]
+        ].forEach(([label, val]) => {
+          const item = document.createElement("div");
+          const dt = document.createElement("dt");
+          dt.textContent = label;
+          const dd = document.createElement("dd");
+          dd.textContent = val;
+          item.append(dt, dd);
+          stats.append(item);
+        });
+        const readyBadge = document.createElement("span");
+        readyBadge.className = "online-ready-badge";
+        readyBadge.dataset.ready = isReady ? "true" : "false";
+        readyBadge.textContent = isReady ? "READY" : "SELECTING...";
+        card.append(role, name, archetype, stats, readyBadge);
+        return card;
+      };
+
+      const versus = document.createElement("div");
+      versus.className = "character-select__versus";
+      versus.textContent = "VS";
+
+      matchup.append(
+        makeOnlineCard(localChar, ov.localSlot === 0 ? "YOU · PLAYER 01" : "YOU · PLAYER 02", ov.localReady, "online-char-local", "character-card--player"),
+        versus,
+        makeOnlineCard(remoteChar, ov.localSlot === 0 ? "RIVAL · PLAYER 02" : "RIVAL · PLAYER 01", ov.remoteReady, "online-char-remote", "character-card--opponent")
+      );
+
+      const nav = document.createElement("div");
+      nav.className = "character-select__navigation";
+      nav.append(
+        makeButton("← PREVIOUS", "menu-choice character-nav", () => online.cycleCharacter(-1)),
+        makeButton("NEXT →", "menu-choice character-nav", () => online.cycleCharacter(1))
+      );
+
+      const actions = document.createElement("div");
+      actions.className = "character-select__actions";
+      const readyBtn = makeButton(
+        ov.localReady ? "CANCEL READY" : "READY TO FIGHT",
+        "menu-primary character-confirm",
+        () => online.toggleReady()
+      );
+      readyBtn.dataset.testid = "online-ready-btn";
+      actions.append(
+        makeButton("DISCONNECT", "menu-choice character-back", () => online.disconnect()),
+        readyBtn
+      );
+
+      menuContent.append(title, subtitle, statusBox, matchup, nav, actions);
+      return;
+    }
+
+    // --- Lobby screen (Direct Invite & Room Code tabs) ---
+    const toolbar = document.createElement("div");
+    toolbar.className = "online-toolbar";
+
+    const tabs = document.createElement("div");
+    tabs.className = "online-tabs";
+    tabs.append(
+      makeButton(
+        "DIRECT INVITE (NO SERVER)",
+        "menu-choice" + (onlineTab === "direct" ? " is-selected" : ""),
+        () => { onlineTab = "direct"; renderMenu(menu.getViewModel()); },
+        onlineTab === "direct"
+      ),
+      makeButton(
+        "ROOM CODE (SIGNALING)",
+        "menu-choice" + (onlineTab === "room" ? " is-selected" : ""),
+        () => { onlineTab = "room"; renderMenu(menu.getViewModel()); },
+        onlineTab === "room"
+      )
+    );
+
+    const delayPicker = document.createElement("div");
+    delayPicker.className = "online-delay-picker";
+    const delayLabel = document.createElement("span");
+    delayLabel.textContent = "INPUT DELAY:";
+    delayPicker.append(delayLabel);
+    [0, 1, 2, 3, 4].forEach(frames => {
+      const btn = makeButton(
+        `${frames}F`,
+        "online-delay-btn" + (ov.inputDelay === frames ? " is-selected" : ""),
+        () => online.setInputDelay(frames),
+        ov.inputDelay === frames
+      );
+      delayPicker.append(btn);
+    });
+    toolbar.append(tabs, delayPicker);
+
+    const grid = document.createElement("div");
+    grid.className = "online-grid";
+
+    if (onlineTab === "direct") {
+      // Host panel
+      const hostPanel = document.createElement("section");
+      hostPanel.className = "online-panel";
+      const hostTitle = document.createElement("h3");
+      hostTitle.textContent = "HOST · CREATE INVITE";
+      const hostHelp = document.createElement("p");
+      hostHelp.textContent = "Works directly on GitHub Pages with zero backend. Generate an invite code, send it to your opponent, then paste their Answer code.";
+      const createInviteBtn = makeButton("CREATE DIRECT INVITE", "menu-primary", () => {
+        void online.createDirectInvite();
+      });
+      createInviteBtn.dataset.testid = "online-create-invite";
+
+      const offerOutput = document.createElement("textarea");
+      offerOutput.className = "online-field";
+      offerOutput.rows = 3;
+      offerOutput.readOnly = true;
+      offerOutput.placeholder = "Your BTA1:... invite code will appear here";
+      offerOutput.value = ov.localOfferCode;
+      offerOutput.dataset.testid = "online-offer-output";
+
+      const copyOfferBtn = makeButton("COPY INVITE", "menu-choice", () => copyToClipboard(ov.localOfferCode, copyOfferBtn));
+      copyOfferBtn.disabled = !ov.localOfferCode;
+
+      const answerInput = document.createElement("textarea");
+      answerInput.className = "online-field";
+      answerInput.rows = 3;
+      answerInput.placeholder = "Paste guest BTA1:... Answer code here";
+      answerInput.value = draftRemoteAnswer;
+      answerInput.dataset.testid = "online-answer-input";
+      answerInput.addEventListener("input", () => { draftRemoteAnswer = answerInput.value; });
+
+      const connectBtn = makeButton("CONNECT WITH ANSWER", "menu-primary", () => {
+        void online.completeDirectInvite(draftRemoteAnswer);
+      });
+      connectBtn.dataset.testid = "online-connect-answer";
+
+      const hostActions = document.createElement("div");
+      hostActions.className = "online-actions";
+      hostActions.append(createInviteBtn, copyOfferBtn);
+
+      hostPanel.append(hostTitle, hostHelp, hostActions, offerOutput, answerInput, connectBtn);
+
+      // Guest panel
+      const guestPanel = document.createElement("section");
+      guestPanel.className = "online-panel";
+      const guestTitle = document.createElement("h3");
+      guestTitle.textContent = "JOIN · PASTE HOST INVITE";
+      const guestHelp = document.createElement("p");
+      guestHelp.textContent = "Paste the Host's invite code, create your Answer code, and send it back. Character Select opens automatically once connected.";
+
+      const offerInput = document.createElement("textarea");
+      offerInput.className = "online-field";
+      offerInput.rows = 3;
+      offerInput.placeholder = "Paste Host BTA1:... invite code here";
+      offerInput.value = draftRemoteOffer;
+      offerInput.dataset.testid = "online-offer-input";
+      offerInput.addEventListener("input", () => { draftRemoteOffer = offerInput.value; });
+
+      const createAnswerBtn = makeButton("CREATE ANSWER", "menu-primary", () => {
+        void online.acceptDirectInvite(draftRemoteOffer);
+      });
+      createAnswerBtn.dataset.testid = "online-create-answer";
+
+      const answerOutput = document.createElement("textarea");
+      answerOutput.className = "online-field";
+      answerOutput.rows = 3;
+      answerOutput.readOnly = true;
+      answerOutput.placeholder = "Your BTA1:... Answer code will appear here";
+      answerOutput.value = ov.localAnswerCode;
+      answerOutput.dataset.testid = "online-answer-output";
+
+      const copyAnswerBtn = makeButton("COPY ANSWER", "menu-choice", () => copyToClipboard(ov.localAnswerCode, copyAnswerBtn));
+      copyAnswerBtn.disabled = !ov.localAnswerCode;
+
+      const guestActions = document.createElement("div");
+      guestActions.className = "online-actions";
+      guestActions.append(createAnswerBtn, copyAnswerBtn);
+
+      guestPanel.append(guestTitle, guestHelp, offerInput, guestActions, answerOutput);
+      grid.append(hostPanel, guestPanel);
+    } else {
+      // Room-Code Signaling panel
+      const hostPanel = document.createElement("section");
+      hostPanel.className = "online-panel";
+      const hostTitle = document.createElement("h3");
+      hostTitle.textContent = "HOST · ROOM CODE";
+      const hostHelp = document.createElement("p");
+      hostHelp.textContent = "Uses a lightweight WebSocket signaling relay (run locally with `node server/signaling-server.js` or deploy `server/cloudflare-worker.js`). Match traffic stays direct WebRTC P2P.";
+
+      const urlInput = document.createElement("input");
+      urlInput.type = "text";
+      urlInput.className = "online-field";
+      urlInput.placeholder = "ws://localhost:8787 or wss://your-worker.workers.dev";
+      urlInput.value = draftSignalingUrl;
+      urlInput.dataset.testid = "online-signaling-url";
+      urlInput.addEventListener("input", () => { draftSignalingUrl = urlInput.value; });
+
+      const createRoomBtn = makeButton("CREATE ROOM", "menu-primary", () => {
+        void online.createRoom(draftSignalingUrl);
+      });
+      createRoomBtn.dataset.testid = "online-create-room";
+
+      hostPanel.append(hostTitle, hostHelp, urlInput, createRoomBtn);
+      if (ov.roomCode && ov.localSlot === 0) {
+        const codeBox = document.createElement("div");
+        codeBox.className = "online-room-code";
+        codeBox.dataset.testid = "online-room-code";
+        codeBox.textContent = ov.roomCode;
+        const copyCodeBtn = makeButton("COPY ROOM CODE", "menu-choice", () => copyToClipboard(ov.roomCode, copyCodeBtn));
+        hostPanel.append(codeBox, copyCodeBtn);
+      }
+
+      const joinPanel = document.createElement("section");
+      joinPanel.className = "online-panel";
+      const joinTitle = document.createElement("h3");
+      joinTitle.textContent = "JOIN · ENTER ROOM CODE";
+      const joinHelp = document.createElement("p");
+      joinHelp.textContent = "Enter the 5-character code from your host. If the signaling server is unavailable, switch back to Direct Invite.";
+
+      const codeInput = document.createElement("input");
+      codeInput.type = "text";
+      codeInput.className = "online-field";
+      codeInput.maxLength = 10;
+      codeInput.placeholder = "ROOM CODE (E.G. 7K2PB)";
+      codeInput.value = draftRoomCode;
+      codeInput.dataset.testid = "online-join-code-input";
+      codeInput.addEventListener("input", () => {
+        draftRoomCode = codeInput.value.toUpperCase();
+        codeInput.value = draftRoomCode;
+      });
+
+      const joinBtn = makeButton("JOIN ROOM", "menu-primary", () => {
+        void online.joinRoom(draftRoomCode, draftSignalingUrl);
+      });
+      joinBtn.dataset.testid = "online-join-room";
+
+      joinPanel.append(joinTitle, joinHelp, codeInput, joinBtn);
+      grid.append(hostPanel, joinPanel);
+    }
+
+    const natNote = document.createElement("p");
+    natNote.className = "menu-hint";
+    natNote.textContent = "WEBRTC P2P (GGPO ROLLBACK · STUN DEFAULT) · STRICT FIREWALLS MAY REQUIRE TURN · ESC TO RETURN";
+
+    const footerActions = document.createElement("div");
+    footerActions.className = "online-actions";
+    const back = makeButton("BACK TO MENU", "menu-choice", () => {
+      online.disconnect();
+      menu.back();
+    });
+    footerActions.append(back);
+    if (ov.phase !== ONLINE_PHASES.LOBBY) {
+      footerActions.append(makeButton("RESET CONNECTION", "menu-choice", () => online.disconnect()));
+    }
+
+    menuContent.append(title, statusBox, toolbar, grid, natNote, footerActions);
   }
 
   function renderMenu(view = menu.getViewModel()) {
@@ -348,10 +831,12 @@ try {
 
     if (view.screen === MENU_SCREENS.PAUSE) {
       const title = document.createElement("h2");
-      title.textContent = "PAUSED";
+      title.textContent = view.mode === "online" ? "ONLINE MENU" : "PAUSED";
       const subtitle = document.createElement("p");
       subtitle.className = "menu-subtitle";
-      subtitle.textContent = "MATCH SUSPENDED";
+      subtitle.textContent = view.mode === "online"
+        ? "MATCH CONTINUES LIVE IN BACKGROUND"
+        : "MATCH SUSPENDED";
       const list = document.createElement("div");
       list.className = "menu-list";
       view.pauseItems.forEach((item,index) => {
@@ -371,16 +856,7 @@ try {
     }
 
     if (view.screen === MENU_SCREENS.ONLINE) {
-      const title = document.createElement("h2");
-      title.textContent = "ONLINE";
-      const message = document.createElement("p");
-      message.className = "menu-message";
-      message.textContent = "NETWORK MATCHMAKING IS NOT CONNECTED YET. LOCAL ARCADE AND TRAINING ARE READY.";
-      const hint = document.createElement("p");
-      hint.className = "menu-hint";
-      hint.textContent = "PRESS ENTER OR ESC TO RETURN";
-      const back = makeButton("BACK", "menu-primary", () => menu.back());
-      menuContent.append(title, message, hint, back);
+      renderOnlineScreen();
       return;
     }
 
@@ -415,6 +891,15 @@ try {
   });
 
   const onMenuKeyDown = event => {
+    const tag = event.target?.tagName;
+    const typingInField = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || Boolean(event.target?.isContentEditable);
+    if (typingInField) {
+      if (event.key === "Escape") {
+        event.target.blur?.();
+      }
+      return;
+    }
+
     if (menu.screen === MENU_SCREENS.PLAYING) {
       if(event.key==="Escape"){
         menu.pause();
@@ -429,8 +914,27 @@ try {
   renderMenu();
 
   const loop = new GameLoop({
+    getStepIntervalSeconds: () => (
+      menu.mode === "online" && online.phase === ONLINE_PHASES.IN_MATCH
+        ? online.getRecommendedStepIntervalMs() / 1000
+        : 1 / 60
+    ),
     update: (deltaSeconds) => {
-      if (!gameStarted || menu.screen!==MENU_SCREENS.PLAYING) {
+      if (!gameStarted) {
+        input.endFrame();
+        return;
+      }
+      if (menu.mode === "online") {
+        if (online.phase === ONLINE_PHASES.IN_MATCH) {
+          // Online matches never freeze when Escape opens the overlay; pass neutral
+          // input while the overlay is open so navigating Resume/Forfeit does not move your fighter.
+          const localMask = menu.screen === MENU_SCREENS.PLAYING ? encodeInputMask(input) : 0;
+          online.stepLocalFrame(localMask);
+        }
+        input.endFrame();
+        return;
+      }
+      if (menu.screen !== MENU_SCREENS.PLAYING) {
         input.endFrame();
         return;
       }
@@ -439,17 +943,31 @@ try {
     },
     render: (alpha) => {
       if (!gameStarted) return;
-      const paused=menu.screen===MENU_SCREENS.PAUSE;
-      renderer.render(arena, alpha, paused);
+      const paused = menu.screen === MENU_SCREENS.PAUSE;
+      const onlineView = menu.mode === "online" ? online.getViewModel() : null;
+      renderer.render(arena, alpha, paused, onlineView);
       stateDebugPanel.update(arena);
-      status.dataset.error = "false";
-      status.textContent = paused
-        ? "PAUSED · ESC TO RESUME"
-        : arena.trainingMode
-          ? "TRAINING MODE · DUMMY AUTO-RECOVERS"
-          : arena.rounds.phase === ROUND_PHASES.MATCH_OVER
-            ? "MATCH COMPLETE · PRESS ENTER TO REMATCH"
-            : "ARCADE MODE · CPU RIVAL ACTIVE · FIXED 60 HZ";
+      if (onlineView) {
+        renderOnlineMatchBar(onlineView);
+      }
+      status.dataset.error = onlineView?.stats?.desynced ? "true" : "false";
+      if (onlineView) {
+        const ping = Number.isFinite(onlineView.rttMs) ? `${onlineView.rttMs}MS` : "--MS";
+        const rb = onlineView.stats?.lastRollbackFrames ?? 0;
+        status.textContent = onlineView.stats?.desynced
+          ? `ONLINE DESYNC · ${onlineView.stats.desyncInfo?.reason ?? "STATE MISMATCH"}`
+          : onlineView.phase === ONLINE_PHASES.DISCONNECTED
+            ? `ONLINE DISCONNECTED · ${onlineView.statusMessage.toUpperCase()}`
+            : `ONLINE ROLLBACK · PING ${ping} · DELAY ${onlineView.inputDelay}F · RB ${rb}F · FIXED 60 HZ`;
+      } else {
+        status.textContent = paused
+          ? "PAUSED · ESC TO RESUME"
+          : arena.trainingMode
+            ? "TRAINING MODE · DUMMY AUTO-RECOVERS"
+            : arena.rounds.phase === ROUND_PHASES.MATCH_OVER
+              ? "MATCH COMPLETE · PRESS ENTER TO REMATCH"
+              : "ARCADE MODE · CPU RIVAL ACTIVE · FIXED 60 HZ";
+      }
     },
     onError: reportEngineError
   });
@@ -458,6 +976,7 @@ try {
   renderer.attach();
   loop.start();
   window.addEventListener("beforeunload", () => {
+    online.teardownConnections();
     loop.stop();
     input.detach();
     renderer.detach();

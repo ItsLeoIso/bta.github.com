@@ -59,7 +59,7 @@
 - [x] Arcade mode foundations (local best-of-three CPU match).
 - [x] Options menu (combat box and state-inspector toggles).
 - [x] Pause menu (Resume, Restart Mode, Exit to Menu; Training adds Reset Positions).
-- [x] Online mode investigation and implementation plan (recorded in `docs/ONLINE_PLAN.md`; implementation milestones O1–O5 remain planned, not yet built).
+- [x] Online mode investigation, architecture plan, and 1v1 WebRTC rollback implementation (milestones O1–O5 in `docs/ONLINE_PLAN.md`: Direct Invite P2P on GitHub Pages, optional room-code signaling server/worker, Online Character Select, live network HUD, rematch voting, and forfeit/disconnect handling).
 
 ## Phase 7 — Content and polish
 - [x] Add data-driven character profiles for Striker and CPU Rival, including per-character stats, move sets, and animation metadata.

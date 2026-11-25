@@ -1418,4 +1418,59 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 - Proceed to **Milestone O2 — Integer Frame Timers, Canonical Snapshots & Seeded Rollback Harness** (`MovementController` / `ProjectileController` / `RoundController` frame timers, `Arena.saveState()` / `loadState()` + FNV-1a checksum, and `src/net/` `RollbackSession` + binary packet codec + seeded network simulator).
 
 
+### 2026-11-25 — Antigravity — Full Online 1v1 Rollback Mode implemented (Milestones O2–O5, Prototype 023)
+
+**Type:** Completed / Handoff  
+**Commits:** O2 (`4050606`) + O3–O5 (commit containing this entry).  
+**Owner direction:** Leo approved implementing Online mode in its entirety through a functional online mode.
+
+**Files / systems:**
+- **O2 (Determinism, Snapshots & GGPO Rollback Core):**
+  - `src/movement/MovementController.js` (integer 60 Hz frame counters `elapsedFrames`, `lastTapFrame` with `null` sentinel, `groundDashCooldownFrames`, dash `remainingFrames`, backwards-compatible `elapsed`/`lastTap` accessors, `saveState()`/`loadState()`)
+  - `src/combat/ProjectileController.js` (fixed `DIAGONAL_UNIT` constant, integer `remainingFrames`, `ownerSlot`, `saveState()`/`loadState()`)
+  - `src/combat/RoundController.js` (integer `timerRemainingFrames` & `phaseRemainingFrames` with seconds getters/setters, slot-indexed `saveState()`/`loadState()`)
+  - `src/combat/ComboTracker.js`, `src/input/CommandHistory.js`, `src/input/InputBuffer.js` (`saveState()`/`loadState()`)
+  - `src/engine/Arena.js` (`SNAPSHOT_SCHEMA_VERSION = 1`, explicit canonical `saveState()`/`loadState()` excluding cosmetic state, `isResimulating` VFX/HUD gating, `allowLocalRematchConfirm`)
+  - `src/engine/GameLoop.js` (optional `getStepIntervalSeconds` wall-clock pacing stretch; numbered simulation frames are never skipped)
+  - `src/net/StateChecksum.js` (new — deterministic 32-bit FNV-1a snapshot hash & `computeContentVersion()`)
+  - `src/net/PacketCodec.js` (new — 32-byte little-endian binary `"inputs"` packet codec + `MATCH_CONFIG` version validator)
+  - `src/net/RollbackSession.js` (new — GGPO-style rollback loop, hard `maxRollback` stall, wall-clock pacing recommendation, out-of-order / duplicate-safe reconstruction, 30-frame checksum exchange & desync detection)
+- **O3 & O4 (WebRTC P2P Transport, Session Orchestration & Online UI):**
+  - `src/net/WebRtcTransport.js` (new — pluggable `iceServers`, dual `"inputs"` unreliable binary + `"control"` reliable JSON channels, compact `BTA1:...` copy/paste Direct Invite tokens, trickle ICE)
+  - `src/net/OnlineMatchController.js` (new — Direct Invite & Room-Code flows, Online Character Select + Ready sync, `MATCH_CONFIG`/`MATCH_READY`/`MATCH_REJECT` handshake, RTT ping, two-player rematch voting, deferred-close `FORFEIT` flush, heartbeat timeout)
+  - `src/input/KeyboardInput.js` (ignore keydown/keyup when focused inside `INPUT`/`TEXTAREA`/`SELECT` so players can type room codes/URLs cleanly)
+  - `src/ui/MenuController.js` (`startOnline()`, `openOnline()`, non-blocking online pause options `["Resume", "Forfeit & Exit"]`, `onForfeitOnline`)
+  - `src/engine/CanvasRenderer.js` (live Online Network HUD bar `PING`/`DELAY`/`RB`/`SYNC`, `YOU`/`RIVAL` HUD labels, local-slot combo & buffer display, online rematch vote overlay)
+  - `src/main.js`, `src/ui/styles.css`, `index.html` (Online Lobby with Direct Invite & Room Code tabs, `0F`–`4F` input delay picker, Online Character Select screen, non-blocking `ONLINE MENU` overlay, `#online-match-bar` for rematch / disconnect / desync)
+- **O5 (Lightweight Room-Code Signaling Relay):**
+  - `src/net/SignalingClient.js` (new — browser WebSocket room-code client that closes automatically once P2P DataChannels open)
+  - `server/signaling-server.js` (new — zero-dependency Node.js RFC 6455 WebSocket room-code relay with `/health`, 5-char room codes, TTL cleanup, max 2 peers/room)
+  - `server/cloudflare-worker.js` (new — ready-to-deploy Cloudflare Worker + Durable Object room relay using the identical JSON protocol)
+- **Tests & Docs:**
+  - `tests/PacketCodec.test.js` (new — 4 tests)
+  - `tests/RollbackSession.test.js` (new — 4 tests, including 3 seeded 620-frame harsh rollback runs under 12% packet loss, 10% duplication, jitter, reordering, and `> maxRollback` stalls verified frame-for-frame against zero-latency reference!)
+  - `tests/OnlineTransportAndController.test.js` (new — 5 tests covering Direct Invite, TURN config, full match lifecycle, version-mismatch rejection, rematch voting, forfeit, and online pause)
+  - `tests/SignalingServer.test.js` (new — live Node RFC 6455 WebSocket integration test)
+  - `tests/browser/playtest.spec.js` (updated Online lobby smoke check + added real two-browser Chromium WebRTC Direct Invite -> Character Select -> live 60 Hz rollback match -> Forfeit E2E test)
+  - `docs/ONLINE_PLAN.md`, `docs/ROADMAP.md`, `docs/TECHNICAL_PLAN.md`, `README.md`, `Cooperation.md`
+
+**Notable defects caught by tests during implementation:**
+- O2's seeded 620-frame rollback test immediately caught a 4px/14px spawn-offset fallback mismatch when restoring mid-startup `arcLance` snapshots (`72/-136` vs `PROJECTILE_DEFAULTS`'s `76/-150`); fixed by importing `PROJECTILE_DEFAULTS` / `MOTION_SPECIAL_DEFAULTS` directly in `Arena.js`.
+- O3/O4's integration test caught `forfeitAndExit()` closing the DataChannel synchronously before the `FORFEIT` control message flushed; fixed by detaching locally and deferring channel teardown briefly (40 ms).
+
+**Verification:**
+- Local Node test suite (`npm test`): **254/254 passed, 0 failures** (including syntax & relative-import integrity checks, seeded 620-frame rollback stress tests, and live WebSocket signaling server tests).
+- Zero runtime npm dependencies added (`package.json` unchanged).
+- GitHub Actions CI (Node tests + Chromium browser smoke including the new two-browser WebRTC E2E test + GitHub Pages deploy) will be checked right after pushing this commit.
+- Not yet human-verified: real cross-network playtest (home Wi-Fi ↔ mobile hotspot) and Chromium ↔ Firefox cross-engine determinism check.
+
+**Review requested / concerns:**
+- ChatGPT / Claude: feel free to review `src/net/` (`RollbackSession.js`, `PacketCodec.js`, `WebRtcTransport.js`, `OnlineMatchController.js`) and `server/signaling-server.js`.
+- Leo: test Direct Invite on the live GitHub Pages site between two tabs/devices (and optionally `node server/signaling-server.js` for 5-char room codes, or deploy `server/cloudflare-worker.js` to Cloudflare Workers free tier).
+
+**Suggested next step:**
+- Confirm GitHub Actions CI (including the two-browser Chromium WebRTC E2E test) passes green, then run a quick human two-browser / cross-network Online playtest — and move into **Phase 7** (Striker pixel-art sprite sheet integration, audio/SFX, and VFX polish)!
+
+
+
 

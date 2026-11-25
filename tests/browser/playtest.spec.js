@@ -11,7 +11,8 @@ test("title, mode menu, Online notice, and Arcade pause flow", async ({ page }) 
   await expect(page.getByRole("heading", { name: "MAIN MENU" })).toBeVisible({ timeout: 5000 });
 
   await page.getByRole("button", { name: /ONLINE/ }).click();
-  await expect(page.getByText(/NETWORK MATCHMAKING IS NOT CONNECTED YET/)).toBeVisible();
+  await expect(page.getByRole("heading", { name: /ONLINE · 1V1 ROLLBACK/ })).toBeVisible();
+  await expect(page.getByTestId("online-create-invite")).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("heading", { name: "MAIN MENU" })).toBeVisible();
 
@@ -143,4 +144,79 @@ test("character select changes the player and opposing fighter before launching"
   await expect(page.locator("#engine-status")).toContainText("ARCADE MODE");
   await expect(page.locator("#game-canvas")).toBeVisible();
   expect(pageErrors).toEqual([]);
+});
+
+test("two peers connect via WebRTC Direct Invite, run a live online rollback match, and handle forfeit cleanly", async ({ browser }) => {
+  const hostContext = await browser.newContext();
+  const guestContext = await browser.newContext();
+  const hostPage = await hostContext.newPage();
+  const guestPage = await guestContext.newPage();
+  const pageErrors = [];
+  hostPage.on("pageerror", error => pageErrors.push("host: " + error.message));
+  guestPage.on("pageerror", error => pageErrors.push("guest: " + error.message));
+
+  const openOnlineLobby = async page => {
+    await page.goto("/");
+    await expect(page.getByRole("button", { name: "Start BTA" })).toBeVisible();
+    await page.getByRole("button", { name: "Start BTA" }).click();
+    await expect(page.getByRole("heading", { name: "MAIN MENU" })).toBeVisible({ timeout: 5000 });
+    await page.getByRole("button", { name: /ONLINE/ }).click();
+    await expect(page.getByRole("heading", { name: /ONLINE · 1V1 ROLLBACK/ })).toBeVisible();
+  };
+
+  try {
+    await Promise.all([openOnlineLobby(hostPage), openOnlineLobby(guestPage)]);
+
+    // 1. Host creates Direct Invite code
+    await hostPage.getByTestId("online-create-invite").click();
+    await expect.poll(async () => (await hostPage.getByTestId("online-offer-output").inputValue()).startsWith("BTA1:"), { timeout: 10000 }).toBe(true);
+    const offerCode = await hostPage.getByTestId("online-offer-output").inputValue();
+
+    // 2. Guest pastes offer and creates Answer code
+    await guestPage.getByTestId("online-offer-input").fill(offerCode);
+    await guestPage.getByTestId("online-create-answer").click();
+    await expect.poll(async () => (await guestPage.getByTestId("online-answer-output").inputValue()).startsWith("BTA1:"), { timeout: 10000 }).toBe(true);
+    const answerCode = await guestPage.getByTestId("online-answer-output").inputValue();
+
+    // 3. Host applies Answer -> real WebRTC P2P DataChannels open -> both enter Online Character Select
+    await hostPage.getByTestId("online-answer-input").fill(answerCode);
+    await hostPage.getByTestId("online-connect-answer").click();
+
+    await expect(hostPage.getByRole("heading", { name: /ONLINE · SELECT YOUR FIGHTER/ })).toBeVisible({ timeout: 10000 });
+    await expect(guestPage.getByRole("heading", { name: /ONLINE · SELECT YOUR FIGHTER/ })).toBeVisible({ timeout: 10000 });
+
+    // 4. Both peers click Ready -> MATCH_CONFIG handshake completes -> live 60 Hz rollback match launches
+    await hostPage.getByTestId("online-ready-btn").click();
+    await guestPage.getByTestId("online-ready-btn").click();
+
+    await expect(hostPage.locator("#engine-status")).toContainText("ONLINE ROLLBACK", { timeout: 10000 });
+    await expect(guestPage.locator("#engine-status")).toContainText("ONLINE ROLLBACK", { timeout: 10000 });
+    await expect(hostPage.locator("#game-canvas")).toBeVisible();
+    await expect(guestPage.locator("#game-canvas")).toBeVisible();
+
+    // 5. Exchange real keyboard inputs for >1s over WebRTC DataChannels (passing 60+ frames & checksums)
+    await hostPage.keyboard.down("KeyD");
+    await guestPage.keyboard.down("KeyA");
+    await hostPage.waitForTimeout(350);
+    await hostPage.keyboard.press("KeyH");
+    await guestPage.keyboard.press("KeyJ");
+    await hostPage.waitForTimeout(800);
+    await hostPage.keyboard.up("KeyD");
+    await guestPage.keyboard.up("KeyA");
+
+    await expect(hostPage.locator("#engine-status")).not.toContainText("DESYNC");
+    await expect(guestPage.locator("#engine-status")).not.toContainText("DESYNC");
+
+    // 6. Host opens non-blocking Online Menu and Forfeits -> Guest sees forfeit disconnect cleanly
+    await hostPage.keyboard.press("Escape");
+    await expect(hostPage.getByRole("heading", { name: "ONLINE MENU" })).toBeVisible();
+    await hostPage.getByRole("button", { name: /FORFEIT & EXIT/ }).click();
+    await expect(hostPage.getByRole("heading", { name: "MAIN MENU" })).toBeVisible();
+    await expect(guestPage.locator("#online-match-bar")).toContainText(/FORFEITED|DISCONNECTED/i, { timeout: 8000 });
+
+    expect(pageErrors).toEqual([]);
+  } finally {
+    await hostContext.close();
+    await guestContext.close();
+  }
 });

@@ -23,18 +23,21 @@ export class MenuController {
   constructor({
     onChange = () => {},
     onStart = () => {},
-    onResetTraining = () => {}
+    onResetTraining = () => {},
+    onForfeitOnline = () => {}
   } = {}) {
     if (
       typeof onChange !== "function" ||
       typeof onStart !== "function" ||
-      typeof onResetTraining !== "function"
+      typeof onResetTraining !== "function" ||
+      typeof onForfeitOnline !== "function"
     ) {
       throw new TypeError("Menu callbacks must be functions.");
     }
     this.onChange = onChange;
     this.onStart = onStart;
     this.onResetTraining = onResetTraining;
+    this.onForfeitOnline = onForfeitOnline;
     this.screen = MENU_SCREENS.TITLE;
     this.selectedIndex = 0;
     this.optionIndex = 0;
@@ -47,6 +50,9 @@ export class MenuController {
   }
 
   getPauseItems() {
+    if (this.mode === "online") {
+      return ["Resume", "Forfeit & Exit"];
+    }
     return this.mode === "training"
       ? ["Resume", "Reset Positions", "Restart Mode", "Exit to Menu"]
       : ["Resume", "Restart Mode", "Exit to Menu"];
@@ -178,7 +184,7 @@ export class MenuController {
     }
 
     if (this.screen === MENU_SCREENS.ONLINE) {
-      if (key === "Escape" || key === "Enter") {
+      if (key === "Escape") {
         this.back();
         return true;
       }
@@ -240,6 +246,10 @@ export class MenuController {
       case "Restart Mode":
         this.start(this.mode);
         break;
+      case "Forfeit & Exit":
+        this.onForfeitOnline();
+        this.exitToMenu();
+        break;
       case "Exit to Menu":
         this.exitToMenu();
         break;
@@ -269,6 +279,19 @@ export class MenuController {
       default:
         return false;
     }
+    return true;
+  }
+
+  openOnline() {
+    this.screen = MENU_SCREENS.ONLINE;
+    this.notify();
+    return true;
+  }
+
+  startOnline() {
+    this.mode = "online";
+    this.screen = MENU_SCREENS.PLAYING;
+    this.notify();
     return true;
   }
 
