@@ -7,6 +7,7 @@ from types import SimpleNamespace
 
 from agent_orchestrator import (
     get_repo_snapshot,
+    is_protected_path,
     safe_extract_snapshot,
     slugify,
     wait_for_interaction,
@@ -95,6 +96,12 @@ class OrchestratorHelpersTest(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 safe_extract_snapshot(snapshot, Path(temp))
             self.assertFalse((Path(temp).parent / "escape.txt").exists())
+
+    def test_agent_cannot_change_gitignore_or_workflows(self):
+        self.assertTrue(is_protected_path(".gitignore"))
+        self.assertTrue(is_protected_path(".github/workflows/node-tests.yml"))
+        self.assertTrue(is_protected_path("scripts/agent_orchestrator.py"))
+        self.assertFalse(is_protected_path("src/game.js"))
 
     def test_interaction_completion_returns_result(self):
         interaction = SimpleNamespace(id="int_123", status="completed", output_text="done")
