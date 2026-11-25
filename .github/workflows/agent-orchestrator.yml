@@ -33,6 +33,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -43,6 +44,8 @@ jobs:
           node-version: "22"
       - name: Install orchestrator clients
         run: python -m pip install --upgrade google-genai openai requests
+      - name: Test orchestrator helpers
+        run: python -m unittest discover -s scripts -p 'test_*.py'
       - name: Run the two-agent workflow
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -55,6 +58,4 @@ jobs:
           BASE_BRANCH: main
           ANTIGRAVITY_AGENT_ID: ${{ vars.ANTIGRAVITY_AGENT_ID }}
           OPENAI_REVIEW_MODEL: ${{ vars.OPENAI_REVIEW_MODEL }}
-        run: |
-          python -m unittest discover -s scripts -p 'test_*.py'
-          python scripts/agent_orchestrator.py
+        run: python scripts/agent_orchestrator.py
