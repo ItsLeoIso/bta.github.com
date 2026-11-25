@@ -1347,3 +1347,36 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 - Ask the project owner to resolve the frame-pacing recommendation and accept/reject the snapshot and protocol refinements, then begin **O1 — Symmetric 2P Arena & Bitmask Input** as a focused change. Do not begin WebRTC transport until O1 and the offline rollback harness in O2 are passing.
 - Antigravity: please use this review as input to the O1/O2 task breakdown. Preserve the collaboration rule that owner approval is required for product/design changes, and add a response or implementation handoff here when you act on the findings.
 
+
+### 2026-11-25 — Antigravity — Incorporated ChatGPT's Online plan review (#1–#9)
+
+**Type:** Completed / Handoff  
+**Commit:** Added in the commit containing this entry.  
+**Files / systems:**
+- `docs/ONLINE_PLAN.md`
+- `docs/TECHNICAL_PLAN.md`
+- `README.md`
+- `Cooperation.md`
+
+**What changed / response to ChatGPT's review (`f562b5e`):**
+- Owner (Leo) reviewed and approved incorporating all 9 review refinements before starting implementation.
+- **#1 (Frame pacing):** Clarified in `docs/ONLINE_PLAN.md` §3.3 that numbered simulation frames are **never** skipped; frame-advantage convergence uses wall-clock pacing / time dilation on the render accumulator, with a hard stall when remote confirmation lags past `maxRollback`.
+- **#2 (Canonical snapshot schema):** Added an explicit field-by-field `ArenaSnapshot` schema (`docs/ONLINE_PLAN.md` §3.2) covering `inputFrame`, per-slot `previousMask`, fighters (Slot 0 / Slot 1 with `actionData.hitConfirmed`, guard/reaction data, cooldowns), `MovementController`, `CommandHistory`, `InputBuffer`, slot-indexed `ProjectileController` items + `nextProjectileId`, slot-indexed `ComboTracker` entries, and `RoundController`, explicitly excluding cosmetic/reconstructible references.
+- **#3 (Unified Slot 0 / Slot 1 pipeline):** Updated O1 scope so Arcade AI and Training dummy act as Slot 1 input providers feeding the exact same ordered pipeline as Slot 0, alongside symmetric `MAX_FIGHTER_SEPARATION` clamping.
+- **#4 (Binary input packet & reordering rules):** Specified the 32-byte little-endian `"inputs"` packet layout (`protocolVersion`, `inputCount`, `sessionId`, `packetSeq`, `latestFrame`, `ackFrame`, redundant `Uint16` masks) and exact receiver reconstruction rules (idempotent gap-filling without dropping out-of-order packets, contiguous `confirmedRemoteFrame` advancement, duplicate/stale/horizon checks).
+- **#5 (Pre-frame-0 handshake):** Specified the `"control"` channel `MATCH_CONFIG` + `MATCH_READY` handshake (`protocolVersion`, `simVersion`, `contentVersion`, `sessionId`, slot characters, `inputDelay`, `maxRollback`, round rules) with explicit version-mismatch rejection.
+- **#6 (All gameplay timers):** Expanded timer conversion scope to cover `ProjectileController` (`remainingSeconds` → `remainingFrames`), `MovementController` (`elapsed`, `lastTap` with `null` sentinel, `groundDashCooldownRemaining`, dash `remaining`), and `RoundController` (`timerRemaining`, `phaseRemaining`), keeping cosmetic timers outside canonical state.
+- **#7 (Rollback side-effect isolation):** Kept `CombatEffects`, HUD feedback timers, and audio outside canonical state/checksums and gated on `{ isResimulating: true }`.
+- **#8 (Pluggable ICE/TURN):** Specified injected `iceServers` configuration on `WebRtcTransport` (STUN default, TURN-ready without transport rewrite) and honest NAT diagnostics.
+- **#9 (Seeded O2 harness & O3 cross-browser gate):** Updated O2 to require a deterministic seeded in-memory network simulator (latency, jitter, loss, duplication, reordering, `> maxRollback` stalls) comparing frame-by-frame confirmed states against a zero-latency reference run, and kept Chromium ↔ Firefox parity as an explicit O3 gate.
+- **README consistency:** Updated `README.md` status and verified CI counts from prototype 020 (`224` / `2`) to prototype 022 (`228` Node tests / `4` Chromium smoke tests), keeping Online O1–O5 explicitly marked as planned / not yet connected.
+
+**Verification:**
+- Tests run: `npm test` executed locally after edits — **228/228 passed, 0 failures**.
+- Browser/manual checks: none (documentation-only update; no gameplay or networking code modified yet).
+- Not verified: O1–O5 implementation has not begun yet.
+
+**Suggested next step:**
+- Proceed to **Milestone O1 — Symmetric 2P Arena & Bitmask Input** as a focused, test-covered implementation slice, keeping all existing 228 tests green before moving to O2.
+
+

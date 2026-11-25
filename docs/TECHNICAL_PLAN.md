@@ -288,10 +288,10 @@ Not included: final art, custom sprite sheets, character select, portraits, besp
 
 ## Phase 6 — Online mode architecture plan (not yet implemented)
 
-Recorded in `docs/ONLINE_PLAN.md` based on an engine determinism audit and owner decisions (2026-11-25):
+Recorded in `docs/ONLINE_PLAN.md` based on an engine determinism audit, owner decisions, and independent review refinements (2026-11-25):
 
-- **Netcode:** GGPO-style rollback netcode over 60 Hz deterministic simulation with a 16-bit per-frame input bitmask, configurable input delay, state snapshot ring buffer, and periodic FNV-1a checksum desync detection.
-- **Transport:** WebRTC peer-to-peer (`RTCDataChannel`: unreliable/unordered redundant input packets + reliable control channel), supporting a zero-backend copy-paste invite fallback on GitHub Pages and a lightweight room-code signaling service later.
-- **Engine prerequisites identified before transport work:** symmetric P1/P2 input/history/buffer/cancel pipeline in `Arena.update`, symmetric separation clamping, slot-indexed serializable snapshots (`saveState()` / `loadState()`), frame-counter timers in `MovementController` / `RoundController`, and resimulation-safe VFX/audio gating.
+- **Netcode:** GGPO-style rollback netcode over 60 Hz deterministic simulation with a 16-bit per-frame input bitmask, configurable input delay, wall-clock pacing (never skipping numbered simulation frames), explicit canonical snapshot schema + FNV-1a checksum desync detection, and a seeded in-memory O2 network harness before transport work.
+- **Transport & handshake:** WebRTC peer-to-peer (`RTCDataChannel`: 32-byte binary redundant input packets on unreliable/unordered `"inputs"` + pre-frame-0 `MATCH_CONFIG` version handshake and control messages on reliable `"control"`), pluggable `iceServers` (STUN default, TURN-ready), zero-backend copy-paste invite fallback on GitHub Pages, and a lightweight room-code signaling service later.
+- **Engine prerequisites identified before transport work:** symmetric P1/P2 input/history/buffer/cancel pipeline in `Arena.update` (with Arcade AI and Training dummy as Slot 1 input providers), symmetric separation clamping, integer 60 Hz frame timers across `MovementController`, `ProjectileController`, and `RoundController`, slot-indexed explicit `saveState()` / `loadState()`, and resimulation-safe VFX/audio gating.
 - **Boundary:** All future networking code stays isolated under `src/net/` so local Arcade, Training, and Node tests remain zero-dependency. No networking code was implemented in this planning pass.
 
