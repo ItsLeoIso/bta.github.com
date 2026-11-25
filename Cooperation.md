@@ -1269,3 +1269,81 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 - Phase 6 planning is complete. Next up is either **Phase 7** (e.g., Striker pixel-art sprite sheet production/integration, audio/SFX, VFX polish) or beginning **Online Milestone O1** (symmetric 2P `Arena` + bitmask input adapter) once Leo gives the go-ahead to implement.
 
 
+
+
+### 2026-11-25 — ChatGPT — Independent review of Phase 6 Online plan
+
+**Type:** Review / Handoff  
+**Commit:** Added in the commit containing this entry.  
+**Files / systems reviewed:**
+- `README.md`, `Cooperation.md`, `docs/ONLINE_PLAN.md`, `docs/TECHNICAL_PLAN.md`, `docs/ROADMAP.md`
+- `src/engine/Arena.js`, `src/engine/GameLoop.js`, `src/main.js`
+- `src/movement/MovementController.js`
+- `src/combat/ComboTracker.js`, `src/combat/ProjectileController.js`, `src/combat/RoundController.js`
+- `src/effects/CombatEffects.js`
+
+**Overall assessment:**
+- The proposed architecture is a good fit for BTA: fixed-step simulation, GGPO-style rollback, WebRTC peer-to-peer match traffic, a reliable control channel, and staged delivery from O1 to O5.
+- Keep the current scope: private 1v1 first, no matchmaking or always-on game backend in the first implementation, and no networking dependency added before it is needed.
+- The plan is suitable to proceed after the following refinements are considered. These are review recommendations, not changes to owner-confirmed product decisions.
+
+**Review findings and recommendations:**
+
+1. **Major — Do not skip simulation ticks to correct peer frame advantage.**
+   - The plan currently suggests that a peer running ahead by more than 1–2 frames might stretch a render frame or skip a fixed tick.
+   - A simulation tick must never be skipped. Frame numbers are the shared identity for input history, snapshots, acknowledgements, and rollback. Skipping one would make the peer timelines ambiguous and can create permanent divergence.
+   - Keep simulation frame advancement explicit and canonical. Bound prediction by the configured rollback window; when the client cannot safely advance, temporarily wait for remote input. Rendering/presentation may adapt independently, but both peers must execute the same numbered simulation frames.
+
+2. **Major — Specify a complete, explicit snapshot schema before implementing rollback.**
+   - The current code confirms the serialization hazards already listed in `ONLINE_PLAN.md`: `ComboTracker.combos` is keyed by fighter object references; projectiles store `owner: fighter`; and `MovementController` initializes tap timestamps with `-Infinity`.
+   - Add a documented field inventory for the canonical gameplay state: both fighters' physics and resource values; locomotion/action/reaction and active move data; guard and hitstun/blockstun state; input edge history, command history and input buffers; movement cooldown/tap state; projectiles and next projectile ID; combo/juggle state; round/match phase, scores and timers; and any other gameplay-affecting counters.
+   - Serialize stable fighter slot IDs (0/1), not object references. Reconstruct immutable character definitions and controller references from stable IDs rather than serializing those objects.
+   - Use explicit `saveState()` / `loadState()` methods and a canonical serialization order. Do not serialize arbitrary live objects or depend on `JSON.stringify` of the full Arena.
+
+3. **Major — O1 must give both slots the same gameplay input pipeline.**
+   - Inspection of `Arena.update(deltaSeconds, input)` confirms the current asymmetry: the primary fighter gets `CommandHistory`, `InputBuffer`, QCF Arc Lance recognition, and hit-confirm special-cancel handling. The opponent receives AI output (or neutral input) and direct guard/attack/projectile updates, but not the same command-history and buffer path.
+   - Refactor toward `Arena.update(deltaSeconds, p1Input, p2Input)` and run both fighters through the same ordered command, buffer, cancel, attack, projectile, guard, and movement processing. Arcade AI and the Training neutral input should become input providers for Slot 1, not a separate simulation path.
+   - Keep canonical Slot 0 / Slot 1 identities and identical update ordering on both peers. Local perspective should affect only local input routing and presentation labels.
+   - The current maximum-separation clamp also changes only `opponent.x`; O1 should resolve separation symmetrically, subject to stage bounds. Retain tests for both slot assignments and for both fighters using QCF, buffered moves, cancels, combos, and projectiles.
+
+4. **Major — Define packet sequencing, acknowledgement, and reordering rules.**
+   - The unreliable input channel with redundant recent input masks is a sensible low-latency approach, but the receiver needs an exact reconstruction algorithm for lost, duplicated, delayed, and out-of-order packets.
+   - Specify session/match identity, protocol version, packet sequence, simulation frame, input mask history, and acknowledgement / latest confirmed-frame semantics. Define duplicate suppression, stale-packet handling, frame-number wrap assumptions, and what happens when data arrives beyond the rollback window.
+   - Keep frequent input packets small and avoid putting large SDP or lobby messages on the input channel. The reliable control channel should own connection setup, ready state, rematch votes, and disconnect messages.
+
+5. **Major — Negotiate a compatible match before frame 0.**
+   - Add a connection/match handshake that verifies protocol version, simulation/schema version, character IDs and move-set/content version, input-delay setting, and agreed match configuration.
+   - Both clients must acknowledge the same configuration and a common start frame before the simulation begins. Reject incompatible versions explicitly rather than allowing two different simulations to start and desynchronize.
+
+6. **Important — Convert all gameplay-affecting timers, not just the two called out.**
+   - `MovementController` and `RoundController` use seconds-based timers; `ProjectileController` also decrements projectile `remainingSeconds`, which directly affects gameplay and must become frame-based or otherwise exactly reproducible.
+   - Audit other countdowns and counters in `Arena` and combat controllers. Cosmetic-only effects and presentation timers can remain outside canonical gameplay snapshots if they are gated during resimulation and cannot influence gameplay.
+   - Animation should likewise remain presentation-only or be derived consistently from the canonical fighter state and simulation frame.
+
+7. **Important — Keep rollback side effects out of resimulation.**
+   - The plan correctly calls out impact effects and one-shot audio. Preserve deterministic gameplay state during replay, but do not replay audible cues or duplicate external side effects for corrected historical frames.
+   - Either rebuild cosmetic effects from a confirmed event stream or reset/reconcile them after rollback. Do not let cosmetic state affect hit detection, physics, or checksums.
+
+8. **Important — Treat STUN-only connectivity as a limitation and keep TURN pluggable.**
+   - Manual SDP offer/answer is a useful no-backend development path, and a small signaling relay can later make room codes convenient.
+   - Direct P2P will not work on every NAT/firewall combination. Keep ICE server configuration abstract so a TURN relay can be introduced without rewriting the match transport. Do not promise universal connectivity from STUN alone; measure connection failures across home networks, mobile hotspots, and stricter networks before choosing a TURN provider.
+   - Keep the game itself statically hostable; signaling should exchange connection metadata only, not carry match traffic.
+
+9. **Important — Make the O2 rollback test harsher and reproducible.**
+   - The proposed in-memory network harness is exactly the right next step before WebRTC. Use seeded, reproducible latency, jitter, packet loss, duplication, reordering, and temporary stalls.
+   - Compare both peers at the same mutually confirmed frame against a no-network reference run. Test recovery from repeated rollbacks and the defined behavior when the rollback window is exceeded, not only a single final checksum after a short run.
+   - Keep cross-browser Chromium/Firefox verification as a separate real-browser gate once O3 exists. A Node simulator alone cannot establish cross-engine determinism.
+
+**Documentation consistency note:**
+- At the reviewed repository head, the README still labels the game prototype 020 and reports 224 Node tests / 2 browser smoke tests, while the later cooperation history records prototype 022 and 228 Node tests / 4 Chromium smoke tests. Update the README's status and verification counts when the owner confirms the latest CI results.
+- The README and roadmap correctly state that Online is not connected and O1–O5 are planned, not implemented. Keep that distinction explicit until the corresponding milestones are actually complete.
+
+**Verification:**
+- Tests run during this review: none. This was a read-only documentation and source inspection; no repository code was changed.
+- Browser/manual checks performed during this review: none.
+- Not verified: rollback implementation, WebRTC connectivity, cross-browser deterministic behavior, and real network conditions. These remain future milestone acceptance tests.
+
+**Suggested next step:**
+- Ask the project owner to resolve the frame-pacing recommendation and accept/reject the snapshot and protocol refinements, then begin **O1 — Symmetric 2P Arena & Bitmask Input** as a focused change. Do not begin WebRTC transport until O1 and the offline rollback harness in O2 are passing.
+- Antigravity: please use this review as input to the O1/O2 task breakdown. Preserve the collaboration rule that owner approval is required for product/design changes, and add a response or implementation handoff here when you act on the findings.
+
