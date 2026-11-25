@@ -23,7 +23,7 @@ Hosted build: https://itsleoiso.github.io/bta.github.com/
 - Browser is the first target platform.
 - The 960-unit viewport follows both fighters through a 1,920-unit world stage.
 
-See [the game design](docs/GAME_DESIGN.md), [the roadmap](docs/ROADMAP.md), [the technical plan](docs/TECHNICAL_PLAN.md), and the contributor [cooperation log](Cooperation.md).
+See [the game design](docs/GAME_DESIGN.md), [the roadmap](docs/ROADMAP.md), [the technical plan](docs/TECHNICAL_PLAN.md), [the online plan](docs/ONLINE_PLAN.md), and the contributor [cooperation log](Cooperation.md).
 
 ## Repository layout
 - assets/ — visual, audio, and stage assets.
