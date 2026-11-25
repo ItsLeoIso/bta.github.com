@@ -79,6 +79,8 @@ commands from the repository owner.
 - The sandbox gets repository source access only; it does not receive GITHUB_TOKEN
   or OPENAI_API_KEY. The GitHub runner removes API secrets from its environment
   before launching npm, Playwright, or other project test/package processes.
+- The importer protects .gitignore, the orchestrator itself, and all
+  .github/workflows files from agent snapshots.
 - The runner writes only to a new branch and opens a PR. No automatic merge, release,
   deployment, secret changes, branch-protection changes, or repository settings edits.
 - Workflow concurrency prevents overlapping runs for the same issue (or dispatch run).
@@ -91,8 +93,8 @@ commands from the repository owner.
 
 - This is an API-driven Antigravity worker, not a remote-control bridge to the
   Antigravity browser tab you currently have open. That tab remains independent.
-- This initial version is configured for this public repository. Private repositories
-  need a Google-managed read-only GitHub credential.
+- This initial version is configured for this public repository. Private repository
+  authentication is not implemented in this starter.
 - The OpenAI reviewer is an API agent, not the model in this chat session. It uses
   the configured OpenAI API model and API billing.
 - The workflow has a three-round repair cap. If the agents disagree, tests fail, or
