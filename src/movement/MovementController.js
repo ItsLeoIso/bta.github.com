@@ -1,9 +1,21 @@
 import { FIGHTER_STATES, FighterStateController } from "../state/FighterStateController.js";
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+const SIM_HZ = 60;
+
+function secondsToFrames(seconds) {
+  if (!Number.isFinite(seconds) || seconds <= 0) return 0;
+  return Math.max(1, Math.round(seconds * SIM_HZ));
+}
+
+function deltaToFrames(deltaSeconds) {
+  if (!Number.isFinite(deltaSeconds) || deltaSeconds <= 0) return 0;
+  return Math.max(1, Math.round(deltaSeconds * SIM_HZ));
+}
 
 /**
- * First-pass anime-fighter movement. Distances are arena units and time is seconds.
+ * First-pass anime-fighter movement. Distances are arena units and timers run
+ * on canonical 60 Hz integer frame counters for rollback determinism.
  * Horizontal controls are screen-relative and never reverse when fighters cross.
  * Dash type (forward dash or backdash) is determined relative to facing.
  *
@@ -34,19 +46,68 @@ export class MovementController {
       jumpVelocity, gravity, groundSpeed, crouchSpeedMultiplier,
       airSpeed, groundDashCooldown
     });
+    this.doubleTapWindowFrames = secondsToFrames(doubleTapWindow);
+    this.groundDashDurationFrames = secondsToFrames(groundDashDuration);
+    this.backdashDurationFrames = secondsToFrames(backdashDuration);
+    this.airDashDurationFrames = secondsToFrames(airDashDuration);
+    this.groundDashCooldownFrames = secondsToFrames(groundDashCooldown);
     this.stateController = stateController;
-    this.elapsed = 0;
-    this.lastTap = { left: -Infinity, right: -Infinity };
+    const controller = this;
+    this.lastTap = {
+      get left() {
+        return controller.lastTapFrame.left === null ? -Infinity : controller.lastTapFrame.left / SIM_HZ;
+      },
+      set left(value) {
+        controller.lastTapFrame.left = Number.isFinite(value) ? Math.round(value * SIM_HZ) : null;
+      },
+      get right() {
+        return controller.lastTapFrame.right === null ? -Infinity : controller.lastTapFrame.right / SIM_HZ;
+      },
+      set right(value) {
+        controller.lastTapFrame.right = Number.isFinite(value) ? Math.round(value * SIM_HZ) : null;
+      }
+    };
+    this.reset();
+  }
+
+  get elapsed() {
+    return this.elapsedFrames / SIM_HZ;
+  }
+
+  reset() {
+    this.elapsedFrames = 0;
+    this.lastTapFrame = { left: null, right: null };
+  }
+
+  saveState() {
+    return {
+      elapsedFrames: this.elapsedFrames,
+      lastTapFrame: {
+        left: this.lastTapFrame.left,
+        right: this.lastTapFrame.right
+      }
+    };
+  }
+
+  loadState(snapshot) {
+    this.elapsedFrames = Number.isInteger(snapshot?.elapsedFrames) ? snapshot.elapsedFrames : 0;
+    this.lastTapFrame = {
+      left: Number.isInteger(snapshot?.lastTapFrame?.left) ? snapshot.lastTapFrame.left : null,
+      right: Number.isInteger(snapshot?.lastTapFrame?.right) ? snapshot.lastTapFrame.right : null
+    };
   }
 
   update(fighter, input, deltaSeconds, { floorY, minX, maxX }) {
     const states = this.stateController;
     states.initialize(fighter);
-    this.elapsed += deltaSeconds;
-    fighter.groundDashCooldownRemaining = Math.max(
-      0,
-      (fighter.groundDashCooldownRemaining ?? 0) - deltaSeconds
-    );
+    const stepFrames = deltaToFrames(deltaSeconds);
+    this.elapsedFrames += stepFrames;
+
+    const currentCooldownFrames = Number.isInteger(fighter.groundDashCooldownFrames)
+      ? fighter.groundDashCooldownFrames
+      : secondsToFrames(fighter.groundDashCooldownRemaining ?? 0);
+    fighter.groundDashCooldownFrames = Math.max(0, currentCooldownFrames - stepFrames);
+    fighter.groundDashCooldownRemaining = fighter.groundDashCooldownFrames / SIM_HZ;
 
     const worldAxis = input.getWorldAxis
       ? input.getWorldAxis("horizontal")
@@ -97,18 +158,20 @@ export class MovementController {
         fighter.state.reaction === FIGHTER_STATES.reaction.NONE) {
       const direction = pressedWorldAxis > 0 ? "right" : "left";
       const opposite = direction === "right" ? "left" : "right";
-      const previousTap = this.lastTap[direction];
-      const isDoubleTap = this.elapsed - previousTap <= this.doubleTapWindow;
-      this.lastTap[opposite] = -Infinity;
+      const previousTap = this.lastTapFrame[direction];
+      const isDoubleTap =
+        previousTap !== null &&
+        this.elapsedFrames - previousTap <= this.doubleTapWindowFrames;
+      this.lastTapFrame[opposite] = null;
       if (isDoubleTap) {
-        this.lastTap[direction] = -Infinity;
+        this.lastTapFrame[direction] = null;
         if (fighter.state.action === FIGHTER_STATES.action.GUARD) {
           states.endAction(fighter, FIGHTER_STATES.action.GUARD);
           fighter.guardData = null;
         }
         this.startDash(fighter, pressedWorldAxis);
       } else {
-        this.lastTap[direction] = this.elapsed;
+        this.lastTapFrame[direction] = this.elapsedFrames;
       }
     }
 
@@ -143,11 +206,12 @@ export class MovementController {
 
     const dashWasActive = fighter.state.action === FIGHTER_STATES.action.DASH;
     if (dashWasActive) {
-      fighter.actionData.remaining = Math.max(
-        0,
-        fighter.actionData.remaining - deltaSeconds
-      );
-      if (fighter.actionData.remaining > 0) {
+      const currentRemainingFrames = Number.isInteger(fighter.actionData.remainingFrames)
+        ? fighter.actionData.remainingFrames
+        : secondsToFrames(fighter.actionData.remaining ?? 0);
+      fighter.actionData.remainingFrames = Math.max(0, currentRemainingFrames - stepFrames);
+      fighter.actionData.remaining = fighter.actionData.remainingFrames / SIM_HZ;
+      if (fighter.actionData.remainingFrames > 0) {
         fighter.vx = fighter.actionData.velocity;
       } else {
         const completedDashType = fighter.actionData.dashType;
@@ -198,7 +262,7 @@ export class MovementController {
       if (
         fighter.state.action === FIGHTER_STATES.action.DASH &&
         fighter.actionData.dashType === "air" &&
-        fighter.actionData.remaining > 0
+        (fighter.actionData.remainingFrames ?? 0) > 0
       ) {
         fighter.vy = 0;
       } else {
@@ -256,27 +320,33 @@ export class MovementController {
     if (sign === 0) return false;
     const forward = sign * fighter.facing > 0;
     if (fighter.onGround) {
-      if ((fighter.groundDashCooldownRemaining ?? 0) <= 0) {
+      const cooldownFrames = Number.isInteger(fighter.groundDashCooldownFrames)
+        ? fighter.groundDashCooldownFrames
+        : secondsToFrames(fighter.groundDashCooldownRemaining ?? 0);
+      if (cooldownFrames <= 0) {
         const dashType = forward ? "forward" : "backdash";
-        const duration = forward ? this.groundDashDuration : this.backdashDuration;
+        const durationFrames = forward ? this.groundDashDurationFrames : this.backdashDurationFrames;
         const velocity = sign * (forward ? this.groundDashSpeed : this.backdashSpeed);
         const started = states.startAction(fighter, FIGHTER_STATES.action.DASH, {
           dashType,
-          remaining: duration,
+          remainingFrames: durationFrames,
+          remaining: durationFrames / SIM_HZ,
           velocity
         });
         if (!started) return false;
         if (fighter.state.locomotion === FIGHTER_STATES.locomotion.CROUCHING) {
           states.setLocomotion(fighter, FIGHTER_STATES.locomotion.STANDING);
         }
-        fighter.groundDashCooldownRemaining = this.groundDashCooldown;
+        fighter.groundDashCooldownFrames = this.groundDashCooldownFrames;
+        fighter.groundDashCooldownRemaining = fighter.groundDashCooldownFrames / SIM_HZ;
         return true;
       }
       return false;
     } else if (fighter.airDashAvailable) {
       const started = states.startAction(fighter, FIGHTER_STATES.action.DASH, {
         dashType: "air",
-        remaining: this.airDashDuration,
+        remainingFrames: this.airDashDurationFrames,
+        remaining: this.airDashDurationFrames / SIM_HZ,
         velocity: sign * this.airDashSpeed
       });
       if (!started) return false;

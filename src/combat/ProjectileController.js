@@ -5,14 +5,26 @@ import { FIGHTER_STATES, FighterStateController, isGrounded } from "../state/Fig
 import { MOTION_SPECIAL_DEFAULTS, PROJECTILE_DEFAULTS } from "../characters/MoveSets.js";
 export { MOTION_SPECIAL_DEFAULTS, PROJECTILE_DEFAULTS } from "../characters/MoveSets.js";
 
+const SIM_HZ = 60;
+const DIAGONAL_UNIT = 0.7071067811865475;
+
+function secondsToFrames(seconds) {
+  if (!Number.isFinite(seconds) || seconds <= 0) return 0;
+  return Math.max(1, Math.round(seconds * SIM_HZ));
+}
+
+function deltaToFrames(deltaSeconds) {
+  if (!Number.isFinite(deltaSeconds) || deltaSeconds <= 0) return 0;
+  return Math.max(1, Math.round(deltaSeconds * SIM_HZ));
+}
+
 function resolveSpecialDirection(fighter) {
   const facing = Math.sign(fighter.facing) || 1;
   if (isGrounded(fighter)) {
     return { x: facing, y: 0, directional: false };
   }
   // Airborne Energy Shot is always angled down and toward the opponent.
-  const diagonal = 1 / Math.sqrt(2);
-  return { x: facing * diagonal, y: diagonal, directional: false };
+  return { x: facing * DIAGONAL_UNIT, y: DIAGONAL_UNIT, directional: false };
 }
 
 /**
@@ -189,15 +201,27 @@ export class ProjectileController {
       ? moveData.directionX
       : Math.sign(fighter.facing) || 1;
     const requestedY = Number.isFinite(moveData.directionY) ? moveData.directionY : 0;
-    const magnitude = Math.hypot(requestedX, requestedY) || 1;
-    const directionX = requestedX / magnitude;
-    const directionY = requestedY / magnitude;
+    let directionX;
+    let directionY;
+    if (requestedY === 0) {
+      directionX = Math.sign(requestedX) || Math.sign(fighter.facing) || 1;
+      directionY = 0;
+    } else if (Math.abs(Math.abs(requestedX) - Math.abs(requestedY)) < 1e-9) {
+      directionX = Math.sign(requestedX) * DIAGONAL_UNIT;
+      directionY = Math.sign(requestedY) * DIAGONAL_UNIT;
+    } else {
+      const magnitude = Math.hypot(requestedX, requestedY) || 1;
+      directionX = requestedX / magnitude;
+      directionY = requestedY / magnitude;
+    }
     // Vertical shots still approach from the fighter's facing side for guard checks.
     const direction = Math.sign(directionX) || Math.sign(fighter.facing) || 1;
     const spawnDirectionX = Math.sign(directionX) || Math.sign(fighter.facing) || 1;
+    const remainingFrames = secondsToFrames(moveData.lifetimeSeconds ?? this.lifetimeSeconds);
     const projectile = {
       id: this.nextProjectileId++,
       owner: fighter,
+      ownerSlot: Number.isInteger(fighter.slot) ? fighter.slot : 0,
       x: fighter.x + spawnDirectionX * (moveData.spawnOffsetX ?? this.spawnOffsetX),
       y: fighter.y + (moveData.spawnOffsetY ?? this.spawnOffsetY) + directionY * (moveData.spawnOffsetX ?? this.spawnOffsetX),
       direction,
@@ -206,7 +230,8 @@ export class ProjectileController {
       velocityX: directionX * (moveData.speed ?? this.speed),
       velocityY: directionY * (moveData.speed ?? this.speed),
       radius: moveData.radius ?? this.radius,
-      remainingSeconds: moveData.lifetimeSeconds ?? this.lifetimeSeconds,
+      remainingFrames,
+      remainingSeconds: remainingFrames / SIM_HZ,
       moveId: moveData.moveId ?? PROJECTILE_DEFAULTS.moveId,
       moveName: moveData.moveName ?? PROJECTILE_DEFAULTS.moveName,
       hitLevel: moveData.hitLevel ?? PROJECTILE_DEFAULTS.hitLevel
@@ -223,16 +248,21 @@ export class ProjectileController {
     floorY = Infinity
   } = {}) {
     const delta = Number.isFinite(deltaSeconds) ? Math.max(0, deltaSeconds) : 0;
+    const stepFrames = deltaToFrames(delta);
     const events = [];
 
     for (let index = this.projectiles.length - 1; index >= 0; index -= 1) {
       const projectile = this.projectiles[index];
       projectile.x += projectile.velocityX * delta;
       projectile.y += projectile.velocityY * delta;
-      projectile.remainingSeconds -= delta;
+      const currentFrames = Number.isInteger(projectile.remainingFrames)
+        ? projectile.remainingFrames
+        : secondsToFrames(projectile.remainingSeconds);
+      projectile.remainingFrames = currentFrames - stepFrames;
+      projectile.remainingSeconds = projectile.remainingFrames / SIM_HZ;
 
       if (
-        projectile.remainingSeconds <= 0 ||
+        projectile.remainingFrames <= 0 ||
         projectile.x + projectile.radius < minX ||
         projectile.x - projectile.radius > maxX ||
         projectile.y + projectile.radius < minY ||
@@ -288,6 +318,55 @@ export class ProjectileController {
     }
 
     return events.reverse();
+  }
+
+  saveState() {
+    return {
+      nextProjectileId: this.nextProjectileId,
+      items: this.projectiles.map(projectile => ({
+        id: projectile.id,
+        ownerSlot: Number.isInteger(projectile.ownerSlot)
+          ? projectile.ownerSlot
+          : (Number.isInteger(projectile.owner?.slot) ? projectile.owner.slot : 0),
+        x: projectile.x,
+        y: projectile.y,
+        direction: projectile.direction,
+        directionX: projectile.directionX,
+        directionY: projectile.directionY,
+        velocityX: projectile.velocityX,
+        velocityY: projectile.velocityY,
+        radius: projectile.radius,
+        remainingFrames: Number.isInteger(projectile.remainingFrames)
+          ? projectile.remainingFrames
+          : secondsToFrames(projectile.remainingSeconds),
+        moveId: projectile.moveId,
+        moveName: projectile.moveName,
+        hitLevel: projectile.hitLevel
+      }))
+    };
+  }
+
+  loadState(snapshot, fighters = []) {
+    this.nextProjectileId = Number.isInteger(snapshot?.nextProjectileId) ? snapshot.nextProjectileId : 1;
+    const items = Array.isArray(snapshot?.items) ? snapshot.items : [];
+    this.projectiles = items.map(item => ({
+      id: item.id,
+      owner: fighters[item.ownerSlot] ?? fighters[0] ?? null,
+      ownerSlot: item.ownerSlot,
+      x: item.x,
+      y: item.y,
+      direction: item.direction,
+      directionX: item.directionX,
+      directionY: item.directionY,
+      velocityX: item.velocityX,
+      velocityY: item.velocityY,
+      radius: item.radius,
+      remainingFrames: item.remainingFrames,
+      remainingSeconds: item.remainingFrames / SIM_HZ,
+      moveId: item.moveId,
+      moveName: item.moveName,
+      hitLevel: item.hitLevel
+    }));
   }
 
   clear() {

@@ -6,7 +6,7 @@ import { BLOCK_PROFILES, GuardController } from "../combat/GuardController.js";
 import { resolvePushboxes } from "../movement/Pushbox.js";
 import { FIGHTER_STATES, FighterStateController, isGrounded } from "../state/FighterStateController.js";
 import { ROUND_PHASES, RoundController } from "../combat/RoundController.js";
-import { ProjectileController } from "../combat/ProjectileController.js";
+import { ProjectileController, PROJECTILE_DEFAULTS, MOTION_SPECIAL_DEFAULTS } from "../combat/ProjectileController.js";
 import { CommandHistory } from "../input/CommandHistory.js";
 import { InputBuffer } from "../input/InputBuffer.js";
 import { ComboTracker } from "../combat/ComboTracker.js";
@@ -18,6 +18,9 @@ import { FighterAnimator } from "../animation/FighterAnimator.js";
 const clamp = (value,min,max)=>Math.min(max,Math.max(min,value));
 export const STAGE_MARGIN=68;
 export const MAX_FIGHTER_SEPARATION=960-2*STAGE_MARGIN;
+export const SNAPSHOT_SCHEMA_VERSION=1;
+
+const SIM_HZ=60;
 
 const NEUTRAL_INPUT=Object.freeze({
   getWorldAxis:()=>0,
@@ -68,6 +71,114 @@ export function resolveFighterSeparation(first, second, {
   }
 }
 
+function serializeFighterActionData(fighter) {
+  const action = fighter.state?.action;
+  const data = fighter.actionData;
+  if (!data || action === FIGHTER_STATES.action.NONE) return null;
+
+  if (action === FIGHTER_STATES.action.DASH) {
+    return {
+      dashType: data.dashType ?? null,
+      remainingFrames: Number.isInteger(data.remainingFrames)
+        ? data.remainingFrames
+        : Math.max(0, Math.round((data.remaining ?? 0) * SIM_HZ)),
+      velocity: data.velocity ?? 0
+    };
+  }
+  if (action === FIGHTER_STATES.action.GUARD) {
+    return {
+      guardHeight: data.guardHeight ?? fighter.guardData?.guardHeight ?? "high"
+    };
+  }
+  if (action === FIGHTER_STATES.action.ATTACK) {
+    return {
+      moveId: data.moveId ?? null,
+      elapsedFrames: data.elapsedFrames ?? 0,
+      phase: data.phase ?? "startup",
+      phaseFrame: data.phaseFrame ?? 0,
+      hitConfirmed: Boolean(data.hitConfirmed),
+      hitOutcome: data.hitOutcome ?? null,
+      hitAdvantage: data.hitAdvantage ?? null,
+      blockAdvantage: data.blockAdvantage ?? null
+    };
+  }
+  if (action === FIGHTER_STATES.action.SPECIAL) {
+    return {
+      moveId: data.moveId ?? "special",
+      elapsedFrames: data.elapsedFrames ?? 0,
+      phase: data.phase ?? "startup",
+      phaseFrame: data.phaseFrame ?? 0,
+      projectileSpawned: Boolean(data.projectileSpawned),
+      directionX: data.directionX ?? fighter.facing ?? 1,
+      directionY: data.directionY ?? 0,
+      hitAdvantage: data.hitAdvantage ?? null,
+      blockAdvantage: data.blockAdvantage ?? null
+    };
+  }
+  return null;
+}
+
+function restoreFighterActionData(fighter, action, data) {
+  if (!data || action === FIGHTER_STATES.action.NONE) {
+    return {};
+  }
+  if (action === FIGHTER_STATES.action.DASH) {
+    const remainingFrames = data.remainingFrames ?? 0;
+    return {
+      dashType: data.dashType ?? null,
+      remainingFrames,
+      remaining: remainingFrames / SIM_HZ,
+      velocity: data.velocity ?? 0
+    };
+  }
+  if (action === FIGHTER_STATES.action.GUARD) {
+    return { guardHeight: data.guardHeight ?? "high" };
+  }
+  if (action === FIGHTER_STATES.action.ATTACK) {
+    const move = fighter.character?.moveSet?.attacks?.[data.moveId] ?? {};
+    return {
+      ...move,
+      moveId: data.moveId,
+      moveName: move.name ?? data.moveId,
+      elapsedFrames: data.elapsedFrames,
+      phase: data.phase,
+      phaseFrame: data.phaseFrame,
+      hitConfirmed: Boolean(data.hitConfirmed),
+      hitOutcome: data.hitOutcome ?? null,
+      hitAdvantage: data.hitAdvantage ?? null,
+      blockAdvantage: data.blockAdvantage ?? null
+    };
+  }
+  if (action === FIGHTER_STATES.action.SPECIAL) {
+    const projectiles = fighter.character?.moveSet?.projectiles;
+    const isArcLance = data.moveId === "arcLance";
+    const move = isArcLance
+      ? (projectiles?.arcLance ?? MOTION_SPECIAL_DEFAULTS)
+      : (projectiles?.energyShot ?? PROJECTILE_DEFAULTS);
+    return {
+      moveId: data.moveId,
+      moveName: move.moveName ?? (isArcLance ? MOTION_SPECIAL_DEFAULTS.moveName : PROJECTILE_DEFAULTS.moveName),
+      hitLevel: move.hitLevel ?? PROJECTILE_DEFAULTS.hitLevel,
+      startupFrames: move.startupFrames ?? PROJECTILE_DEFAULTS.startupFrames,
+      recoveryFrames: move.recoveryFrames ?? PROJECTILE_DEFAULTS.recoveryFrames,
+      projectileSpeed: move.speed ?? PROJECTILE_DEFAULTS.speed,
+      projectileRadius: move.radius ?? PROJECTILE_DEFAULTS.radius,
+      projectileLifetimeSeconds: move.lifetimeSeconds ?? PROJECTILE_DEFAULTS.lifetimeSeconds,
+      projectileSpawnOffsetX: move.spawnOffsetX ?? PROJECTILE_DEFAULTS.spawnOffsetX,
+      projectileSpawnOffsetY: move.spawnOffsetY ?? PROJECTILE_DEFAULTS.spawnOffsetY,
+      elapsedFrames: data.elapsedFrames,
+      phase: data.phase,
+      phaseFrame: data.phaseFrame,
+      projectileSpawned: Boolean(data.projectileSpawned),
+      directionX: data.directionX,
+      directionY: data.directionY,
+      hitAdvantage: data.hitAdvantage ?? null,
+      blockAdvantage: data.blockAdvantage ?? null
+    };
+  }
+  return {};
+}
+
 function createFighter({ slot, x, facing, character }) {
   const fighter = {
     slot,
@@ -87,9 +198,10 @@ function createFighter({ slot, x, facing, character }) {
       action: FIGHTER_STATES.action.NONE,
       reaction: FIGHTER_STATES.reaction.NONE
     },
-    actionData: { dashType: null, remaining: 0, velocity: 0 },
+    actionData: { dashType: null, remainingFrames: 0, remaining: 0, velocity: 0 },
     dashType: null, dashRemaining: 0, dashVelocity: 0,
     airDashAvailable: true, airProjectileAvailable: true, airHorizontalVelocity: 0,
+    groundDashCooldownFrames: 0,
     groundDashCooldownRemaining: 0, lastAttackData: null,
     guardData: null, reactionData: null
   };
@@ -152,7 +264,8 @@ export class Arena {
     movement,
     commandHistory,
     inputBuffer,
-    deltaSeconds
+    deltaSeconds,
+    isResimulating = false
   }) {
     const resolvedInput = input ?? NEUTRAL_INPUT;
     commandHistory.update(resolvedInput, fighter.facing);
@@ -164,8 +277,10 @@ export class Arena {
         specialMove: "arcLance",
         specialFacing: fighter.facing
       });
-      this.commandFeedbackText = "ARC LANCE";
-      this.commandFeedbackRemaining = 0.9;
+      if (!isResimulating) {
+        this.commandFeedbackText = "ARC LANCE";
+        this.commandFeedbackRemaining = 0.9;
+      }
     } else {
       inputBuffer.capture(resolvedInput, this.inputFrame);
     }
@@ -227,9 +342,14 @@ export class Arena {
     });
   }
 
-  update(deltaSeconds, input, player2Input = null) {
+  update(deltaSeconds, input, player2Input = null, {
+    isResimulating = false,
+    allowLocalRematchConfirm = true
+  } = {}) {
     const slot0Input = input ?? NEUTRAL_INPUT;
-    this.combatEffects.update(deltaSeconds);
+    if (!isResimulating) {
+      this.combatEffects.update(deltaSeconds);
+    }
     this.previousCameraX=this.cameraX;
     // The round controller owns all non-active transitions. Combat and physics
     // stay frozen during result/ready-up screens and after the match is decided.
@@ -240,7 +360,7 @@ export class Arena {
       const transition=this.rounds.update(deltaSeconds,{
         playerHealth:this.player.health,
         opponentHealth:this.opponent.health,
-        confirmPressed:Boolean(
+        confirmPressed: allowLocalRematchConfirm && Boolean(
           slot0Input.wasPressed?.("Enter") ||
           slot0Input.wasPressed?.("Space") ||
           player2Input?.wasPressed?.("Enter") ||
@@ -248,18 +368,20 @@ export class Arena {
         )
       });
       if (transition?.type==="nextRound" || transition?.type==="matchReset") {
-        this.resetFighters();
+        this.resetFighters({ preserveEffects: isResimulating });
       }
       this.updateAnimations();
       return;
     }
 
     this.lastCombatEvent=null;
-    this.commandFeedbackRemaining=Math.max(0,this.commandFeedbackRemaining-deltaSeconds);
-    if (this.commandFeedbackRemaining===0) this.commandFeedbackText="";
-    if (this.lastHit) {
-      this.lastHit.remaining-=deltaSeconds;
-      if (this.lastHit.remaining<=0) this.lastHit=null;
+    if (!isResimulating) {
+      this.commandFeedbackRemaining=Math.max(0,this.commandFeedbackRemaining-deltaSeconds);
+      if (this.commandFeedbackRemaining===0) this.commandFeedbackText="";
+      if (this.lastHit) {
+        this.lastHit.remaining-=deltaSeconds;
+        if (this.lastHit.remaining<=0) this.lastHit=null;
+      }
     }
     const player=this.player;
     this.damage.update(player);
@@ -277,7 +399,8 @@ export class Arena {
       movement: this.movement,
       commandHistory: this.commandHistory,
       inputBuffer: this.inputBuffer,
-      deltaSeconds
+      deltaSeconds,
+      isResimulating
     });
 
     const slot1Input =
@@ -289,7 +412,8 @@ export class Arena {
         movement: this.opponentMovement,
         commandHistory: this.opponentCommandHistory,
         inputBuffer: this.opponentInputBuffer,
-        deltaSeconds
+        deltaSeconds,
+        isResimulating
       });
     } else {
       // Passive dummy (Training / isolated single-player fixtures): no input-driven
@@ -316,7 +440,7 @@ export class Arena {
       resolveAttackCollision(player,this.opponent),
       resolveAttackCollision(this.opponent,player)
     ].filter(Boolean);
-    for(const event of combatEvents) this.resolveCombatEvent(event);
+    for(const event of combatEvents) this.resolveCombatEvent(event, { isResimulating });
 
     const projectileEvents=this.projectileController.updateProjectiles(
       deltaSeconds,
@@ -330,7 +454,7 @@ export class Arena {
       }
     );
     for(const projectileEvent of projectileEvents){
-      this.resolveCombatEvent(projectileEvent);
+      this.resolveCombatEvent(projectileEvent, { isResimulating });
     }
 
     // Check KO/timeout after combat resolution so a hit that empties health
@@ -370,7 +494,7 @@ export class Arena {
     this.cameraX=clamp(midpoint-this.width/2,0,maxCameraX);
   }
 
-  resolveCombatEvent(event) {
+  resolveCombatEvent(event, { isResimulating = false } = {}) {
     if(event.type==="contact"){
       event.type=canGuardAttack(
         event.attacker,
@@ -425,20 +549,160 @@ export class Arena {
     }
 
     event.outcome=event.resolution?.outcome ?? event.type;
-    this.combatEffects.trigger(event);
+    if (!isResimulating) {
+      this.combatEffects.trigger(event);
+      this.lastHit={
+        moveName:event.moveName,
+        hitLevel:event.hitLevel,
+        outcome:event.outcome,
+        x:defender.x,
+        y:defender.y-112,
+        remaining:0.48
+      };
+    }
     this.lastCombatEvent=event;
     if(this.trainingMode && defender===this.opponent &&
       (event.type==="hit" || event.type==="block")){
       this.trainingDummyResetFrames=120;
     }
-    this.lastHit={
-      moveName:event.moveName,
-      hitLevel:event.hitLevel,
-      outcome:event.outcome,
-      x:defender.x,
-      y:defender.y-112,
-      remaining:0.48
+  }
+
+  saveState({ inputMasks = [0, 0] } = {}) {
+    return {
+      schemaVersion: SNAPSHOT_SCHEMA_VERSION,
+      inputFrame: this.inputFrame,
+      inputMasks: [inputMasks[0] & 0x00ff, inputMasks[1] & 0x00ff],
+      fighters: this.fighters.map(fighter => ({
+        slot: fighter.slot,
+        characterId: fighter.characterId,
+        x: fighter.x,
+        y: fighter.y,
+        previousX: fighter.previousX,
+        previousY: fighter.previousY,
+        vx: fighter.vx,
+        vy: fighter.vy,
+        airHorizontalVelocity: fighter.airHorizontalVelocity,
+        facing: fighter.facing,
+        onGround: Boolean(fighter.onGround),
+        health: fighter.health,
+        guardMeter: fighter.guardMeter,
+        guardMeterRecoveryDelayFrames: fighter.guardMeterRecoveryDelayFrames ?? 0,
+        airDashAvailable: Boolean(fighter.airDashAvailable),
+        airProjectileAvailable: Boolean(fighter.airProjectileAvailable),
+        groundDashCooldownFrames: Number.isInteger(fighter.groundDashCooldownFrames)
+          ? fighter.groundDashCooldownFrames
+          : Math.max(0, Math.round((fighter.groundDashCooldownRemaining ?? 0) * SIM_HZ)),
+        state: {
+          locomotion: fighter.state.locomotion,
+          action: fighter.state.action,
+          reaction: fighter.state.reaction
+        },
+        actionData: serializeFighterActionData(fighter),
+        guardData: fighter.guardData ? { guardHeight: fighter.guardData.guardHeight } : null,
+        reactionData: fighter.reactionData
+          ? {
+              remainingFrames: fighter.reactionData.remainingFrames,
+              totalFrames: fighter.reactionData.totalFrames,
+              knockbackVelocity: fighter.reactionData.knockbackVelocity,
+              damage: fighter.reactionData.damage ?? 0,
+              moveId: fighter.reactionData.moveId ?? null,
+              blocked: Boolean(fighter.reactionData.blocked),
+              guardBreak: Boolean(fighter.reactionData.guardBreak)
+            }
+          : null
+      })),
+      movement: [
+        this.movement.saveState(),
+        this.opponentMovement.saveState()
+      ],
+      commandHistories: [
+        this.commandHistory.saveState(),
+        this.opponentCommandHistory.saveState()
+      ],
+      inputBuffers: [
+        this.inputBuffer.saveState(),
+        this.opponentInputBuffer.saveState()
+      ],
+      projectiles: this.projectileController.saveState(),
+      combos: this.comboTracker.saveState(this.fighters),
+      rounds: this.rounds.saveState()
     };
+  }
+
+  loadState(snapshot) {
+    if (!snapshot || snapshot.schemaVersion !== SNAPSHOT_SCHEMA_VERSION) {
+      throw new RangeError(
+        "Unsupported Arena snapshot schema version: " + snapshot?.schemaVersion
+      );
+    }
+
+    this.inputFrame = snapshot.inputFrame;
+    for (let slot = 0; slot < 2; slot += 1) {
+      const target = this.fighters[slot];
+      const source = snapshot.fighters[slot];
+      if (!target || !source) continue;
+
+      if (source.characterId && source.characterId !== target.characterId) {
+        const definition = getCharacterDefinition(source.characterId);
+        if (!definition) throw new RangeError("Unknown snapshot character: " + source.characterId);
+        target.characterId = definition.id;
+        target.character = definition;
+        target.displayName = definition.displayName;
+        target.moveSpeed = definition.stats.moveSpeed;
+        target.damageMultiplier = definition.stats.damageMultiplier;
+        target.animator = new FighterAnimator(definition.animations);
+      }
+
+      target.slot = slot;
+      target.x = source.x;
+      target.y = source.y;
+      target.previousX = source.previousX;
+      target.previousY = source.previousY;
+      target.vx = source.vx;
+      target.vy = source.vy;
+      target.airHorizontalVelocity = source.airHorizontalVelocity;
+      target.facing = source.facing;
+      target.onGround = Boolean(source.onGround);
+      target.health = source.health;
+      target.guardMeter = source.guardMeter;
+      target.guardMeterRecoveryDelayFrames = source.guardMeterRecoveryDelayFrames;
+      target.airDashAvailable = Boolean(source.airDashAvailable);
+      target.airProjectileAvailable = Boolean(source.airProjectileAvailable);
+      target.groundDashCooldownFrames = source.groundDashCooldownFrames;
+      target.groundDashCooldownRemaining = source.groundDashCooldownFrames / SIM_HZ;
+      target.state = {
+        locomotion: source.state.locomotion,
+        action: source.state.action,
+        reaction: source.state.reaction
+      };
+      target.actionData = restoreFighterActionData(target, source.state.action, source.actionData);
+      target.guardData = source.guardData ? { guardHeight: source.guardData.guardHeight } : null;
+      target.reactionData = source.reactionData
+        ? {
+            remainingFrames: source.reactionData.remainingFrames,
+            totalFrames: source.reactionData.totalFrames,
+            knockbackVelocity: source.reactionData.knockbackVelocity,
+            damage: source.reactionData.damage ?? 0,
+            moveId: source.reactionData.moveId ?? null,
+            blocked: Boolean(source.reactionData.blocked),
+            guardBreak: Boolean(source.reactionData.guardBreak)
+          }
+        : null;
+      this.stateController.syncCompatibilityFields(target);
+    }
+
+    this.movement.loadState(snapshot.movement[0]);
+    this.opponentMovement.loadState(snapshot.movement[1]);
+    this.commandHistory.loadState(snapshot.commandHistories[0]);
+    this.opponentCommandHistory.loadState(snapshot.commandHistories[1]);
+    this.inputBuffer.loadState(snapshot.inputBuffers[0]);
+    this.opponentInputBuffer.loadState(snapshot.inputBuffers[1]);
+    this.projectileController.loadState(snapshot.projectiles, this.fighters);
+    this.comboTracker.loadState(snapshot.combos, this.fighters);
+    this.rounds.loadState(snapshot.rounds);
+    this.updateCamera();
+    this.previousCameraX = this.cameraX;
+    this.updateAnimations();
   }
 
   resetTraining() {
@@ -448,11 +712,11 @@ export class Arena {
     return true;
   }
 
-  resetFighters() {
+  resetFighters({ preserveEffects = false } = {}) {
     this.resetFighter(this.player,780,1);
     this.resetFighter(this.opponent,1140,-1);
-    this.movement.lastTap={left:-Infinity,right:-Infinity};
-    this.opponentMovement.lastTap={left:-Infinity,right:-Infinity};
+    this.movement.reset();
+    this.opponentMovement.reset();
     this.opponentAI?.reset();
     this.projectileController.clear();
     this.commandHistory.reset();
@@ -467,8 +731,10 @@ export class Arena {
     this.cameraX=(this.player.x+this.opponent.x)/2-this.width/2;
     this.previousCameraX=this.cameraX;
     this.lastCombatEvent=null;
-    this.lastHit=null;
-    this.combatEffects.reset();
+    if (!preserveEffects) {
+      this.lastHit=null;
+      this.combatEffects.reset();
+    }
   }
 
   resetFighter(fighter,x,facing) {
@@ -489,13 +755,14 @@ export class Arena {
       action:FIGHTER_STATES.action.NONE,
       reaction:FIGHTER_STATES.reaction.NONE
     };
-    fighter.actionData={dashType:null,remaining:0,velocity:0};
+    fighter.actionData={dashType:null,remainingFrames:0,remaining:0,velocity:0};
     fighter.dashType=null;
     fighter.dashRemaining=0;
     fighter.dashVelocity=0;
     fighter.airDashAvailable=true;
     fighter.airProjectileAvailable=true;
     fighter.airHorizontalVelocity=0;
+    fighter.groundDashCooldownFrames=0;
     fighter.groundDashCooldownRemaining=0;
     fighter.lastAttackData=null;
     fighter.lastCancelData=null;

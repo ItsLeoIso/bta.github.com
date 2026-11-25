@@ -71,6 +71,33 @@ export class InputBuffer {
     }
   }
 
+  saveState() {
+    return {
+      pending: this.pending
+        ? {
+            action: this.pending.action,
+            pressedFrame: this.pending.pressedFrame,
+            expiresFrame: this.pending.expiresFrame,
+            specialMove: this.pending.specialMove,
+            specialFacing: this.pending.specialFacing
+          }
+        : null
+    };
+  }
+
+  loadState(snapshot) {
+    const pending = snapshot?.pending;
+    this.pending = pending
+      ? {
+          action: pending.action,
+          pressedFrame: pending.pressedFrame,
+          expiresFrame: pending.expiresFrame,
+          specialMove: pending.specialMove ?? null,
+          specialFacing: pending.specialFacing ?? null
+        }
+      : null;
+  }
+
   clear() {
     this.pending = null;
   }

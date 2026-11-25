@@ -57,6 +57,23 @@ export class CommandHistory {
     return true;
   }
 
+  saveState() {
+    return {
+      frame: this.frame,
+      entries: this.entries.map(entry => ({
+        direction: entry.direction,
+        frame: entry.frame
+      }))
+    };
+  }
+
+  loadState(snapshot) {
+    this.frame = Number.isInteger(snapshot?.frame) ? snapshot.frame : 0;
+    this.entries = Array.isArray(snapshot?.entries)
+      ? snapshot.entries.map(entry => ({ direction: entry.direction, frame: entry.frame }))
+      : [];
+  }
+
   reset() {
     this.frame = 0;
     this.entries = [];

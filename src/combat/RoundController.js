@@ -14,16 +14,39 @@ export const ROUND_DEFAULTS = Object.freeze({
 });
 
 const HEALTH_EPSILON = 1e-9;
+const SIM_HZ = 60;
 
 function isPositiveNumber(value) {
   return Number.isFinite(value) && value > 0;
+}
+
+function secondsToFrames(seconds) {
+  if (!Number.isFinite(seconds) || seconds <= 0) return 0;
+  return Math.max(1, Math.round(seconds * SIM_HZ));
+}
+
+function deltaToFrames(deltaSeconds) {
+  if (!Number.isFinite(deltaSeconds) || deltaSeconds <= 0) return 0;
+  return Math.max(1, Math.round(deltaSeconds * SIM_HZ));
+}
+
+function winnerToSlot(winner) {
+  if (winner === "player") return 0;
+  if (winner === "opponent") return 1;
+  return null;
+}
+
+function slotToWinner(slot) {
+  if (slot === 0) return "player";
+  if (slot === 1) return "opponent";
+  return null;
 }
 
 /**
  * Owns round timing and match progression.
  *
  * Prototype defaults are 99 seconds per round and first-to-two round wins.
- * These are tuning defaults, not locked competitive rules.
+ * Gameplay timers run on canonical 60 Hz integer frame counts for rollback determinism.
  */
 export class RoundController {
   constructor({
@@ -50,11 +73,30 @@ export class RoundController {
     }
 
     this.durationSeconds = durationSeconds;
+    this.durationFrames = secondsToFrames(durationSeconds);
     this.roundsToWin = roundsToWin;
     this.resultSeconds = resultSeconds;
+    this.resultFrames = secondsToFrames(resultSeconds);
     this.introSeconds = introSeconds;
+    this.introFrames = secondsToFrames(introSeconds);
     this.fightBannerSeconds = fightBannerSeconds;
     this.resetMatch();
+  }
+
+  get timerRemaining() {
+    return this.timerRemainingFrames / SIM_HZ;
+  }
+
+  set timerRemaining(seconds) {
+    this.timerRemainingFrames = secondsToFrames(seconds);
+  }
+
+  get phaseRemaining() {
+    return this.phaseRemainingFrames / SIM_HZ;
+  }
+
+  set phaseRemaining(seconds) {
+    this.phaseRemainingFrames = secondsToFrames(seconds);
   }
 
   resetMatch() {
@@ -64,10 +106,38 @@ export class RoundController {
     this.roundWinner = null;
     this.resultReason = null;
     this.phase = ROUND_PHASES.ACTIVE;
-    this.phaseRemaining = 0;
-    this.timerRemaining = this.durationSeconds;
+    this.phaseRemainingFrames = 0;
+    this.timerRemainingFrames = this.durationFrames;
     this.bannerText = "ROUND 1 · FIGHT!";
     this.bannerRemaining = this.fightBannerSeconds;
+  }
+
+  saveState() {
+    return {
+      roundNumber: this.roundNumber,
+      score: [this.score.player, this.score.opponent],
+      phase: this.phase,
+      phaseRemainingFrames: this.phaseRemainingFrames,
+      timerRemainingFrames: this.timerRemainingFrames,
+      roundWinnerSlot: winnerToSlot(this.roundWinner),
+      matchWinnerSlot: winnerToSlot(this.matchWinner),
+      resultReason: this.resultReason
+    };
+  }
+
+  loadState(snapshot) {
+    if (!snapshot) return;
+    this.roundNumber = snapshot.roundNumber;
+    this.score = {
+      player: snapshot.score[0],
+      opponent: snapshot.score[1]
+    };
+    this.phase = snapshot.phase;
+    this.phaseRemainingFrames = snapshot.phaseRemainingFrames;
+    this.timerRemainingFrames = snapshot.timerRemainingFrames;
+    this.roundWinner = slotToWinner(snapshot.roundWinnerSlot);
+    this.matchWinner = slotToWinner(snapshot.matchWinnerSlot);
+    this.resultReason = snapshot.resultReason;
   }
 
   update(deltaSeconds, {
@@ -76,6 +146,7 @@ export class RoundController {
     confirmPressed = false
   } = {}) {
     const delta = Number.isFinite(deltaSeconds) ? Math.max(0, deltaSeconds) : 0;
+    const stepFrames = deltaToFrames(delta);
 
     if (this.phase === ROUND_PHASES.MATCH_OVER) {
       if (confirmPressed) {
@@ -86,8 +157,8 @@ export class RoundController {
     }
 
     if (this.phase === ROUND_PHASES.ROUND_INTRO) {
-      this.phaseRemaining = Math.max(0, this.phaseRemaining - delta);
-      if (this.phaseRemaining === 0) {
+      this.phaseRemainingFrames = Math.max(0, this.phaseRemainingFrames - stepFrames);
+      if (this.phaseRemainingFrames === 0) {
         this.beginActiveRound();
         return { type: "roundStart" };
       }
@@ -95,8 +166,8 @@ export class RoundController {
     }
 
     if (this.phase === ROUND_PHASES.ROUND_OVER) {
-      this.phaseRemaining = Math.max(0, this.phaseRemaining - delta);
-      if (this.phaseRemaining === 0) {
+      this.phaseRemainingFrames = Math.max(0, this.phaseRemainingFrames - stepFrames);
+      if (this.phaseRemainingFrames === 0) {
         if (this.score.player >= this.roundsToWin) {
           this.matchWinner = "player";
           this.phase = ROUND_PHASES.MATCH_OVER;
@@ -134,8 +205,8 @@ export class RoundController {
       return { type: "roundEnd" };
     }
 
-    this.timerRemaining = Math.max(0, this.timerRemaining - delta);
-    if (this.timerRemaining === 0) {
+    this.timerRemainingFrames = Math.max(0, this.timerRemainingFrames - stepFrames);
+    if (this.timerRemainingFrames === 0) {
       const difference = playerHealthValue - opponentHealthValue;
       const winner = Math.abs(difference) <= HEALTH_EPSILON
         ? null
@@ -159,15 +230,15 @@ export class RoundController {
     this.resultReason = reason;
     if (winner) this.score[winner] += 1;
     this.phase = ROUND_PHASES.ROUND_OVER;
-    this.phaseRemaining = this.resultSeconds;
+    this.phaseRemainingFrames = this.resultFrames;
     this.bannerRemaining = 0;
     return true;
   }
 
   beginRoundIntro() {
     this.phase = ROUND_PHASES.ROUND_INTRO;
-    this.phaseRemaining = this.introSeconds;
-    this.timerRemaining = this.durationSeconds;
+    this.phaseRemainingFrames = this.introFrames;
+    this.timerRemainingFrames = this.durationFrames;
     this.roundWinner = null;
     this.resultReason = null;
     this.bannerText = "ROUND " + this.roundNumber;
@@ -176,8 +247,8 @@ export class RoundController {
 
   beginActiveRound() {
     this.phase = ROUND_PHASES.ACTIVE;
-    this.phaseRemaining = 0;
-    this.timerRemaining = this.durationSeconds;
+    this.phaseRemainingFrames = 0;
+    this.timerRemainingFrames = this.durationFrames;
     this.bannerText = "FIGHT!";
     this.bannerRemaining = this.fightBannerSeconds;
   }

@@ -106,6 +106,48 @@ export class ComboTracker {
     return null;
   }
 
+  saveState(fighters = []) {
+    const entries = [];
+    for (const [defender, combo] of this.combos) {
+      const defenderSlot = Number.isInteger(defender?.slot)
+        ? defender.slot
+        : fighters.indexOf(defender);
+      const attackerSlot = Number.isInteger(combo.attacker?.slot)
+        ? combo.attacker.slot
+        : fighters.indexOf(combo.attacker);
+      if (defenderSlot < 0 || attackerSlot < 0) continue;
+      entries.push({
+        defenderSlot,
+        attackerSlot,
+        hitCount: combo.hitCount,
+        totalDamage: combo.totalDamage,
+        juggleHits: combo.juggleHits,
+        airCombo: Boolean(combo.airCombo),
+        remainingFrames: combo.remainingFrames
+      });
+    }
+    entries.sort((a, b) => a.defenderSlot - b.defenderSlot);
+    return entries;
+  }
+
+  loadState(snapshot = [], fighters = []) {
+    this.combos.clear();
+    if (!Array.isArray(snapshot)) return;
+    for (const entry of snapshot) {
+      const defender = fighters[entry.defenderSlot];
+      const attacker = fighters[entry.attackerSlot];
+      if (!defender || !attacker) continue;
+      this.combos.set(defender, {
+        attacker,
+        hitCount: entry.hitCount,
+        totalDamage: entry.totalDamage,
+        juggleHits: entry.juggleHits,
+        airCombo: Boolean(entry.airCombo),
+        remainingFrames: entry.remainingFrames
+      });
+    }
+  }
+
   reset() {
     this.combos.clear();
   }
