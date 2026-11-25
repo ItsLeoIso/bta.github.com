@@ -37,12 +37,25 @@ def require_env(name: str) -> str:
     return value
 
 
-def run_command(args: list[str], timeout: int = 1200) -> tuple[int, str]:
+def run_command(
+    args: list[str],
+    timeout: int = 1200,
+    clean_env: bool = False,
+) -> tuple[int, str]:
     print(f"::group::{' '.join(args)}", flush=True)
+    child_env = None
+    if clean_env:
+        safe_names = {
+            "PATH", "HOME", "LANG", "LC_ALL", "TMPDIR", "TEMP",
+            "CI", "RUNNER_TEMP", "PLAYWRIGHT_BROWSERS_PATH",
+        }
+        child_env = {key: value for key, value in os.environ.items() if key in safe_names}
+        child_env["CI"] = "true"
     try:
         process = subprocess.run(
             args,
             cwd=REPO_ROOT,
+            env=child_env,
             text=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -400,7 +413,7 @@ def prepare_browser_tools() -> None:
         (["npm", "install", "--no-save", "--package-lock=false", "@playwright/test"], 600),
         (["npx", "playwright", "install", "--with-deps", "chromium"], 1200),
     ):
-        code, output = run_command(command, timeout)
+        code, output = run_command(command, timeout, clean_env=True)
         if code:
             raise RuntimeError("Could not prepare browser tests: " + output[-5000:])
 
@@ -412,7 +425,7 @@ def run_checks() -> tuple[bool, str]:
         (["npm", "test"], 900),
         (["npx", "playwright", "test"], 1200),
     ):
-        code, output = run_command(command, timeout)
+        code, output = run_command(command, timeout, clean_env=True)
         transcripts.append(f"$ {' '.join(command)}\n{output[-12000:]}")
         if code != 0:
             return False, "\n\n".join(transcripts)[-30000:]
@@ -536,6 +549,31 @@ def github_request(method: str, url: str, token: str, payload: dict[str, Any] | 
             f"GitHub API {method} {url} returned {response.status_code}: {response.text[:3000]}"
         )
     return response.json() if response.content else {}
+
+
+def push_branch(branch: str, token: str) -> None:
+    import base64
+
+    # Supply credentials only to this Git process. actions/checkout is configured
+    # with persist-credentials:false, so test and package scripts cannot read them.
+    encoded = base64.b64encode(f"x-access-token:{token}".encode()).decode()
+    child_env = os.environ.copy()
+    child_env["GIT_CONFIG_COUNT"] = "1"
+    child_env["GIT_CONFIG_KEY_0"] = "http.https://github.com/.extraheader"
+    child_env["GIT_CONFIG_VALUE_0"] = f"AUTHORIZATION: basic {encoded}"
+    process = subprocess.run(
+        ["git", "push", "--set-upstream", "origin", branch],
+        cwd=REPO_ROOT,
+        env=child_env,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        timeout=180,
+        check=False,
+    )
+    print(process.stdout[-12000:], flush=True)
+    if process.returncode:
+        raise RuntimeError("Could not push the isolated task branch: " + (process.stdout or "")[-5000:])
 
 
 def open_pull_request(
@@ -706,9 +744,7 @@ def main() -> int:
                 }
                 break
 
-        code, output = run_command(["git", "push", "--set-upstream", "origin", branch], 180)
-        if code:
-            raise RuntimeError("Could not push the isolated task branch: " + output[-5000:])
+        push_branch(branch, token)
 
         pr_url = open_pull_request(
             repo=repo,
