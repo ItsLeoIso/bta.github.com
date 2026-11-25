@@ -9,14 +9,15 @@ Agents API as an independent reviewer.
 
 1. A task is submitted from Actions → Autonomous agent team → Run workflow.
    Alternatively, comment /agents run followed by the task on a normal GitHub issue.
-2. The Antigravity agent receives a fresh remote sandbox with a read-only repository
-   source. It plans, implements, and returns the resulting workspace snapshot.
-3. The GitHub Actions runner imports the snapshot on a new agents/... branch.
+2. Antigravity first proposes a plan in a fresh remote sandbox. The OpenAI architect
+   independently critiques that plan and sends actionable feedback to Antigravity.
+3. Antigravity revises the plan, implements the task, and returns the workspace snapshot.
+4. The GitHub Actions runner imports the snapshot on a new agents/... branch.
    The raw GitHub write token never enters the Antigravity sandbox.
-4. The runner executes npm test and the existing Chromium Playwright smoke suite.
-5. The OpenAI reviewer independently reviews the diff and test results. Findings are
+5. The runner executes npm test and the existing Chromium Playwright smoke suite.
+6. The OpenAI reviewer independently reviews the diff and test results. Findings are
    sent to the same Antigravity environment for up to three repair rounds.
-6. The workflow pushes the branch and opens a pull request. It never merges it.
+7. The workflow pushes the branch and opens a pull request. It never merges it.
 
 A review that cannot be parsed, a failed test, a missing API capability, or an
 unresolved finding results in a draft PR for a human to inspect. Only a clean
@@ -64,12 +65,15 @@ From a GitHub issue, comment on a normal issue:
 
 /agents run Plan, discuss, and implement all of Phase 7. Come back when done.
 
-The comment trigger intentionally ignores pull-request conversations.
+The comment trigger intentionally ignores pull-request conversations and only accepts
+commands from the repository owner.
 
 ## Safety boundaries
 
 - Antigravity works in a separate Google-managed sandbox. It cannot see this ChatGPT
   conversation or your existing Antigravity web session.
+- The OpenAI architect reviews Antigravity's plan before implementation; a second
+  independent review happens after the code and automated tests are ready.
 - The sandbox gets repository source access only; it does not receive GITHUB_TOKEN
   or OPENAI_API_KEY.
 - The runner writes only to a new branch and opens a PR. No automatic merge, release,
