@@ -261,6 +261,7 @@ def start_antigravity(client: Any, task: str, repo: str, run_id: str, agent_id: 
             "allowlist": [
                 {"domain": "github.com"},
                 {"domain": "api.github.com"},
+                {"domain": "registry.npmjs.org"},
             ]
         },
     }
