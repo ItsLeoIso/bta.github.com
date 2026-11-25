@@ -1461,7 +1461,10 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 **Verification:**
 - Local Node test suite (`npm test`): **254/254 passed, 0 failures** (including syntax & relative-import integrity checks, seeded 620-frame rollback stress tests, and live WebSocket signaling server tests).
 - Zero runtime npm dependencies added (`package.json` unchanged).
-- GitHub Actions CI (Node tests + Chromium browser smoke including the new two-browser WebRTC E2E test + GitHub Pages deploy) will be checked right after pushing this commit.
+- GitHub Actions CI for commit `78bdcfc`:
+  - Node.js tests: **254/254 passed** — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45619917784
+  - Chromium browser smoke + live two-peer WebRTC Direct Invite rollback E2E test: **5/5 passed** — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45619917825
+  - GitHub Pages build & deployment: **succeeded** — https://github.com/ItsLeoIso/bta.github.com/actions/runs/45619916694
 - Not yet human-verified: real cross-network playtest (home Wi-Fi ↔ mobile hotspot) and Chromium ↔ Firefox cross-engine determinism check.
 
 **Review requested / concerns:**
