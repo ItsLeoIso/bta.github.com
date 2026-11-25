@@ -8,6 +8,7 @@ import json
 import os
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import tarfile
@@ -449,7 +450,10 @@ def overlay_snapshot(snapshot: Path) -> None:
             continue
         target = REPO_ROOT / relative
         target.parent.mkdir(parents=True, exist_ok=True)
+        previous_mode = stat.S_IMODE(target.stat().st_mode) if target.exists() else None
         shutil.copy2(path, target)
+        if previous_mode is not None:
+            target.chmod(previous_mode)
 
 
 def slugify(value: str) -> str:
@@ -471,7 +475,14 @@ def apply_snapshot_and_commit(archive_bytes: bytes, message: str, required: bool
             raise RuntimeError("Antigravity returned no repository changes.")
         return False
     code, output = run_command(
-        ["git", "-c", "core.hooksPath=/dev/null", "commit", "-m", message[:180]], 120
+        [
+            "git",
+            "-c", "core.hooksPath=/dev/null",
+            "-c", "user.name=github-actions[bot]",
+            "-c", "user.email=41898282+github-actions[bot]@users.noreply.github.com",
+            "commit", "-m", message[:180],
+        ],
+        120,
     )
     if code:
         raise RuntimeError("Could not commit agent snapshot: " + output[-5000:])
@@ -716,6 +727,7 @@ def main() -> int:
             raise RuntimeError("The task input was empty.")
         repo = require_env("GITHUB_REPOSITORY")
         run_id = require_env("GITHUB_RUN_ID")
+        run_attempt = os.environ.get("GITHUB_RUN_ATTEMPT", "1").strip() or "1"
         token = require_env("GITHUB_TOKEN")
         gemini_key = require_env("GEMINI_API_KEY")
         openai_key = require_env("OPENAI_API_KEY")
@@ -727,7 +739,7 @@ def main() -> int:
         agent_id = os.environ.get("ANTIGRAVITY_AGENT_ID", "").strip() or AGENT_ID_DEFAULT
         reviewer_model = os.environ.get("OPENAI_REVIEW_MODEL", "").strip() or REVIEW_MODEL_DEFAULT
 
-        branch = f"agents/run-{run_id}-{slugify(task)[:28]}"
+        branch = f"agents/run-{run_id}-attempt-{run_attempt}-{slugify(task)[:24]}"
         print(f"Starting BTA two-agent run for {repo} on branch {branch}", flush=True)
 
         client = make_google_client(gemini_key)
