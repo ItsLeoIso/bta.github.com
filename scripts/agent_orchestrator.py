@@ -82,7 +82,7 @@ def wait_for_interaction(client: Any, interaction: Any, timeout_seconds: int = 7
         raise RuntimeError("Antigravity API returned an interaction without an ID.")
     deadline = time.monotonic() + timeout_seconds
     success = {"completed", "complete", "succeeded", "success"}
-    failure = {"failed", "error", "cancelled", "canceled", "expired"}
+    failure = {"failed", "error", "cancelled", "canceled", "expired", "incomplete"}
     while time.monotonic() < deadline:
         status = str(getattr(interaction, "status", "") or "").lower()
         if status in success:
@@ -236,6 +236,8 @@ def implement_after_plan(
         environment=environment_id,
         previous_interaction_id=getattr(previous, "id"),
         background=True,
+        store=True,
+        agent_config={"type": "antigravity", "max_total_tokens": 60000},
     )
     return wait_for_interaction(client, interaction)
 
@@ -267,6 +269,8 @@ def start_antigravity(client: Any, task: str, repo: str, run_id: str, agent_id: 
         input=build_agent_prompt(task, repo, run_id),
         environment=environment,
         background=True,
+        store=True,
+        agent_config={"type": "antigravity", "max_total_tokens": 60000},
     )
     return wait_for_interaction(client, interaction)
 
@@ -297,24 +301,85 @@ def continue_antigravity(
 
 
 def get_repo_snapshot(client: Any, environment_id: str) -> bytes:
-    errors: list[str] = []
-    for path in ("workspace/bta", "/workspace/bta"):
+    """
+    Export the source tree from the managed sandbox.
+
+    The SDK's download() method downloads one file or a non-recursive directory
+    archive. Use the recursive file listing API, then download each file and
+    construct a POSIX tar archive locally.
+    """
+    listing_errors: list[str] = []
+    for root in ("workspace/bta", "bta"):
         try:
-            data = client.environments.files.download(
+            listing = client.environments.files.list(
                 environment=environment_id,
-                path=path,
+                path=root,
                 recursive=True,
             )
-            payload = bytes(data)
-            if not payload:
-                raise RuntimeError("The downloaded workspace archive is empty.")
-            if len(payload) > SNAPSHOT_LIMIT_BYTES:
-                raise RuntimeError("Workspace archive exceeds the 250 MB limit.")
-            return payload
-        except Exception as exc:
-            errors.append(f"{path}: {exc}")
-    raise RuntimeError("Could not export Antigravity workspace: " + " | ".join(errors))
+            entries = list(getattr(listing, "files", None) or [])
+            if not entries:
+                raise RuntimeError(f"No files were listed under {root!r}.")
 
+            archive_buffer = io.BytesIO()
+            total_bytes = 0
+            exported_files = 0
+            with tarfile.open(fileobj=archive_buffer, mode="w") as archive:
+                for entry in entries:
+                    if str(getattr(entry, "type", "")).upper() != "FILE":
+                        continue
+
+                    source_path = str(getattr(entry, "path", "") or "").replace("\\", "/")
+                    source_parts = list(PurePosixPath(source_path.lstrip("/")).parts)
+                    if not source_parts or ".." in source_parts:
+                        raise RuntimeError(f"Unsafe path returned by sandbox listing: {source_path!r}")
+
+                    if source_parts[:2] == ["workspace", "bta"]:
+                        relative_parts = source_parts[2:]
+                    elif source_parts[0] == "bta":
+                        relative_parts = source_parts[1:]
+                    elif source_parts[0] == "workspace":
+                        raise RuntimeError(
+                            f"Sandbox listed a path outside the project source: {source_path!r}"
+                        )
+                    else:
+                        # Some SDK versions return paths relative to the listed directory.
+                        relative_parts = source_parts
+
+                    if not relative_parts:
+                        continue
+                    if any(part in {".git", "node_modules"} for part in relative_parts):
+                        continue
+
+                    relative_path = PurePosixPath(*relative_parts)
+                    if relative_path.is_absolute() or ".." in relative_path.parts:
+                        raise RuntimeError(f"Unsafe relative path: {relative_path}")
+
+                    payload = bytes(
+                        client.environments.files.download(
+                            environment=environment_id,
+                            path=source_path,
+                        )
+                    )
+                    total_bytes += len(payload)
+                    if total_bytes > SNAPSHOT_LIMIT_BYTES:
+                        raise RuntimeError("Workspace snapshot exceeds the 250 MB size limit.")
+
+                    info = tarfile.TarInfo(name=relative_path.as_posix())
+                    info.size = len(payload)
+                    info.mode = 0o644
+                    archive.addfile(info, io.BytesIO(payload))
+                    exported_files += 1
+
+            if exported_files == 0:
+                raise RuntimeError(f"No project files could be exported from {root!r}.")
+            result = archive_buffer.getvalue()
+            if not result:
+                raise RuntimeError("The exported workspace archive is empty.")
+            return result
+        except Exception as exc:
+            listing_errors.append(f"{root}: {type(exc).__name__}: {exc}")
+
+    raise RuntimeError("Could not export Antigravity workspace: " + " | ".join(listing_errors))
 
 def safe_extract_snapshot(archive_bytes: bytes, destination: Path) -> None:
     destination.mkdir(parents=True, exist_ok=True)
