@@ -24,11 +24,15 @@ REVIEW_MODEL_DEFAULT = "gpt-6-astra"
 SOURCE_TARGET = "/workspace/bta"
 SNAPSHOT_LIMIT_BYTES = 250 * 1024 * 1024
 PROTECTED_PATHS = {
-    ".github/workflows/agent-orchestrator.yml",
+    ".gitignore",
     "scripts/agent_orchestrator.py",
     "scripts/test_agent_orchestrator.py",
     "docs/AGENT_ORCHESTRATOR.md",
 }
+
+
+def is_protected_path(path: str) -> bool:
+    return path in PROTECTED_PATHS or path.startswith(".github/workflows/")
 
 
 def require_env(name: str) -> str:
@@ -124,6 +128,7 @@ PLANNING RULES:
 - State the tests and browser checks needed for each milestone.
 - Separate required work from optional polish.
 - Call out any decision that genuinely requires the repository owner's judgment.
+- Do not create, modify, or delete any .github/workflows files or .gitignore.
 - Do not modify repository settings, secrets, branch protections, deployments, or
   external services. Do not publish releases or merge anything.
 - Never request or print credentials.
@@ -435,7 +440,7 @@ def overlay_snapshot(snapshot: Path) -> None:
     )
     tracked = result.stdout.decode("utf-8", errors="surrogateescape").split("\0")
     for item in tracked:
-        if not item or item in PROTECTED_PATHS:
+        if not item or is_protected_path(item):
             continue
         current = REPO_ROOT / item
         if current.is_file() and not (snapshot / item).exists():
@@ -444,7 +449,7 @@ def overlay_snapshot(snapshot: Path) -> None:
         if path.is_dir():
             continue
         relative = path.relative_to(snapshot).as_posix()
-        if relative in PROTECTED_PATHS or relative == "agent-workspace.tar":
+        if is_protected_path(relative) or relative == "agent-workspace.tar":
             continue
         if relative.startswith(".git/") or relative.startswith("node_modules/"):
             continue
