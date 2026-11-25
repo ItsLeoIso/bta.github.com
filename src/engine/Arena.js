@@ -25,8 +25,52 @@ const NEUTRAL_INPUT=Object.freeze({
   isDown:()=>false
 });
 
-function createFighter({ x, facing, character }) {
+export function resolveFighterSeparation(first, second, {
+  minX = STAGE_MARGIN,
+  maxX = 1920 - STAGE_MARGIN,
+  maxSeparation = MAX_FIGHTER_SEPARATION
+} = {}) {
+  first.x = clamp(first.x, minX, maxX);
+  second.x = clamp(second.x, minX, maxX);
+  const separation = second.x - first.x;
+  const excess = Math.abs(separation) - maxSeparation;
+  if (excess <= 0) return;
+
+  const direction = Math.sign(separation);
+  const firstDelta = first.x - (first.previousX ?? first.x);
+  const secondDelta = second.x - (second.previousX ?? second.x);
+  const firstOutward = Math.max(0, -direction * firstDelta);
+  const secondOutward = Math.max(0, direction * secondDelta);
+  const totalOutward = firstOutward + secondOutward;
+
+  let firstPull;
+  let secondPull;
+  if (totalOutward > 0) {
+    // Each fighter absorbs excess in proportion to how far they moved apart
+    // this frame, so walking into the camera edge never drags a stationary opponent.
+    firstPull = excess * (firstOutward / totalOutward);
+    secondPull = excess * (secondOutward / totalOutward);
+  } else {
+    firstPull = excess / 2;
+    secondPull = excess / 2;
+  }
+
+  first.x = clamp(first.x + direction * firstPull, minX, maxX);
+  second.x = clamp(second.x - direction * secondPull, minX, maxX);
+
+  const remainingExcess = Math.abs(second.x - first.x) - maxSeparation;
+  if (remainingExcess > 0) {
+    if (first.x === minX || first.x === maxX) {
+      second.x = clamp(second.x - direction * remainingExcess, minX, maxX);
+    } else {
+      first.x = clamp(first.x + direction * remainingExcess, minX, maxX);
+    }
+  }
+}
+
+function createFighter({ slot, x, facing, character }) {
   const fighter = {
+    slot,
     x, y: 440, previousX: x, previousY: 440, facing,
     characterId: character.id,
     character,
@@ -71,8 +115,9 @@ export class Arena {
     const opponentCharacter=getCharacterDefinition(opponentCharacterId);
     if(!playerCharacter) throw new RangeError("Unknown player character: "+playerCharacterId);
     if(!opponentCharacter) throw new RangeError("Unknown opponent character: "+opponentCharacterId);
-    this.player=createFighter({x:780,facing:1,character:playerCharacter});
-    this.opponent=createFighter({x:1140,facing:-1,character:opponentCharacter});
+    this.player=createFighter({slot:0,x:780,facing:1,character:playerCharacter});
+    this.opponent=createFighter({slot:1,x:1140,facing:-1,character:opponentCharacter});
+    this.fighters=[this.player,this.opponent];
     this.stateController.initialize(this.player);
     this.stateController.initialize(this.opponent);
     this.player.stateController=this.stateController;
@@ -86,7 +131,9 @@ export class Arena {
     this.rounds=new RoundController();
     this.projectileController=new ProjectileController({stateController:this.stateController});
     this.commandHistory=new CommandHistory();
+    this.opponentCommandHistory=new CommandHistory();
     this.inputBuffer=new InputBuffer({bufferFrames:8});
+    this.opponentInputBuffer=new InputBuffer({bufferFrames:8});
     this.comboTracker=new ComboTracker({comboWindowFrames:45,maxJuggleHits:3});
     this.inputFrame=0;
     this.trainingDummyResetFrames=0;
@@ -99,18 +146,106 @@ export class Arena {
     this.combatEffects=new CombatEffects();
   }
 
-  update(deltaSeconds,input) {
+  processFighterStep({
+    fighter,
+    input,
+    movement,
+    commandHistory,
+    inputBuffer,
+    deltaSeconds
+  }) {
+    const resolvedInput = input ?? NEUTRAL_INPUT;
+    commandHistory.update(resolvedInput, fighter.facing);
+    const quarterCircleSpecial =
+      Boolean(resolvedInput.wasPressed?.("special")) &&
+      commandHistory.consumeQuarterCircleForward();
+    if (quarterCircleSpecial) {
+      inputBuffer.capture(resolvedInput, this.inputFrame, {
+        specialMove: "arcLance",
+        specialFacing: fighter.facing
+      });
+      this.commandFeedbackText = "ARC LANCE";
+      this.commandFeedbackRemaining = 0.9;
+    } else {
+      inputBuffer.capture(resolvedInput, this.inputFrame);
+    }
+    const bufferedInput = inputBuffer.getInput(resolvedInput, this.inputFrame);
+    this.guard.update(fighter, resolvedInput);
+
+    // Light / Medium can cancel into either projectile special after a
+    // confirmed hit. QCF input keeps its Arc Lance move identity while buffered.
+    const cancelData = fighter.actionData;
+    const cancelTargets = isGrounded(fighter)
+      ? (cancelData.cancelOnHit ?? [])
+      : (cancelData.airCancelOnHit ?? []);
+    const specialCancel =
+      fighter.state.action === FIGHTER_STATES.action.ATTACK &&
+      cancelData.hitOutcome === "hit" &&
+      cancelTargets.includes("special") &&
+      this.projectileController.canStartSpecial(
+        fighter,
+        bufferedInput,
+        { allowAttackCancel: true }
+      );
+    if (specialCancel) {
+      const fromMoveId = cancelData.moveId;
+      this.stateController.endAction(fighter, FIGHTER_STATES.action.ATTACK);
+      fighter.lastCancelData = { type: "hit", fromMoveId, toMoveId: "special" };
+    }
+
+    const actionDataBefore = fighter.actionData;
+    this.attacks.update(fighter, bufferedInput);
+    this.projectileController.updateFighter(fighter, bufferedInput);
+
+    // One final dispatch after advancing the current move lets a buffered
+    // command start on the exact frame the previous action/recovery ends.
+    if (
+      inputBuffer.pending &&
+      fighter.state.action === FIGHTER_STATES.action.NONE &&
+      fighter.state.reaction === FIGHTER_STATES.reaction.NONE
+    ) {
+      this.attacks.update(fighter, bufferedInput);
+      this.projectileController.updateFighter(fighter, bufferedInput);
+    }
+
+    const pendingAction = inputBuffer.pending?.action;
+    const startedBufferedMove =
+      pendingAction &&
+      fighter.actionData !== actionDataBefore &&
+      fighter.actionData.elapsedFrames === 1 &&
+      ((pendingAction === "special" &&
+        fighter.state.action === FIGHTER_STATES.action.SPECIAL) ||
+       (pendingAction !== "special" &&
+        fighter.state.action === FIGHTER_STATES.action.ATTACK &&
+        fighter.actionData.moveId === pendingAction));
+    if (startedBufferedMove) inputBuffer.consume(pendingAction);
+
+    movement.update(fighter, resolvedInput, deltaSeconds, {
+      floorY: this.floorY,
+      minX: this.stageMargin,
+      maxX: this.worldWidth - this.stageMargin
+    });
+  }
+
+  update(deltaSeconds, input, player2Input = null) {
+    const slot0Input = input ?? NEUTRAL_INPUT;
     this.combatEffects.update(deltaSeconds);
     this.previousCameraX=this.cameraX;
     // The round controller owns all non-active transitions. Combat and physics
     // stay frozen during result/ready-up screens and after the match is decided.
     if (this.rounds.phase !== ROUND_PHASES.ACTIVE) {
       this.inputBuffer.clear();
+      this.opponentInputBuffer.clear();
       this.comboTracker.reset();
       const transition=this.rounds.update(deltaSeconds,{
         playerHealth:this.player.health,
         opponentHealth:this.opponent.health,
-        confirmPressed:Boolean(input.wasPressed?.("Enter") || input.wasPressed?.("Space"))
+        confirmPressed:Boolean(
+          slot0Input.wasPressed?.("Enter") ||
+          slot0Input.wasPressed?.("Space") ||
+          player2Input?.wasPressed?.("Enter") ||
+          player2Input?.wasPressed?.("Space")
+        )
       });
       if (transition?.type==="nextRound" || transition?.type==="matchReset") {
         this.resetFighters();
@@ -135,94 +270,43 @@ export class Arena {
     player.facing=player.x<=this.opponent.x ? 1 : -1;
     this.opponent.facing=-player.facing;
     this.inputFrame+=1;
-    this.commandHistory.update(input,player.facing);
-    const quarterCircleSpecial =
-      Boolean(input.wasPressed?.("special")) &&
-      this.commandHistory.consumeQuarterCircleForward();
-    if (quarterCircleSpecial) {
-      this.inputBuffer.capture(input,this.inputFrame,{
-        specialMove:"arcLance",
-        specialFacing:player.facing
-      });
-      this.commandFeedbackText="ARC LANCE";
-      this.commandFeedbackRemaining=0.9;
-    } else {
-      this.inputBuffer.capture(input,this.inputFrame);
-    }
-    const bufferedInput=this.inputBuffer.getInput(input,this.inputFrame);
-    this.guard.update(player,input);
 
-    // Light / Medium can cancel into either projectile special after a
-    // confirmed hit. QCF input keeps its Arc Lance move identity while buffered.
-    const cancelData=player.actionData;
-    const cancelTargets=isGrounded(player)
-      ? (cancelData.cancelOnHit ?? [])
-      : (cancelData.airCancelOnHit ?? []);
-    const specialCancel =
-      player.state.action===FIGHTER_STATES.action.ATTACK &&
-      cancelData.hitOutcome==="hit" &&
-      cancelTargets.includes("special") &&
-      this.projectileController.canStartSpecial(
-        player,
-        bufferedInput,
-        {allowAttackCancel:true}
-      );
-    if (specialCancel) {
-      const fromMoveId=cancelData.moveId;
-      this.stateController.endAction(player,FIGHTER_STATES.action.ATTACK);
-      player.lastCancelData={type:"hit",fromMoveId,toMoveId:"special"};
-    }
-
-    const actionDataBefore=player.actionData;
-    this.attacks.update(player,bufferedInput);
-    this.projectileController.updateFighter(player,bufferedInput);
-
-    // One final dispatch after advancing the current move lets a buffered
-    // command start on the exact frame the previous action/recovery ends.
-    if (this.inputBuffer.pending &&
-        player.state.action===FIGHTER_STATES.action.NONE &&
-        player.state.reaction===FIGHTER_STATES.reaction.NONE) {
-      this.attacks.update(player,bufferedInput);
-      this.projectileController.updateFighter(player,bufferedInput);
-    }
-
-    const pendingAction=this.inputBuffer.pending?.action;
-    const startedBufferedMove =
-      pendingAction &&
-      player.actionData!==actionDataBefore &&
-      player.actionData.elapsedFrames===1 &&
-      ((pendingAction==="special" &&
-        player.state.action===FIGHTER_STATES.action.SPECIAL) ||
-       (pendingAction!=="special" &&
-        player.state.action===FIGHTER_STATES.action.ATTACK &&
-        player.actionData.moveId===pendingAction));
-    if (startedBufferedMove) this.inputBuffer.consume(pendingAction);
-    this.movement.update(player,input,deltaSeconds,{
-      floorY:this.floorY,minX:this.stageMargin,maxX:this.worldWidth-this.stageMargin
+    this.processFighterStep({
+      fighter: player,
+      input: slot0Input,
+      movement: this.movement,
+      commandHistory: this.commandHistory,
+      inputBuffer: this.inputBuffer,
+      deltaSeconds
     });
 
-    const opponentInput=this.opponentAI?.update(this.opponent,player) ?? null;
-    if(opponentInput){
-      this.guard.update(this.opponent,opponentInput);
-      this.attacks.update(this.opponent,opponentInput);
-      this.projectileController.updateFighter(this.opponent,opponentInput);
+    const slot1Input =
+      player2Input ?? (this.opponentAI ? this.opponentAI.update(this.opponent, player) : null);
+    if (slot1Input) {
+      this.processFighterStep({
+        fighter: this.opponent,
+        input: slot1Input,
+        movement: this.opponentMovement,
+        commandHistory: this.opponentCommandHistory,
+        inputBuffer: this.opponentInputBuffer,
+        deltaSeconds
+      });
+    } else {
+      // Passive dummy (Training / isolated single-player fixtures): no input-driven
+      // actions or guard release, while knockback, gravity, and landing still run.
+      this.opponentMovement.update(
+        this.opponent,
+        NEUTRAL_INPUT,
+        deltaSeconds,
+        {floorY:this.floorY,minX:this.stageMargin,maxX:this.worldWidth-this.stageMargin}
+      );
     }
-    // Training keeps the dummy passive, but it still receives knockback, gravity,
-    // and landing physics through a neutral input sample.
-    // When AI is disabled, the passive opponent still receives physics through
-    // a neutral sample; it never walks or acts, but knockback / gravity / landing work.
-    this.opponentMovement.update(
-      this.opponent,
-      opponentInput ?? NEUTRAL_INPUT,
-      deltaSeconds,
-      {floorY:this.floorY,minX:this.stageMargin,maxX:this.worldWidth-this.stageMargin}
-    );
-    player.x=clamp(player.x,this.stageMargin,this.worldWidth-this.stageMargin);
-    this.opponent.x=clamp(this.opponent.x,this.stageMargin,this.worldWidth-this.stageMargin);
-    const fighterSeparation=this.opponent.x-player.x;
-    if(Math.abs(fighterSeparation)>MAX_FIGHTER_SEPARATION){
-      this.opponent.x=player.x+Math.sign(fighterSeparation)*MAX_FIGHTER_SEPARATION;
-    }
+
+    resolveFighterSeparation(player,this.opponent,{
+      minX:this.stageMargin,
+      maxX:this.worldWidth-this.stageMargin,
+      maxSeparation:MAX_FIGHTER_SEPARATION
+    });
     resolvePushboxes(player,this.opponent,{minX:this.stageMargin,maxX:this.worldWidth-this.stageMargin});
     player.facing=player.x<=this.opponent.x ? 1 : -1;
     this.opponent.facing=-player.facing;
@@ -268,7 +352,10 @@ export class Arena {
         opponentHealth:this.opponent.health
       });
     }
-    if (this.rounds.phase !== ROUND_PHASES.ACTIVE) this.inputBuffer.clear();
+    if (this.rounds.phase !== ROUND_PHASES.ACTIVE) {
+      this.inputBuffer.clear();
+      this.opponentInputBuffer.clear();
+    }
     this.updateAnimations();
   }
 
@@ -280,12 +367,7 @@ export class Arena {
   updateCamera() {
     const maxCameraX=Math.max(0,this.worldWidth-this.width);
     const midpoint=(this.player.x+this.opponent.x)/2;
-    const minForPlayer=Math.max(0,this.player.x-(this.width-this.stageMargin));
-    const maxForPlayer=Math.min(maxCameraX,this.player.x-this.stageMargin);
-    const lower=Math.min(minForPlayer,maxForPlayer);
-    const upper=Math.max(minForPlayer,maxForPlayer);
-    this.cameraX=clamp(midpoint-this.width/2,lower,upper);
-    this.cameraX=clamp(this.cameraX,0,maxCameraX);
+    this.cameraX=clamp(midpoint-this.width/2,0,maxCameraX);
   }
 
   resolveCombatEvent(event) {
@@ -374,7 +456,9 @@ export class Arena {
     this.opponentAI?.reset();
     this.projectileController.clear();
     this.commandHistory.reset();
+    this.opponentCommandHistory.reset();
     this.inputBuffer.clear();
+    this.opponentInputBuffer.clear();
     this.comboTracker.reset();
     this.inputFrame=0;
     this.trainingDummyResetFrames=0;

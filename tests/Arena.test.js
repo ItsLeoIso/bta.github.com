@@ -291,7 +291,7 @@ test("camera follows the fighters and scrolls through the extended stage",()=>{
 test("camera clamps at stage ends and keeps the controlled fighter visible",()=>{
   const arena=new Arena();
   arena.player.x=arena.stageMargin;
-  arena.opponent.x=1000;
+  arena.opponent.x=arena.player.x+180;
   arena.update(0,input());
   assert.equal(arena.cameraX,0);
   assert.ok(arena.player.x-arena.cameraX>=0);

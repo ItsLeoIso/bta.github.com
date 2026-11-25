@@ -50,9 +50,9 @@ test("projectile is blockable from the side it travels in from and deals chip/gu
 
 test("air projectile cancels launch momentum but gravity continues through the move",()=>{
   const arena=new Arena();
-  arena.player.x=300;
+  arena.player.x=400;
   arena.player.y=280; // At the jump apex.
-  arena.player.previousX=300;
+  arena.player.previousX=400;
   arena.player.previousY=280;
   arena.player.onGround=false;
   arena.player.vx=160;

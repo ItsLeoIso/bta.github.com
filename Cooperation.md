@@ -1380,3 +1380,42 @@ Please review this proposal against the actual SF6 / DBFZ mechanics and BTA's cu
 - Proceed to **Milestone O1 — Symmetric 2P Arena & Bitmask Input** as a focused, test-covered implementation slice, keeping all existing 228 tests green before moving to O2.
 
 
+### 2026-11-25 — Antigravity — Online Milestone O1 implemented (Symmetric 2P Arena & Bitmask Input)
+
+**Type:** Completed / Handoff  
+**Commit:** Added in the commit containing this entry.  
+**Files / systems:**
+- `src/input/BitmaskInput.js` (new)
+- `src/engine/Arena.js`
+- `tests/BitmaskInput.test.js` (new)
+- `tests/ArenaTwoPlayer.test.js` (new)
+- `tests/Arena.test.js` (fixture alignment for symmetric separation)
+- `tests/ProjectileIntegration.test.js` (fixture alignment for symmetric separation)
+- `docs/ONLINE_PLAN.md`, `docs/TECHNICAL_PLAN.md`, `Cooperation.md`
+
+**What changed:**
+- Added `src/input/BitmaskInput.js` with protocol v1 `INPUT_BITS` (`0x0001`–`0x0080`, reserved upper bits zeroed), `encodeInputMask` (supports `KeyboardInput`, SOCD simultaneous left+right, and axis-only providers), stateless `createBitmaskInputFrame`, and `BitmaskInputAdapter` with `getPreviousMask` / `setPreviousMask` / `reset` so edge-triggered presses `(mask & ~previousMask)` replay identically under future rollback.
+- Refactored `src/engine/Arena.js` for canonical Slot 0 / Slot 1 symmetry:
+  - Fighters carry `slot: 0` / `slot: 1` and are exposed via `this.fighters` while preserving `this.player` / `this.opponent`.
+  - Added `opponentCommandHistory` and `opponentInputBuffer` (cleared on non-active round transitions and in `resetFighters()`).
+  - Updated `Arena.update(deltaSeconds, input, player2Input = null)` to route both Slot 0 and active Slot 1 providers (`player2Input` or `OpponentAIController`) through the shared `processFighterStep` pipeline (command history, QCF Arc Lance, 8-frame input buffer, guard, hit-confirm Special cancels, attacks, projectiles, movement). Passive Training / isolated dummy fixtures (no `player2Input`, no AI) still preserve manual guard-dummy setups while running passive physics.
+  - Replaced the Slot-0-biased separation clamp with symmetric `resolveFighterSeparation`: excess separation is absorbed in proportion to each fighter's outward movement on that frame (so backing into the camera edge stops the retreating fighter without dragging a stationary opponent), falling back to an exact 50/50 split toward the midpoint when static (`dt = 0`).
+  - Simplified `updateCamera()` to symmetric midpoint clamping (`clamp(midpoint - width / 2, 0, maxCameraX)`), which keeps both fighters inside `[stageMargin, width - stageMargin]` with zero slot bias.
+- **Test fixture alignments required by removing Slot 0 separation bias:**
+  - `tests/Arena.test.js` ("camera clamps at stage ends"): changed left-edge setup from `opponent.x = 1000` (`932 > MAX_FIGHTER_SEPARATION = 824`) to `opponent.x = arena.player.x + 180` (mirroring the right-edge half of the same test).
+  - `tests/ProjectileIntegration.test.js` ("air projectile cancels launch momentum"): moved starting `player.x` from `300` (`840` units from default `opponent.x = 1140`, `16` units past `MAX_FIGHTER_SEPARATION`) to `400` (`740` units apart) so frame-1 symmetric separation does not shift `player.x` by `+8`.
+- Added 12 new automated tests across `tests/BitmaskInput.test.js` (5 tests) and `tests/ArenaTwoPlayer.test.js` (7 tests) verifying protocol bit layout, `KeyboardInput` packing, deterministic edge replay, Slot 1 QCF Arc Lance, Slot 1 recovery buffering & hit-confirm Special cancels, Slot 1 directional guard/release, mirror-symmetric 2P trading, symmetric separation clamping, and explicit `player2Input` overriding `opponentAI`.
+
+**Verification:**
+- Tests run locally: `npm test` — **240/240 passed, 0 failures** (including `tests/SourceIntegrity.test.js`).
+- Browser/manual checks: not run locally (Playwright/Chromium browser smoke will run in GitHub Actions CI on push; Arcade/Training gameplay paths remain unchanged).
+- Not verified: O2–O5 (integer frame timers, canonical snapshots, seeded rollback harness, WebRTC transport) are not implemented yet.
+
+**Review requested / concerns:**
+- ChatGPT / Claude: feel free to review `src/input/BitmaskInput.js`, `resolveFighterSeparation`, and `Arena.processFighterStep` before O2 begins.
+
+**Suggested next step:**
+- Proceed to **Milestone O2 — Integer Frame Timers, Canonical Snapshots & Seeded Rollback Harness** (`MovementController` / `ProjectileController` / `RoundController` frame timers, `Arena.saveState()` / `loadState()` + FNV-1a checksum, and `src/net/` `RollbackSession` + binary packet codec + seeded network simulator).
+
+
+
